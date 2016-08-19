@@ -1,18 +1,40 @@
 {
     "name": "jasny/http-message",
-    "description": "PSR-7 compatible HTTP message interface",
     "type": "library",
-    "require": {
-        "psr/http-message": "^1.0"
-    },
-    "require-dev": {
-        "jasny/php-code-quality": "^1.2"
-    },
+    "description": "PSR-7 implementation for handling HTTP requests",
+    "keywords": ["psr-7", "http", "mvc"],
     "license": "MIT",
     "authors": [
         {
             "name": "Arnold Daniels",
             "email": "arnold@jasny.net"
         }
-    ]
+    ],
+    "authors": [
+        {
+            "name": "Arnold Daniels",
+            "email": "arnold@jasny.net",
+            "homepage": "http://www.jasny.net"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/jasny/meta/issues",
+        "source": "https://github.com/jasny/meta"
+    },
+    "require": {
+        "php": ">=5.6.0",
+        "psr/http-message": "^1.0",
+        "jasny/php-functions": "^2.2"
+    },
+    "require-dev": {
+        "jasny/php-code-quality": "^1.2"
+    },
+    "provides": {
+        " psr/http-message-implementation": "1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jasny\\HttpMessage\\": "src/"
+        }
+    }
 }
