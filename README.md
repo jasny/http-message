@@ -8,21 +8,30 @@ The library only implements those [PSR-7 interfaces](http://www.php-fig.org/psr/
 HTTP request. If you want to send HTTP request to other webservices, I recommend using
 [Guzzle](http://docs.guzzlephp.org/).
 
+
 ## Installation
 
     composer install jasny/http-message
+
 
 ## Documentation
 
 The library implements the following PSR-7 interfaces
 
- * `ServerRequest` implements `Psr\Http\Message\ServerRequestInterface`
- * `Response` implements `Psr\Http\Message\ResponseInterface`
- * `Steam` implements `Psr\Http\Message\StreamInterface`
+ * [`ServerRequest`](#ServerRequest) implements `Psr\Http\Message\ServerRequestInterface`
+ * [`Response`](#Response) implements `Psr\Http\Message\ResponseInterface`
+ * [`InputStream`](#InputStream) implements `Psr\Http\Message\StreamInterface`
+ * [`OutputStream`](#OutputStream) implements `Psr\Http\Message\StreamInterface`
+ * [`Uri`](#Uri) implements `Psr\Http\Message\UriInterface`
+
+it defines one interface
+
+ * [`DerivedAttribute`](#DerivedAttribute)
 
 ### ServerRequest
 
 For the full documentation about the `ServerRequest`, please see
+[PSR-7 `RequestInterface`](http://www.php-fig.org/psr/psr-7/#3-2-psr-http-message-requestinterface) and
 [PSR-7 `ServerRequestInterface`](http://www.php-fig.org/psr/psr-7/#3-2-1-psr-http-message-serverrequestinterface).
 
 To create a `ServerRequest` object with the `$_SERVER`, `$_COOKIE`, `$_GET`, `$_POST` and `$_FILES` superglobals and
@@ -31,6 +40,7 @@ with `php://input` as input stream, use the `withSuperGlobals()` method.
 ```php
 $request = (new Jasny\HttpMessage\ServerRequest())->withSuperGlobals();
 ```
+
 
 ### DerivedAttribute
 
@@ -148,3 +158,16 @@ $back = $request->getAttribute('local_referer') ?: '/';
 ```
 
 
+### Uri
+
+For the full documentation about the `Uri`, please see
+[PSR-7 `UriInterface`](http://www.php-fig.org/psr/psr-7/#3-5-psr-http-message-uriinterface).
+
+When creating an Uri you can pass the URL as string or pass the URL in parts as associative array. For the URL parts
+see the [`parse_url`](http://www.php.net/parse_url) function.
+
+The `Jasny\HttpMessage\Uri` object only supports the `http` and `https` schemes.
+
+```php
+$uri = new Jasny\HttpMessage\Uri("http://www.example.com/foo");
+```
