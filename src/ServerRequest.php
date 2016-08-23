@@ -72,7 +72,7 @@ class ServerRequest implements ServerRequestInterface
     {
         $this->attributes = [
             'client_ip' => new DerivedAttribute\ClientIp(),
-            'content_type' => new DerivedAttribute\ContentType()
+            'is_ajax' => new DerivedAttribute\IsAjax()
         ];
     }
     

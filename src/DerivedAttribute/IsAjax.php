@@ -8,7 +8,7 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * Check if request is an AJAX request.
  */
-class Ajax implements DerivedAttribute
+class IsAjax implements DerivedAttribute
 {
     /**
      * Calculate the derived attribute.

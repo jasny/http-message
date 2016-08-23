@@ -5,13 +5,13 @@ namespace Jasny\HttpMessage\DerivedAttribute;
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject;
 
-use Jasny\HttpMessage\DerivedAttribute\Ajax;
+use Jasny\HttpMessage\DerivedAttribute\IsAjax;
 use Jasny\HttpMessage\ServerRequest;
 
 /**
- * @covers \Jasny\HttpMessage\DerivedAttribute\Ajax
+ * @covers \Jasny\HttpMessage\DerivedAttribute\IsAjax
  */
-class AjaxTest extends PHPUnit_Framework_TestCase
+class IsAjaxTest extends PHPUnit_Framework_TestCase
 {
     /**
      * @var ServerRequest|PHPUnit_Framework_MockObject_MockObject
@@ -41,9 +41,9 @@ class AjaxTest extends PHPUnit_Framework_TestCase
             ->with('X-Requested-With')
             ->willReturn(null);
         
-        $clientIp = new Ajax();
+        $isAjax = new IsAjax();
         
-        $this->assertEquals(false, $clientIp($this->request));
+        $this->assertEquals(false, $isAjax($this->request));
     }
     
     /**
@@ -55,9 +55,9 @@ class AjaxTest extends PHPUnit_Framework_TestCase
             ->with('X-Requested-With')
             ->willReturn('xmlhttprequest');
         
-        $clientIp = new Ajax();
+        $isAjax = new IsAjax();
         
-        $this->assertEquals(true, $clientIp($this->request));
+        $this->assertEquals(true, $isAjax($this->request));
     }
     
     /**
@@ -69,8 +69,8 @@ class AjaxTest extends PHPUnit_Framework_TestCase
             ->with('X-Requested-With')
             ->willReturn('foo-bar');
         
-        $clientIp = new Ajax();
+        $isAjax = new IsAjax();
         
-        $this->assertEquals(false, $clientIp($this->request));
+        $this->assertEquals(false, $isAjax($this->request));
     }
 }

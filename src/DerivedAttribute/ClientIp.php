@@ -11,47 +11,35 @@ use Psr\Http\Message\ServerRequestInterface;
 class ClientIp implements DerivedAttribute
 {
     /**
-     * Get the value of the trusted_proxy attribute
-     * 
-     * @param ServerRequestInterface $request
-     * @return boolean|string
+     * CIDR address of trusted proxy
+     * @var string|boolean
      */
-    protected function getTrustedProxyAttribute(ServerRequestInterface $request)
-    {
-        $proxy = $request->getAttribute('trusted_proxy', false);
-        
-        if (is_string($proxy) && !\Jasny\str_contains($proxy, '/')) {
-            $proxy .= '/32';
-        }
-        
-        return $proxy;
-    }
-
+    protected $trustedProxy;
+    
     /**
-     * Use the forwarded IP address, but only if forwarded by a trusted proxy,
+     * Class constructor
      * 
-     * @param string $proxy
-     * @param array  $params
-     * @return string|false
+     * @param string|boolean $trustedProxy  CIDR address of trusted proxy, true to trust all proxies
      */
-    protected function useForwardedIp($proxy, $params)
+    public function __construct($trustedProxy = false)
     {
-        if (isset($params['HTTP_CLIENT_IP'])) {
-            $forwarded = $params['HTTP_CLIENT_IP'];
-        } elseif (isset($params['HTTP_X_FORWARDED_FOR'])) {
-            $forwarded = $params['HTTP_X_FORWARDED_FOR'];
-        } else {
-            return false;
-        }
-
-        if (is_string($proxy) && isset($params['REMOTE_ADDR']) && \Jasny\ip_in_cidr($params['REMOTE_ADDR'], $proxy)) {
-            list($ip) = explode(',', $forwarded);
-        } elseif ($proxy === true) {
-            $ips = explode(',', $forwarded);
-            $ip = trim(end($ips));
+        if (is_string($trustedProxy) && !\Jasny\str_contains($trustedProxy, '/')) {
+            $trustedProxy .= '/32';
         }
         
-        return isset($ip) ? $ip : false;
+        $this->trustedProxy = $trustedProxy;
+    }
+    
+    protected function getForwardedIp(ServerRequestInterface $request)
+    {
+        if ($request->getHeaderLine('Client-Ip') && $request->getHeaderLine('X-Forwarded-For')) {
+            $warning = 'Eiter the `Client-Ip` or `X-Forwarded-For` header should be set, but not both';
+            trigger_error($warning, E_USER_WARNING);
+            return null;
+        }
+        
+        $forwarded = $request->getHeaderLine('Client-Ip') ?: $request->getHeaderLine('X-Forwarded-For');
+        return $forwarded ? array_map('trim', explode(',', $forwarded)) : null;
     }
     
     /**
@@ -62,10 +50,21 @@ class ClientIp implements DerivedAttribute
      */
     public function __invoke(ServerRequestInterface $request)
     {
-        $proxy = $this->getTrustedProxyAttribute($request);
         $params = $request->getServerParams();
+        $ip = isset($params['REMOTE_ADDR']) ? $params['REMOTE_ADDR'] : null;
         
-        return $this->useForwardedIp($proxy, $params) ?:
-            (isset($params['REMOTE_ADDR']) ? $params['REMOTE_ADDR'] : null);
+        if (is_string($this->trustedProxy) && $ip && \Jasny\ip_in_cidr($ip, $this->trustedProxy)) {
+            $forwarded = $this->getForwardedIp($request);
+            if ($forwarded) {
+                $ip = reset($forwarded);
+            }
+        } elseif ($this->trustedProxy === true) {
+            $forwarded = $this->getForwardedIp($request);
+            if ($forwarded) {
+                $ip = end($forwarded);
+            }
+        }
+        
+        return $ip;
     }
 }
