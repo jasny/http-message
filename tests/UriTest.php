@@ -11,6 +11,22 @@ use Jasny\HttpMessage\Uri;
  */
 class UriTest extends PHPUnit_Framework_TestCase
 {
+    public function testContruct()
+    {
+        $uri = new Uri();
+        
+        $this->assertSame('', $uri->getScheme());
+        $this->assertSame('', $uri->getAuthority());
+        $this->assertSame('', $uri->getUserInfo());
+        $this->assertSame('', $uri->getHost());
+        $this->assertNull($uri->getPort());
+        $this->assertSame('', $uri->getPath());
+        $this->assertSame('', $uri->getQuery());
+        $this->assertSame('', $uri->getFragment());
+        
+        $this->assertSame('', (string)$uri);
+    }
+    
     public function testConstructFromParts()
     {
         $uri = new Uri([
