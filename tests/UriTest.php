@@ -8,6 +8,14 @@ use Jasny\HttpMessage\Uri;
 
 /**
  * @covers \Jasny\HttpMessage\Uri
+ * @covers \Jasny\HttpMessage\Uri\Scheme
+ * @covers \Jasny\HttpMessage\Uri\Authority
+ * @covers \Jasny\HttpMessage\Uri\UserInfo
+ * @covers \Jasny\HttpMessage\Uri\Host
+ * @covers \Jasny\HttpMessage\Uri\Port
+ * @covers \Jasny\HttpMessage\Uri\Path
+ * @covers \Jasny\HttpMessage\Uri\Query
+ * @covers \Jasny\HttpMessage\Uri\Fragment
  */
 class UriTest extends PHPUnit_Framework_TestCase
 {

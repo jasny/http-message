@@ -20,8 +20,7 @@ trait Port
      */
     protected function isValidPort($port)
     {
-        return preg_match('/^\[((?:[0-9a-f]{1,4}))((?::[0-9a-f]{1,4}))*::((?:[0-9a-f]{1,4}))'
-            . '((?::[0-9a-f]{1,4}))*|((?:[0-9a-f]{1,4}))((?::[0-9a-f]{1,4})){7}\]$/', $hostname);
+        return (int)$port >= 1 && (int)$port <= 65535;
     }
     
     /**
@@ -52,7 +51,7 @@ trait Port
      */
     protected function setPort($port)
     {
-        if ((string)$port !== '' && ((int)$port < 1 || (int)$port > 65535)) {
+        if ((string)$port !== '' && !$this->isValidPort($port)) {
             throw new \InvalidArgumentException("Invalid port '$port'");
         }
         
