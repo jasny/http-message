@@ -7,6 +7,7 @@ use PHPUnit_Framework_MockObject_MockObject;
 
 use Jasny\HttpMessage\DerivedAttribute\LocalReferer;
 use Jasny\HttpMessage\ServerRequest;
+use Jasny\HttpMessage\Uri;
 
 /**
  * @covers \Jasny\HttpMessage\DerivedAttribute\LocalReferer
@@ -25,10 +26,22 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $this->request = $this->getMockBuilder(ServerRequest::class)
-            ->setMethods(['getHeaderLine'])
+            ->setMethods(['getHeaderLine', 'getUri'])
             ->disableOriginalConstructor()
             ->disableProxyingToOriginalMethods()
             ->getMock();
+        
+        $uri = $this->getMockBuilder(Uri::class)
+            ->setMethods(['getScheme', 'getHost', 'getPort'])
+            ->disableOriginalConstructor()
+            ->disableProxyingToOriginalMethods()
+            ->getMock();
+        
+        $uri->expects($this->any())->method('getScheme')->willReturn('http');
+        $uri->expects($this->any())->method('getHost')->willReturn('www.example.com');
+        $uri->expects($this->any())->method('getPort')->willReturn(null);
+        
+        $this->request->expects($this->any())->method('getUri')->willReturn($uri);
     }
 
     /**
@@ -37,7 +50,7 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     public function testNoReferer()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Host', 'www.example.com'], ['Referer', null]]);
+            ->with('Referer')->willReturn(null);
         
         $localReferer = new LocalReferer();
         
@@ -50,7 +63,7 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     public function testLocalRefererRoot()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Host', 'www.example.com'], ['Referer', 'http://www.example.com/']]);
+            ->with('Referer')->willReturn('http://www.example.com/');
         
         $localReferer = new LocalReferer();
         
@@ -63,24 +76,11 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     public function testLocalRefererPage()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Host', 'www.example.com'], ['Referer', 'http://www.example.com/pages/foo']]);
+            ->with('Referer')->willReturn('http://www.example.com/pages/foo');
         
         $localReferer = new LocalReferer();
         
         $this->assertEquals('/pages/foo', $localReferer($this->request));
-    }
-    
-    /**
-     * Host header not set
-     */
-    public function testNoHost()
-    {
-        $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Host', null], ['Referer', 'http://www.example.com/']]);
-        
-        $localReferer = new LocalReferer();
-        
-        $this->assertNull($localReferer($this->request));
     }
     
     /**
@@ -89,7 +89,7 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     public function testNoMatch()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Host', 'http://www.example.com/'], ['Referer', 'http://www.example.org/']]);
+            ->with('Referer')->willReturn('http://www.example.org/');
         
         $localReferer = new LocalReferer();
         
@@ -102,10 +102,62 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     public function testSubdomainsDontMatch()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Host', 'http://www.example.com/'], ['Referer', 'http://foo.example.com/']]);
+            ->with('Referer')->willReturn('http://foo.example.com/');
         
         $localReferer = new LocalReferer();
         
         $this->assertNull($localReferer($this->request));
+    }
+    
+    /**
+     * Port doesn't match referer port
+     */
+    public function testPortsDontMatch()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->with('Referer')->willReturn('http://www.example.com:8080/');
+        
+        $localReferer = new LocalReferer();
+        
+        $this->assertNull($localReferer($this->request));
+    }
+    
+    /**
+     * Port doesn't match referer port
+     */
+    public function testDontCheckPort()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->with('Referer')->willReturn('http://www.example.com:8080/');
+        
+        $localReferer = new LocalReferer(['checkPort' => false]);
+        
+        $this->assertEquals('/', $localReferer($this->request));
+    }
+    
+    /**
+     * Scheme doesn't match referer
+     */
+    public function testSchemesDontMatch()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->with('Referer')->willReturn('https://www.example.com/');
+        
+        $localReferer = new LocalReferer();
+        
+        $this->assertNull($localReferer($this->request));
+    }
+    
+    /**
+     * Don't check the scheme
+     */
+    public function testDontCheckScheme()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->with('Referer')->willReturn('https://www.example.com/');
+        
+        $localReferer = new LocalReferer(['checkScheme' => false]);
+        
+        $this->assertEquals('/', $localReferer($this->request));
     }
 }

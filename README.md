@@ -126,7 +126,7 @@ use Jasny\HttpMessage\DerivedAttribute\ClientIp;
 
 $request = (new ServerRequest())
     ->withSuperGlobals()
-    ->withAttribute(new ClientIp('10.0.0.0/24'))
+    ->withAttribute('client_ip', new ClientIp('10.0.0.0/24'))
 ;
 
 $ip = $request->getAttribute('client_ip'); // for a request from the internal network, use the `X-Forwarded-For` header
@@ -148,13 +148,25 @@ $isAjax = $request->getAttribute('is_ajax'); // true or false
 
 #### LocalReferer
 
-Return the path of the `Referer` header, but only if the referer's host part matches the `Host` header.
+Return the path of the `Referer` header, but only if the referer's scheme, host and port matches request's scheme, host
+and port.
 
 ```php
 use Jasny\HttpMessage\ServerRequest;
 
 $request = (new ServerRequest())->withSuperGlobals();
-$back = $request->getAttribute('local_referer') ?: '/';
+$back = $request->getAttribute('local_referer') ?: '/'; // Referer Uri path, defaults to `/` for no or external referer
+```
+
+It is possible to disable the check on scheme and/or port if needed.
+
+```php
+use Jasny\HttpMessage\ServerRequest;
+use Jasny\HttpMessage\DerivedAttribute\LocalReferer;
+
+$request = (new ServerRequest())
+    ->withSuperGlobals()
+    ->withAttribute('local_referer', new LocalReferer(['checkScheme' => false, 'checkPort' => false]));
 ```
 
 
