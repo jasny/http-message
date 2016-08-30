@@ -20,8 +20,7 @@ The library implements the following PSR-7 interfaces
 
  * [`ServerRequest`](#ServerRequest) implements `Psr\Http\Message\ServerRequestInterface`
  * [`Response`](#Response) implements `Psr\Http\Message\ResponseInterface`
- * [`InputStream`](#InputStream) implements `Psr\Http\Message\StreamInterface`
- * [`OutputStream`](#OutputStream) implements `Psr\Http\Message\StreamInterface`
+ * [`Stream`](#InputStream) implements `Psr\Http\Message\StreamInterface`
  * [`Uri`](#Uri) implements `Psr\Http\Message\UriInterface`
 
 it defines one interface
@@ -183,3 +182,27 @@ The `Jasny\HttpMessage\Uri` object only supports the `http` and `https` schemes.
 ```php
 $uri = new Jasny\HttpMessage\Uri("http://www.example.com/foo");
 ```
+
+
+### Stream
+
+The `Stream` class is a wrapper around [php streams](http://php.net/manual/en/book.stream.php) implementing the
+[PSR-7 `StreamInterface`](http://www.php-fig.org/psr/psr-7/#3-4-psr-http-message-streaminterface).
+
+```php
+$input = new Jasny\HttpMessage\Stream('php://input', 'r');
+$output = new Jasny\HttpMessage\Stream('php://output', 'w');
+```
+
+For testing purposes use the `php://memory` stream.
+
+```php
+$input = new Jasny\HttpMessage\Stream('php://memory');
+$input->write(json_encode(['foo' => 'bar', 'color' => 'red']));
+
+$output = new Jasny\HttpMessage\Stream('php://memory');
+```
+
+After running the test case, cast `$output` to a string to assert the output.
+
+

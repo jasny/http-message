@@ -3,10 +3,17 @@
 namespace Jasny\HttpMessage;
 
 /**
- *
- * @author arnold
+ * Http response
  */
-interface Response
+class Response
 {
-    //put your code here
+    /**
+     * Class constructor
+     * 
+     * @param int $statusCode  HTTP status code
+     */
+    public function __construct($statusCode)
+    {
+        ;
+    }
 }
