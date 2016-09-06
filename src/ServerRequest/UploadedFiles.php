@@ -47,7 +47,7 @@ trait UploadedFiles
         }
         
         if (!is_array(reset($array))) {
-           return $this->createUploadedFile($array, $groupKey, $assertIsUploadedFile);
+            return $this->createUploadedFile($array, $groupKey, $assertIsUploadedFile);
         }
 
         $rearranged = [];
@@ -57,7 +57,7 @@ trait UploadedFiles
             }
         }
 
-        foreach ($rearranged as $key => &$value){
+        foreach ($rearranged as $key => &$value) {
             $parameterKey = isset($groupKey) ? "{$groupKey}[{$key}]" : $key;
             $value = $this->groupUploadedFiles($value, $parameterKey, $assertIsUploadedFile);
         }
