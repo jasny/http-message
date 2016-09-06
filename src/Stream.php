@@ -293,4 +293,25 @@ class Stream implements StreamInterface
         
         return $meta;
     }
+    
+    
+    /**
+     * Open a stream.
+     * @see http://php.net/manual/en/function.fopen.php
+     * 
+     * @param string $uri   URI or filename
+     * @param string $mode
+     * @return static
+     * @throws \RuntimeException
+     */
+    public static function open($uri, $mode)
+    {
+        $fp = fopen($uri, $mode);
+        
+        if (!$fp) {
+            throw new \RuntimeException("Failed to open the '$uri' stream in '$mode' mode");
+        }
+        
+        return new static($fp);
+    }
 }

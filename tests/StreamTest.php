@@ -11,6 +11,21 @@ use Jasny\HttpMessage\Stream;
  */
 class StreamTest extends PHPUnit_Framework_TestCase
 {
+    protected $errorReporting;
+    protected $errorException;
+    
+    protected function setUp()
+    {
+        $this->errorReporting = error_reporting();
+        $this->errorException = \PHPUnit_Framework_Error_Warning::$enabled;
+    }
+        
+    protected function tearDown()
+    {
+        error_reporting($this->errorReporting);
+        \PHPUnit_Framework_Error_Warning::$enabled = $this->errorException;
+    }
+    
     /**
      * @expectedException \InvalidArgumentException
      */
@@ -382,5 +397,28 @@ class StreamTest extends PHPUnit_Framework_TestCase
         
         $this->assertNull($stream->getMetadata());
         $this->assertNull($stream->getMetadata("uri"));
+    }
+    
+    
+    public function testCreate()
+    {
+        $stream = Stream::open('data://text/plain,foo', 'r');
+        
+        $this->assertInstanceOf(Stream::class, $stream);
+        $this->assertEquals('foo', (string)$stream);
+    }
+    
+    /**
+     * @expectedException RuntimeException
+     */
+    public function testCreateFailed()
+    {
+        error_reporting(E_ERROR | E_USER_ERROR);
+        \PHPUnit_Framework_Error_Warning::$enabled = false;
+        
+        $stream = Stream::open('nonexistant://foo', 'r');
+        
+        $this->assertInstanceOf(Stream::class, $stream);
+        $this->assertEquals('foo', (string)$stream);
     }
 }

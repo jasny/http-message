@@ -36,10 +36,16 @@ class ServerRequest implements ServerRequestInterface
     
     /**
      * Use super globals $_SERVER, $_COOKIE, $_GET, $_POST and $_FILES and the php://input stream.
-     * 
      * Note: this method is not part of the PSR-7 specs.
      * 
+     * @global $_SERVER
+     * @global $_COOKIE
+     * @global $_GET
+     * @global $_POST
+     * @global $_FILES
+     * 
      * @return self
+     * @throws RuntimeException if isn't not possible to open the 'php://input' stream
      */
     public function withSuperGlobals()
     {
@@ -52,7 +58,8 @@ class ServerRequest implements ServerRequestInterface
         $request->postData =& $_POST;
         $request->parsedBodyStats = null;
         $request->setUploadedFiles($_FILES);
-        $request->body = new Stream(fopen('php://input', 'r'));
+        
+        $request->body = Stream::open('php://input', 'r');
         
         return $request;
     }

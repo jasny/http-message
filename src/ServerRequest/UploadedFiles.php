@@ -2,8 +2,11 @@
 
 namespace Jasny\HttpMessage\ServerRequest;
 
+use Psr\Http\Message\UploadedFileInterface;
+use Jasny\HttpMessage\UploadedFile;
+
 /**
- * ServerRequest parsed body methods
+ * ServerRequest uploaded files methods
  */
 trait UploadedFiles
 {
@@ -19,24 +22,32 @@ trait UploadedFiles
     /**
      * Create an UploadedFile instance.
      * 
-     * @param array $info
+     * @param array   $info
+     * @param string  $key                   Parameter key
+     * @param boolean $assertIsUploadedFile  Assert that the file is actually uploaded
      * @return UploadedFile
      */
-    protected function createUploadedFile(array $info)
+    protected function createUploadedFile(array $info, $key, $assertIsUploadedFile)
     {
-        // TODO
+        return new UploadedFile($info, $key, $assertIsUploadedFile);
     }
     
     /**
      * Group data as provided by $_FILES
      * 
-     * @param array $array
+     * @param array   $array
+     * @param string  $groupKey
+     * @param boolean $assertIsUploadedFile  Assert that the file is actually uploaded
      * @return array An array tree of UploadedFileInterface instances
      */
-    protected function groupUploadedFiles(array $array)
+    protected function groupUploadedFiles(array $array, $groupKey, $assertIsUploadedFile)
     {
+        if (empty($array)) {
+            return [];
+        }
+        
         if (!is_array(reset($array))) {
-           return $this->createUploadedFile($array);
+           return $this->createUploadedFile($array, $groupKey, $assertIsUploadedFile);
         }
 
         $rearranged = [];
@@ -46,8 +57,9 @@ trait UploadedFiles
             }
         }
 
-        foreach ($rearranged as &$value){
-           $value = $this->groupUploadedFiles($value);
+        foreach ($rearranged as $key => &$value){
+            $parameterKey = isset($groupKey) ? "{$groupKey}[{$key}]" : $key;
+            $value = $this->groupUploadedFiles($value, $parameterKey, $assertIsUploadedFile);
         }
 
         return $rearranged;
@@ -56,23 +68,35 @@ trait UploadedFiles
     /**
      * Set uploaded files
      * 
+     * @global array $_FILES
+     * 
      * @param array $files
      */
     protected function setUploadedFiles(array $files)
     {
-        $this->uploadedFiles = !isEmpty($array) ? $this->groupUploadedFiles($files) : [];
+        $assertIsUploadedFile = ($files === $_FILES);
+        $this->uploadedFiles = $this->groupUploadedFiles($files, null, $assertIsUploadedFile);
     }
     
     
     /**
      * Assert that each leaf is an UploadedFileInterface
      * 
-     * @param array $uploadedFiles
+     * @param array  $uploadedFiles
+     * @param string $groupKey
      * @throws \InvalidArgumentException if an invalid structure is provided.
      */
-    protected function assertUploadedFilesStructure(array $uploadedFiles)
+    protected function assertUploadedFilesStructure(array $uploadedFiles, $groupKey = null)
     {
-        // TODO
+        foreach ($uploadedFiles as $key => $item) {
+            $parameterKey = isset($groupKey) ? "{$groupKey}[{$key}]" : $key;
+            
+            if (is_array($item)) {
+                $this->assertUploadedFilesStructure($uploadedFiles, $parameterKey);
+            } elseif (!$item instanceof UploadedFileInterface) {
+                throw new \InvalidArgumentException("$parameterKey is not an UploadedFileInterface object");
+            }
+        }
     }
     
     
