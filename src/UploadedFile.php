@@ -113,7 +113,7 @@ class UploadedFile implements UploadedFileInterface
     protected function getDesc()
     {
         $key = $this->getKey();
-        return "uploaded file" . (isset($key) ? " '$key'": '');
+        return "uploaded file" . (isset($key) ? " '$key'" : '');
     }
     
     
