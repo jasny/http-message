@@ -11,7 +11,7 @@ trait ServerParams
      * Server parameters, typically $_SERVER
      * @var array
      */
-    protected $serverParams;
+    protected $serverParams = [];
     
     /**
      * Retrieve server parameters.
@@ -21,7 +21,7 @@ trait ServerParams
      */
     public function getServerParams()
     {
-        
+        return $this->serverParams;
     }
 
     /**
@@ -34,6 +34,9 @@ trait ServerParams
      */
     public function withServerParams(array $params)
     {
+        $request = clone $this;
+        $request->serverParams = $params;
         
+        return $request;
     }
 }

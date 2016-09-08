@@ -3,7 +3,7 @@
 namespace Jasny\HttpMessage\ServerRequest;
 
 use Psr\Http\Message\StreamInterface;
-
+use Jasny\HttpMessage\Stream;
 
 /**
  * ServerRequest body methods
@@ -23,7 +23,7 @@ trait Body
     public function getBody()
     {
         if (!isset($this->body)) {
-            $this->body = new InputStream();
+            $this->body = Stream::open('data://text/plain,', 'r');
         }
         
         return $this->body;
@@ -50,6 +50,6 @@ trait Body
         $request = clone $this;
         $request->setBody($body);
         
-        return $this;
+        return $request;
     }
 }

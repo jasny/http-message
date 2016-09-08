@@ -131,7 +131,7 @@ $request = (new ServerRequest())
 $ip = $request->getAttribute('client_ip'); // for a request from the internal network, use the `X-Forwarded-For` header
 ```
 
-#### IsAjax
+#### IsXhr
 
 Test is the request with made using AJAX.
 
@@ -142,7 +142,7 @@ attribute simply checks that header.
 use Jasny\HttpMessage\ServerRequest;
 
 $request = (new ServerRequest())->withSuperGlobals();
-$isAjax = $request->getAttribute('is_ajax'); // true or false
+$isXhr = $request->getAttribute('is_xhr'); // true or false
 ```
 
 #### LocalReferer

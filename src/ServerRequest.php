@@ -61,6 +61,17 @@ class ServerRequest implements ServerRequestInterface
         
         $request->body = Stream::open('php://input', 'r');
         
+        $request->reset();
+        
         return $request;
+    }
+    
+    /**
+     * Remove all set and cached values
+     */
+    protected function reset()
+    {
+        $this->protocolVersion = null;
+        $this->headers = null;
     }
 }

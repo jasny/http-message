@@ -6,9 +6,9 @@ use Jasny\HttpMessage\DerivedAttribute;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Check if request is an AJAX request.
+ * Check if request is an XHR (AJAX) request.
  */
-class IsAjax implements DerivedAttribute
+class IsXhr implements DerivedAttribute
 {
     /**
      * Calculate the derived attribute.

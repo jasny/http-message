@@ -16,7 +16,7 @@ trait Attributes
     {
         $this->attributes = [
             'client_ip' => new DerivedAttribute\ClientIp(),
-            'is_ajax' => new DerivedAttribute\IsAjax()
+            'is_xhr' => new DerivedAttribute\IsXhr()
         ];
     }
     

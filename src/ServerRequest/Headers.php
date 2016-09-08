@@ -13,6 +13,83 @@ trait Headers
      * @var array
      */
     protected $headers;
+
+    /**
+     * Get the server parameters
+     * 
+     * @return array
+     */
+    abstract public function getServerParams();
+    
+    /**
+     * Turn upper case param into header case.
+     * (SOME_HEADER -> Some-Header)
+     * 
+     * @param string $param
+     * @return string
+     */
+    protected function headerCase($param)
+    {
+        $sentence = preg_replace('/[\W_]+/', ' ', $param);
+        return str_replace(' ', '-', ucwords(strtolower($sentence)));
+    }
+    
+    /**
+     * Determine the headers based on the server parameters
+     * 
+     * @return array
+     */
+    protected function determineHeaders()
+    {
+        $headers = [];
+        $params = $this->getServerParams();
+        
+        foreach ($params as $param => $value) {
+            if (\Jasny\str_starts_with($param, 'HTTP_')) {
+                $key = $this->headerCase(substr($param, 5));
+            } elseif (in_array($param, ['CONTENT_TYPE', 'CONTENT_LENGTH'])) {
+                $key = $this->headerCase($param, 5);
+            } else {
+                continue;
+            }
+            
+            $headers[$key] = [$value];
+        }
+        
+        return $headers;
+    }
+
+    
+    /**
+     * Assert that the header value is a string
+     * 
+     * @param string $name
+     * @throws \InvalidArgumentException
+     */
+    protected function assertHeaderName($name)
+    {
+        if (!is_string($name)) {
+            throw new \InvalidArgumentException("Header name should be a string or an array of strings");
+        }
+        
+        if (!preg_match('/^[a-zA-Z]\w*(\-\w+)*$/', $name)) {
+            throw new \InvalidArgumentException("Invalid header name '$name'");
+        }
+    }
+
+    /**
+     * Assert that the header value is a string
+     * 
+     * @param string|string[] $value
+     * @throws \InvalidArgumentException
+     */
+    protected function assertHeaderValue($value)
+    {
+        if (!is_string($value) && (!is_array($value) || array_product(array_map('is_string', $value)) === 0)) {
+            throw new \InvalidArgumentException("Header value should be a string or an array of strings");
+        }
+    }
+    
     
     /**
      * Retrieves all message header values.
@@ -38,7 +115,11 @@ trait Headers
      */
     public function getHeaders()
     {
+        if (!isset($this->headers)) {
+            $this->headers = $this->determineHeaders();
+        }
         
+        return $this->headers;
     }
 
     /**
@@ -51,7 +132,8 @@ trait Headers
      */
     public function hasHeader($name)
     {
-        
+        $key = $this->headerCase($name);
+        return isset($this->getHeaders()[$key]);
     }
 
     /**
@@ -67,7 +149,8 @@ trait Headers
      */
     public function getHeader($name)
     {
-        
+        $key = $this->headerCase($name);
+        return $this->hasHeader($key) ? $this->getHeaders()[$key] : [];
     }
 
     /**
@@ -84,11 +167,11 @@ trait Headers
      * @param string $name Case-insensitive header field name.
      * @return string A string of values as provided for the given header
      *    concatenated together using a comma. If the header does not appear in
-     *    the message, this method MUST return an empty string.
+     *    the message, this method returns an empty string.
      */
     public function getHeaderLine($name)
     {
-        
+        return join(',', $this->getHeader($name));
     }
 
     /**
@@ -108,7 +191,15 @@ trait Headers
      */
     public function withHeader($name, $value)
     {
+        $this->assertHeaderName($name);
+        $this->assertHeaderValue($value);
         
+        $key = $this->headerCase($name);
+        
+        $request = clone $this;
+        $request->headers[$key] = (array)$value;
+        
+        return $request;
     }
 
     /**
@@ -126,7 +217,20 @@ trait Headers
      */
     public function withAddedHeader($name, $value)
     {
+        $this->assertHeaderName($name);
+        $this->assertHeaderValue($value);
+
+        $key = $this->headerCase($name);
         
+        $request = clone $this;
+        
+        if (isset($this->headers[$key])) {
+            $request->headers[$key] = array_merge($request->headers[$key], (array)$value);
+        } else {
+            $request->headers[$key] = (array)$value;
+        }
+        
+        return $request;
     }
 
     /**
@@ -137,6 +241,6 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        
+        unset($this->headers[$name]);
     }
 }
