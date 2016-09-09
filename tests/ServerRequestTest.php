@@ -7,6 +7,7 @@ use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\Stream;
 use Jasny\HttpMessage\Uri;
+use Jasny\HttpMessage\UploadedFile;
 
 /**
  * @covers Jasny\HttpMessage\ServerRequest
@@ -430,6 +431,10 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     public function testWithCookieParams()
     {
         $request = $this->baseRequest->withCookieParams(['foo' => 'bar', 'color' => 'red']);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
         $this->assertSame(['foo' => 'bar', 'color' => 'red'], $request->getCookieParams());
     }
     
@@ -442,6 +447,184 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     public function testWithQueryParams()
     {
         $request = $this->baseRequest->withQueryParams(['foo' => 'bar', 'color' => 'red']);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
         $this->assertSame(['foo' => 'bar', 'color' => 'red'], $request->getQueryParams());
+    }
+    
+    
+    public function testGetDefaultUploadedFiles()
+    {
+        $this->assertSame([], $this->baseRequest->getUploadedFiles());
+    }
+    
+    /**
+     * ServerRequest::setUploadFiles() is protected, because it can only be used for $_FILES
+     */
+    public function testSetUploadedFiles()
+    {
+        $refl = new \ReflectionMethod(ServerRequest::class, 'setUploadedFiles');
+        $refl->setAccessible(true);
+        
+        $files = [
+            'file' => [
+                'name' => 'foo.txt',
+                'type' => 'text/plain',
+                'size' => 3,
+                'tmp_name' => 'data://text/plain,foo',
+                'error' => UPLOAD_ERR_OK
+            ],
+            'failed' => [
+                'name' => '',
+                'type' => '',
+                'size' => '',
+                'tmp_name' => '',
+                'error' => UPLOAD_ERR_NO_FILE
+            ]
+        ];
+        
+        $refl->invoke($this->baseRequest, $files);
+        $uploadedFiles = $this->baseRequest->getUploadedFiles();
+        
+        $this->assertInternalType('array', $uploadedFiles);
+        
+        $this->assertArrayHasKey('file', $uploadedFiles);
+        $this->assertInstanceOf(UploadedFile::class, $uploadedFiles['file']);
+        $this->assertEquals(new UploadedFile($files['file'], 'file'), $uploadedFiles['file']);
+        
+        $this->assertArrayHasKey('failed', $uploadedFiles);
+        $this->assertInstanceOf(UploadedFile::class, $uploadedFiles['failed']);
+        $this->assertEquals(new UploadedFile($files['failed'], 'failed'), $uploadedFiles['failed']);
+    }
+    
+    /**
+     * ServerRequest::setUploadFiles() is protected, because it can only be used for $_FILES
+     */
+    public function testGroupUploadedFiles()
+    {
+        $refl = new \ReflectionMethod(ServerRequest::class, 'setUploadedFiles');
+        $refl->setAccessible(true);
+        
+        $files = [
+            'file' => [
+                'name' => 'foo.txt',
+                'type' => 'text/plain',
+                'size' => 3,
+                'tmp_name' => 'data://text/plain,foo',
+                'error' => UPLOAD_ERR_OK
+            ],
+            'colors' => [
+                'name' => [
+                    'blue' => 'navy.txt',
+                    'red' => 'cherry.html'
+                ],
+                'type' => [
+                    'blue' => 'text/plain',
+                    'red' => 'text/html'
+                ],
+                'size' => [
+                    'blue' => 4,
+                    'red' => 15
+                ],
+                'tmp_name' => [
+                    'blue' => 'data://text/plain,navy',
+                    'red' => 'data://text/html,<h1>cherry</h1>'
+                ],
+                'error' => [
+                    'blue' => UPLOAD_ERR_OK,
+                    'red' => UPLOAD_ERR_OK
+                ]
+            ]
+        ];
+        
+        $blue = [
+            'name' => 'navy.txt',
+            'type' => 'text/plain',
+            'size' => 4,
+            'tmp_name' => 'data://text/plain,navy',
+            'error' => UPLOAD_ERR_OK,
+        ];
+        
+        $red = [
+            'name' => 'cherry.html',
+            'type' => 'text/html',
+            'size' => 15,
+            'tmp_name' => 'data://text/html,<h1>cherry</h1>',
+            'error' => UPLOAD_ERR_OK,
+        ];
+        
+        $refl->invoke($this->baseRequest, $files);
+        $uploadedFiles = $this->baseRequest->getUploadedFiles();
+        
+        $this->assertInternalType('array', $uploadedFiles);
+        
+        $this->assertArrayHasKey('file', $uploadedFiles);
+        $this->assertInstanceOf(UploadedFile::class, $uploadedFiles['file']);
+        $this->assertEquals(new UploadedFile($files['file'], 'file'), $uploadedFiles['file']);
+        
+        $this->assertArrayHasKey('colors', $uploadedFiles);
+        $this->assertInternalType('array', $uploadedFiles['colors']);
+
+        $this->assertArrayHasKey('blue', $uploadedFiles['colors']);
+        $this->assertInstanceOf(UploadedFile::class, $uploadedFiles['colors']['blue']);
+        $this->assertEquals(new UploadedFile($blue, 'colors[blue]'), $uploadedFiles['colors']['blue']);
+
+        $this->assertArrayHasKey('red', $uploadedFiles['colors']);
+        $this->assertInstanceOf(UploadedFile::class, $uploadedFiles['colors']['red']);
+        $this->assertEquals(new UploadedFile($red, 'colors[red]'), $uploadedFiles['colors']['red']);
+    }
+    
+    public function testWithUploadedFiles()
+    {
+        $uploadedFile = $this->getMockBuilder(UploadedFile::class)
+            ->disableOriginalConstructor()
+            ->disableProxyingToOriginalMethods()
+            ->getMock();
+        
+        $request = $this->baseRequest->withUploadedFiles(['file' => $uploadedFile]);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertSame(['file' => $uploadedFile], $request->getUploadedFiles());
+    }
+    
+    public function testWithUploadedFilesStructure()
+    {
+        $file = $this->getMockBuilder(UploadedFile::class)
+            ->disableOriginalConstructor()
+            ->disableProxyingToOriginalMethods()
+            ->getMock();
+        
+        $blue = clone $file;
+        $red = clone $file;
+        
+        $files = ['file' => $file, 'colors' => compact('blue', 'red')];
+        
+        $request = $this->baseRequest->withUploadedFiles($files);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertSame($files, $request->getUploadedFiles());
+    }
+    
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage 'colors[red]' is not an UploadedFileInterface object, but a string
+     */
+    public function testWithUploadedFilesInvalidStructure()
+    {
+        $file = $this->getMockBuilder(UploadedFile::class)
+            ->disableOriginalConstructor()
+            ->disableProxyingToOriginalMethods()
+            ->getMock();
+        
+        $blue = clone $file;
+        $red = 'hello';
+        
+        $this->baseRequest->withUploadedFiles(['file' => $file, 'colors' => compact('blue', 'red')]);
     }
 }

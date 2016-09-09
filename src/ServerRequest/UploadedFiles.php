@@ -16,7 +16,7 @@ trait UploadedFiles
      * 
      * @var array
      */
-    protected $uploadedFiles;
+    protected $uploadedFiles = [];
     
     
     /**
@@ -42,27 +42,27 @@ trait UploadedFiles
      */
     protected function groupUploadedFiles(array $array, $groupKey, $assertIsUploadedFile)
     {
-        if (empty($array)) {
-            return [];
+        $files = [];
+        
+        foreach ($array as $key => $values) {
+            $parameterKey = isset($groupKey) ? "{$groupKey}[{$key}]" : $key;
+            
+            if (!is_array($values['error'])) {
+                $files[$key] = $this->createUploadedFile($values, $parameterKey, $assertIsUploadedFile);
+                continue;
+            }
+            
+            $rearranged = [];
+            foreach ($values as $property => $propertyValues) {
+                foreach ($propertyValues as $subkey => $value) {
+                    $rearranged[$subkey][$property] = $value;
+                }
+            }
+            
+            $files[$key] = $this->groupUploadedFiles($rearranged, $parameterKey, $assertIsUploadedFile);
         }
         
-        if (!is_array(reset($array))) {
-            return $this->createUploadedFile($array, $groupKey, $assertIsUploadedFile);
-        }
-
-        $rearranged = [];
-        foreach ($array as $property => $values) {
-            foreach ($values as $key => $value) {
-                $rearranged[$key][$property] = $value;
-            }
-        }
-
-        foreach ($rearranged as $key => &$value) {
-            $parameterKey = isset($groupKey) ? "{$groupKey}[{$key}]" : $key;
-            $value = $this->groupUploadedFiles($value, $parameterKey, $assertIsUploadedFile);
-        }
-
-        return $rearranged;
+        return $files;
     }
     
     /**
@@ -92,9 +92,10 @@ trait UploadedFiles
             $parameterKey = isset($groupKey) ? "{$groupKey}[{$key}]" : $key;
             
             if (is_array($item)) {
-                $this->assertUploadedFilesStructure($uploadedFiles, $parameterKey);
+                $this->assertUploadedFilesStructure($item, $parameterKey);
             } elseif (!$item instanceof UploadedFileInterface) {
-                throw new \InvalidArgumentException("$parameterKey is not an UploadedFileInterface object");
+                throw new \InvalidArgumentException("'$parameterKey' is not an UploadedFileInterface object, but a "
+                    . (is_object($item) ? get_class($item) . ' ' : '') . gettype($item));
             }
         }
     }
