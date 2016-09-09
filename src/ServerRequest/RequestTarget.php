@@ -11,6 +11,28 @@ trait RequestTarget
      * @var StreamInterface
      */
     protected $requestTarget;
+
+    /**
+     * Get the server parameters
+     * 
+     * @return array
+     */
+    abstract public function getServerParams();
+    
+    
+    /**
+     * Determine the request target based on the server params
+     * 
+     * @return string
+     */
+    protected function determineRequestTarget()
+    {
+        $params = $this->getServerParams();
+        
+        return isset($params['REQUEST_URI'])
+            ? $params['REQUEST_URI']
+            : (isset($params['REQUEST_METHOD']) && $params['REQUEST_METHOD'] === 'OPTIONS' ? '*' : '/');
+    }
     
     /**
      * Retrieves the message's request target.
@@ -30,24 +52,44 @@ trait RequestTarget
      */
     public function getRequestTarget()
     {
+        if (!isset($this->requestTarget)) {
+            $this->requestTarget = $this->determineRequestTarget();
+        }
         
+        return $this->requestTarget;
+    }
+    
+
+    /**
+     * Assert that the request target is a string
+     * 
+     * @param string $requestTarget
+     * @throws \InvalidArgumentException
+     */
+    protected function assertRequestTarget($requestTarget)
+    {
+        if (!is_string($requestTarget)) {
+            $type = (is_object($requestTarget) ? get_class($requestTarget) . ' ' : '') . gettype($requestTarget);
+            throw new \InvalidArgumentException("Request target should be a string, not a $type");
+        }
     }
 
     /**
      * Return an instance with the specific request-target.
      *
-     * If the request needs a non-origin-form request-target — e.g., for
-     * specifying an absolute-form, authority-form, or asterisk-form —
-     * this method may be used to create an instance with the specified
-     * request-target, verbatim.
-     *
      * @see http://tools.ietf.org/html/rfc7230#section-5.3 (for the various
      *     request-target forms allowed in request messages)
-     * @param mixed $requestTarget
+     * @param string $requestTarget
      * @return static
+     * @throws \InvalidArgumentException if $requestTarget is not a string
      */
     public function withRequestTarget($requestTarget)
     {
+        $this->assertRequestTarget($requestTarget);
         
+        $request = clone $this;
+        $request->requestTarget = $requestTarget;
+        
+        return $request;
     }
 }

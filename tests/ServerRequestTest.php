@@ -68,6 +68,16 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('1.1', $request->getProtocolVersion());
     }
     
+    public function testWithProtocolVersionFloat()
+    {
+        $request = $this->baseRequest->withProtocolVersion(2.0);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals('2.0', $request->getProtocolVersion());
+    }
+    
     /**
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Invalid HTTP protocol version '0.2'
@@ -76,7 +86,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     {
         $this->baseRequest->withProtocolVersion('0.2');
     }
-    
     
     public function testGetDefaultHeaders()
     {
@@ -206,5 +215,82 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertNotSame($this->baseRequest, $request);
         
         $this->assertSame($stream, $request->getBody());
+    }
+    
+    
+    public function testGetDefaultRequestTarget()
+    {
+        $this->assertEquals('/', $this->baseRequest->getRequestTarget());
+    }
+    
+    public function testDetermineRequestTarget()
+    {
+        $request = $this->baseRequest->withServerParams(['REQUEST_URI' => '/foo?bar=1']);
+        $this->assertEquals('/foo?bar=1', $request->getRequestTarget());
+    }
+    
+    public function testDetermineRequestTargetOrigin()
+    {
+        $request = $this->baseRequest->withServerParams(['REQUEST_METHOD' => 'OPTIONS']);
+        $this->assertEquals('*', $request->getRequestTarget());
+    }
+    
+    public function testWithRequestTarget()
+    {
+        $request = $this->baseRequest->withRequestTarget('/foo?bar=99');
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals('/foo?bar=99', $request->getRequestTarget());
+    }
+    
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Request target should be a string, not a stdClass object
+     */
+    public function testWithRequestTargetWithInvalidArgument()
+    {
+        $this->baseRequest->withRequestTarget((object)['foo' => 1, 'bar' => 2, 'zoo' => 3]);
+    }
+    
+    
+    public function testGetDefaultMethod()
+    {
+        $this->assertSame('', $this->baseRequest->getMethod());
+    }
+    
+    public function testDetermineMethod()
+    {
+        $request = $this->baseRequest->withServerParams(['REQUEST_METHOD' => 'post']);
+        $this->assertEquals('POST', $request->getMethod());
+    }
+    
+    public function testWithMethod()
+    {
+        $request = $this->baseRequest->withMethod('GeT');
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals('GET', $request->getMethod());
+    }
+    
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid method 'foo bar': Method may only contain letters and dashes
+     */
+    public function testWithInvalidMethod()
+    {
+        $this->baseRequest->withMethod("foo bar");
+    }
+    
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Method should be a string, not a stdClass object
+     */
+    public function testWithMethodWithInvalidArgument()
+    {
+        $this->baseRequest->withMethod((object)['foo' => 1, 'bar' => 2]);
     }
 }

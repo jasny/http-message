@@ -27,6 +27,8 @@ trait ServerParams
     /**
      * Return an instance with the specified server params.
      * 
+     * Resets all properties that can be derived from the server parameters.
+     * 
      * Note: this method is not part of the PSR-7 specs.
      * 
      * @param array $params Array of key/value pairs server parameters.
@@ -36,6 +38,8 @@ trait ServerParams
     {
         $request = clone $this;
         $request->serverParams = $params;
+        
+        $request->reset();
         
         return $request;
     }

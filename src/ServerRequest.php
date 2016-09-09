@@ -73,5 +73,7 @@ class ServerRequest implements ServerRequestInterface
     {
         $this->protocolVersion = null;
         $this->headers = null;
+        $this->requestTarget = null;
+        $this->method = null;
     }
 }

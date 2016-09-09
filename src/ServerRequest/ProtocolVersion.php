@@ -12,11 +12,6 @@ trait ProtocolVersion
      */
     protected $protocolVersion;
     
-    /**
-     * @var array 
-     */
-    protected $params;
-    
     
     /**
      * Get the server parameters
@@ -62,13 +57,11 @@ trait ProtocolVersion
      * @param string $version HTTP protocol version
      * @throws \InvalidArgumentException for invalid versions
      */
-    protected function setProtocolVersion($version)
+    protected function assertProtocolVersion($version)
     {
         if ($version != '' && $version !== "1.0" && $version !== "1.1" && $version !== "2.0") {
             throw new \InvalidArgumentException("Invalid HTTP protocol version '$version'");
         }
-        
-        $this->protocolVersion = (string)$version;
     }
     
     /**
@@ -77,14 +70,20 @@ trait ProtocolVersion
      * The version string MUST contain only the HTTP version number (e.g.,
      * "1.1", "1.0").
      *
-     * @param string $version HTTP protocol version
+     * @param string|float $version HTTP protocol version
      * @return static
      * @throws \InvalidArgumentException for invalid versions
      */
     public function withProtocolVersion($version)
     {
+        if (is_float($version)) {
+            $version = number_format($version, 1, '.', '');
+        }
+        
+        $this->assertProtocolVersion((string)$version);
+        
         $request = clone $this;
-        $request->setProtocolVersion($version);
+        $request->protocolVersion = (string)$version;
         
         return $request;
     }
