@@ -101,7 +101,7 @@ class Uri implements UriInterface
             ($parts['host'] ? "{$parts['host']}" : '') . 
             ($parts['port'] ? ":{$parts['port']}" : '');
             
-        $uri .=
+        $uri_path .=
             ($uri && $parts['path'] && $parts['path'][0] !== '/' ? '/' : '') .
             ($parts['path'] ? "{$parts['path']}" : '') . 
             ($parts['query'] ? "?{$parts['query']}" : '') . 

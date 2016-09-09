@@ -12,13 +12,13 @@ use Jasny\HttpMessage\Stream;
  */
 class ServerRequest implements ServerRequestInterface
 {
+    use ServerRequest\ServerParams;
     use ServerRequest\ProtocolVersion;
     use ServerRequest\Headers;
     use ServerRequest\Body;
     use ServerRequest\RequestTarget;
     use ServerRequest\Method;
     use ServerRequest\Uri;
-    use ServerRequest\ServerParams;
     use ServerRequest\Cookies;
     use ServerRequest\QueryParams;
     use ServerRequest\UploadedFiles;
@@ -75,5 +75,6 @@ class ServerRequest implements ServerRequestInterface
         $this->headers = null;
         $this->requestTarget = null;
         $this->method = null;
+        $this->uri = null;
     }
 }

@@ -6,6 +6,7 @@ use PHPUnit_Framework_TestCase;
 
 use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\Uri;
 
 /**
  * @covers Jasny\HttpMessage\ServerRequest
@@ -43,6 +44,49 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertNotSame($this->baseRequest, $request);
         
         $this->assertEquals('php://input', $request->getBody()->getMetadata('uri'));
+    }
+    
+    public function testWithSuperGlobalsReset()
+    {
+        $request = $this->baseRequest
+            ->withMethod('POST')
+            ->withSuperGlobals();
+        
+        $this->assertEquals('', $request->getMethod());
+    }
+    
+    
+    public function testGetDefaultServerParams()
+    {
+        $this->assertSame([], $this->baseRequest->getServerParams());
+    }
+    
+    public function testWithServerParams()
+    {
+        $params = [
+            'SERVER_SOFTWARE' => 'Foo 1.0',
+            'COLOR' => 'red',
+            'SCRIPT_FILENAME' => 'qux.php'
+        ];
+        
+        $request = $this->baseRequest->withServerParams($params);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals($params, $request->getServerParams());
+    }
+
+    /**
+     * @depends testWithServerParams
+     */
+    public function testWithServerParamsReset()
+    {
+        $request = $this->baseRequest
+            ->withMethod('POST')
+            ->withServerParams([]);
+        
+        $this->assertEquals('', $request->getMethod());
     }
     
     
@@ -293,4 +337,89 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     {
         $this->baseRequest->withMethod((object)['foo' => 1, 'bar' => 2]);
     }
+    
+    
+    public function testGetDefaultUri()
+    {
+        $uri = $this->baseRequest->getUri();
+        
+        $this->assertInstanceOf(Uri::class, $uri);
+        $this->assertEquals(new Uri(), $uri);
+    }
+    
+    public function testDetermineUri()
+    {
+        $request = $this->baseRequest->withServerParams([
+            'SERVER_PROTOCOL' => 'HTTP/1.1',
+            'PHP_AUTH_USER' => 'foo',
+            'PHP_AUTH_PWD' => 'secure',
+            'HTTP_HOST' => 'www.example.com',
+            'SERVER_PORT' => 80,
+            'PATH_INFO' => '/page/bar',
+            'QUERY_STRING' => 'color=red'
+        ]);
+        
+        $this->assertEquals(new Uri([
+            'scheme' => 'http',
+            'user' => 'foo',
+            'password' => 'secure',
+            'host' => 'www.example.com',
+            'port' => 80,
+            'path' => '/page/bar',
+            'query' => 'color=red'
+        ]), $request->getUri());
+    }
+    
+    public function testDetermineUriHttps()
+    {
+        $protocol = ['SERVER_PROTOCOL' => 'HTTP/1.1'];
+        $request = $this->baseRequest;
+        
+        $this->assertEquals('http', $request->withServerParams($protocol)->getUri()->getScheme());
+        $this->assertEquals('http', $request->withServerParams($protocol + ['HTTPS' => ''])->getUri()->getScheme());
+        $this->assertEquals('http', $request->withServerParams($protocol + ['HTTPS' => 'off'])->getUri()->getScheme());
+        
+        $this->assertEquals('https', $request->withServerParams($protocol + ['HTTPS' => '1'])->getUri()->getScheme());
+        $this->assertEquals('https', $request->withServerParams($protocol + ['HTTPS' => 'on'])->getUri()->getScheme());
+    }
+    
+    public function testWithUri()
+    {
+        $uri = $this->getMockBuilder(Uri::class)
+            ->disableOriginalConstructor()
+            ->setMethods(['getHost'])
+            ->disableProxyingToOriginalMethods()
+            ->getMock();
+        
+        $uri->expects($this->once())->method('getHost')->willReturn('www.example.com');
+        
+        $request = $this->baseRequest->withUri($uri);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertSame($uri, $request->getUri());
+        $this->assertEquals(['www.example.com'], $request->getHeader('Host'));
+    }
+    
+    public function testWithUriPreserveHost()
+    {
+        $uri = $this->getMockBuilder(Uri::class)
+            ->disableOriginalConstructor()
+            ->setMethods(['getHost'])
+            ->disableProxyingToOriginalMethods()
+            ->getMock();
+        
+        $uri->expects($this->never())->method('getHost');
+        
+        $request = $this->baseRequest->withUri($uri, true);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertSame($uri, $request->getUri());
+        $this->assertEquals([], $request->getHeader('Host'));
+    }
+    
+    
 }

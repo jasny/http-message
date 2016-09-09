@@ -12,6 +12,7 @@ trait Method
      * @var string
      */
     protected $method;
+
     
     /**
      * Get the server parameters
@@ -19,7 +20,6 @@ trait Method
      * @return array
      */
     abstract public function getServerParams();
-    
     
     /**
      * Determine the request target based on the server params
