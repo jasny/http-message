@@ -11,7 +11,7 @@ trait Cookies
      * Cookies, typically $_COOKIE
      * @var array
      */
-    protected $cookies;
+    protected $cookies = [];
     
     /**
      * Retrieves cookies sent by the client to the server.
@@ -21,7 +21,7 @@ trait Cookies
      */
     public function getCookieParams()
     {
-        
+        return $this->cookies;
     }
 
     /**
@@ -32,6 +32,9 @@ trait Cookies
      */
     public function withCookieParams(array $cookies)
     {
+        $request = clone $this;
+        $request->cookies = $cookies;
         
+        return $request;
     }
 }

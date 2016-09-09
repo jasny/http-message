@@ -422,4 +422,26 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
+    public function testGetDefaultCookieParams()
+    {
+        $this->assertSame([], $this->baseRequest->getCookieParams());
+    }
+    
+    public function testWithCookieParams()
+    {
+        $request = $this->baseRequest->withCookieParams(['foo' => 'bar', 'color' => 'red']);
+        $this->assertSame(['foo' => 'bar', 'color' => 'red'], $request->getCookieParams());
+    }
+    
+    
+    public function testGetDefaultQueryParams()
+    {
+        $this->assertSame([], $this->baseRequest->getQueryParams());
+    }
+    
+    public function testWithQueryParams()
+    {
+        $request = $this->baseRequest->withQueryParams(['foo' => 'bar', 'color' => 'red']);
+        $this->assertSame(['foo' => 'bar', 'color' => 'red'], $request->getQueryParams());
+    }
 }

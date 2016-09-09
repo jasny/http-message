@@ -11,7 +11,7 @@ trait QueryParams
      * Query parameters, typically $_GET
      * @var array
      */
-    protected $queryParams;
+    protected $queryParams = [];
     
     /**
      * Retrieves the deserialized query string arguments, if any.
@@ -21,7 +21,7 @@ trait QueryParams
      */
     public function getQueryParams()
     {
-        
+        return $this->queryParams;
     }
 
     /**
@@ -32,6 +32,9 @@ trait QueryParams
      */
     public function withQueryParams(array $query)
     {
+        $request = clone $this;
+        $request->queryParams = $query;
         
+        return $request;
     }
 }
