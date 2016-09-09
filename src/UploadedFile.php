@@ -143,8 +143,7 @@ class UploadedFile implements UploadedFileInterface
      * Tells whether the file was uploaded via HTTP POST
      * @link http://php.net/manual/en/function.is-uploaded-file.php
      * 
-     * This method can be mocked for unit testing.
-     * @codeCoverageIgnore
+     * This method can be mocked for (unit) testing.
      * 
      * @param string $filename
      * @return boolean
@@ -158,8 +157,7 @@ class UploadedFile implements UploadedFileInterface
      * Moves an uploaded file to a new location
      * @link http://php.net/manual/en/function.move-uploaded-file.php
      * 
-     * This method can be mocked for unit testing.
-     * @codeCoverageIgnore
+     * This method can be mocked for (unit) testing.
      * 
      * @param string $filename
      * @param string $destination
@@ -169,6 +167,22 @@ class UploadedFile implements UploadedFileInterface
     {
         return move_uploaded_file($filename, $destination);
     }
+    
+    /**
+     * Renames a file or directory
+     * @link http://php.net/manual/en/function.rename.php
+     * 
+     * This method can be mocked for (unit) testing.
+     * 
+     * @param string $filename
+     * @param string $destination
+     * @return boolean
+     */
+    protected function rename($filename, $destination)
+    {
+        return move_uploaded_file($filename, $destination);
+    }
+    
     
     /**
      * Check if the path is valid
@@ -241,7 +255,7 @@ class UploadedFile implements UploadedFileInterface
                 . "'$targetPath' is not a valid path");
         }
 
-        $fn = $this->assertIsUploadedFile ? [$this, 'moveUploadedFile'] : 'rename';
+        $fn = [$this, $this->assertIsUploadedFile ? 'moveUploadedFile' : 'rename'];
         $ret = @call_user_func($fn, $this->tmpName, $targetPath);
         
         if (!$ret) {

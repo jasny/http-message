@@ -34,10 +34,11 @@ class UploadedFileTest extends PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->vfs = vfsStream::setup('root', null, array_fill_keys(['tmp', 'assets', 'bin'], []));
+        $this->vfs = vfsStream::setup('root', null, array_fill_keys(['tmp', 'assets', 'etc', 'bin'], []));
         $this->vfs->getChild('bin')->chmod(0555); // Not writable
         vfsStream::newFile('php1234.tmp')->at($this->vfs->getChild('tmp'))->setContent("hello world");
         vfsStream::newFile('bar.txt')->at($this->vfs->getChild('assets'))->setContent("the stars");
+        vfsStream::newFile('passwd')->at($this->vfs->getChild('etc'))->setContent("root:x:0:0:root:/root:/bin/bash");
         
         $this->info = [
             'name' => 'foo.txt',
@@ -170,20 +171,11 @@ class UploadedFileTest extends PHPUnit_Framework_TestCase
     
     public function testAssertIsUploadedFileSucceed()
     {
-        $uploadedFile = $this->getMockBuilder(UploadedFile::class)
-            ->setMethods(['isUploadedFile', 'moveUploadedFile'])
-            ->setConstructorArgs([$this->info, null, true])
-            ->getMock();
+        $this->uploadedFile = new UploadedFile($this->info, null, true);
+        $this->uploadedFile->moveTo('vfs://root/assets/foo.txt');
         
-        $uploadedFile->expects($this->once())->method('isUploadedFile')
-            ->with('vfs://root/tmp/php1234.tmp')
-            ->willReturn(true);
-        
-        $uploadedFile->expects($this->once())->method('moveUploadedFile')
-            ->with('vfs://root/tmp/php1234.tmp', 'vfs://root/assets/foo.txt')
-            ->willReturn(true);
-        
-        $uploadedFile->moveTo('vfs://root/assets/foo.txt');
+        $this->assertTrue($this->vfs->getChild('assets')->hasChild('foo.txt'));
+        $this->assertEquals('hello world', $this->vfs->getChild('assets')->getChild('foo.txt')->getContent());
     }
 
     /**
@@ -192,17 +184,7 @@ class UploadedFileTest extends PHPUnit_Framework_TestCase
      */
     public function testAssertIsUploadedFileFailed()
     {
-        $uploadedFile = $this->getMockBuilder(UploadedFile::class)
-            ->setMethods(['isUploadedFile', 'moveUploadedFile'])
-            ->setConstructorArgs([$this->info, null, true])
-            ->getMock();
-        
-        $uploadedFile->expects($this->once())->method('isUploadedFile')
-            ->with('vfs://root/tmp/php1234.tmp')
-            ->willReturn(false);
-        
-        $uploadedFile->expects($this->never())->method('moveUploadedFile');
-        
-        $uploadedFile->moveTo('vfs://root/assets/foo.txt');
+        $uploadedFile = new UploadedFile(['tmp_name' => 'vfs://root/etc/passwd'] + $this->info, null, true);
+        $uploadedFile->moveTo('vfs://root/etc/passwd');
     }
 }
