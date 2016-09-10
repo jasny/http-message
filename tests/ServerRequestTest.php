@@ -645,6 +645,8 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
             ->withBody($body);
         
         $this->assertEquals(['foo' => 'bar', 'color' => 'red'], $request->getParsedBody());
+        
+        return $request;
     }
     
     /**
@@ -738,6 +740,18 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $request = $this->baseRequest->withHeader('Content-Type', 'application/x-foo');
         $request->getParsedBody();
     }
+
+    /**
+     * @depends testParseUrlEncodedBody
+     */
+    public function testResetParsedBody(ServerRequest $originalRequest)
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->once())->method('__toString')->willReturn('foo=do&color=blue'); // Same size
+        
+        $request = $originalRequest->withBody($body);
+        $this->assertEquals(['foo' => 'do', 'color' => 'blue'], $request->getParsedBody());
+    }
     
     /**
      * ServerRequest::setPostData is protected, because it should only be used for $_POST
@@ -782,5 +796,65 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         
         $refl->invokeArgs($request, [&$data]); // Should still have no effect
         $this->assertEquals(['foo' => 'bar'], $request->getParsedBody());
+    }
+    
+    public function testWithParsedBody()
+    {
+        $request = $this->baseRequest->withParsedBody(['foo' => 'bar']);
+        
+        $this->assertInstanceOf(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals(['foo' => 'bar'], $request->getParsedBody());
+    }
+    
+    public function testWithParsedBodyNoReset()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->never())->method('__toString');
+        $body->expects($this->never())->method('getSize');
+        
+        $request = $this->baseRequest
+            ->withBody($body)
+            ->withParsedBody(['foo' => 'bar']);
+        
+        $this->assertEquals(['foo' => 'bar'], $request->getParsedBody());
+    }
+    
+    /**
+     * @expectedException PHPUnit_Framework_Error_Warning
+     * @expectedExceptionMessage Failed to parse json body: Syntax error
+     */
+    public function testReparseBodyOnContentType()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->exactly(2))->method('__toString')->willReturn('foo=bar&color=red');
+        
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
+            ->withBody($body);
+        
+        $request->getParsedBody();
+        $request->withHeader('Content-Type', 'application/json')->getParsedBody();
+    }
+    
+    public function testReparseBodyOnSize()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->exactly(2))->method('__toString')
+            ->willReturnOnConsecutiveCalls('foo=bar', 'foo=bar&color=red');
+        $body->expects($this->exactly(4))->method('getSize')->willReturnOnConsecutiveCalls(7, 17, 17, 17);
+        
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
+            ->withBody($body);
+        
+        $this->assertEquals(['foo' => 'bar'], $request->getParsedBody());
+        
+        // Second call with appended content for body
+        $this->assertEquals(['foo' => 'bar', 'color' => 'red'], $request->getParsedBody());
+        
+        // Third call with no reparse
+        $this->assertEquals(['foo' => 'bar', 'color' => 'red'], $request->getParsedBody());
     }
 }

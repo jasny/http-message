@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage\DerivedAttribute;
+namespace Jasny\HttpMessage;
 
 use PHPUnit_Framework_TestCase;
 
@@ -167,6 +167,17 @@ class StreamTest extends PHPUnit_Framework_TestCase
         fclose($fp);
         $stream->seek(5);
     }
+    
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testSeekOutOfBounds()
+    {
+        $fp = fopen('data://text/plain,blue red yellow', 'r');
+        $stream = new Stream($fp);
+        
+        $stream->seek(500);
+    }
 
     
     public function testTell()
@@ -263,6 +274,14 @@ class StreamTest extends PHPUnit_Framework_TestCase
         $stream->write("Foo bar");
     }
     
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testWriteFailed()
+    {
+        $this->markTestIncomplete("Should use vfsStream or custom stream to simulate a write fail");
+    }
+    
     
     public function testRead()
     {
@@ -306,6 +325,14 @@ class StreamTest extends PHPUnit_Framework_TestCase
         
         fclose($fp);
         $stream->read(1024);
+    }
+    
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testReadFailed()
+    {
+        $this->markTestIncomplete("Should use vfsStream or custom stream to simulate a read fail");
     }
 
     

@@ -110,9 +110,6 @@ trait ParsedBody
             case 'application/x-www-form-urlencoded':
                 $data = $this->parseUrlEncodedBody();
                 break;
-            case 'multipart/form-data':
-                $data = $this->parseMultipartBody();
-                break;
             case 'application/json':
                 $data = $this->parseJsonBody();
                 break;
@@ -137,17 +134,6 @@ trait ParsedBody
         $data = null;
         parse_str($this->getBody(), $data);
         return $data;
-    }
-    
-    /**
-     * Parse 'multipart/form-data' body
-     * 
-     * @return array
-     * @throws \RuntimeException as parsing multipart/form-data isn't supported
-     */
-    protected function parseMultipartBody()
-    {
-        throw new \RuntimeException("Parsing multipart/form-data isn't supported");
     }
     
     /**
@@ -217,7 +203,6 @@ trait ParsedBody
      *
      * @param null|array|object|mixed $data The deserialized body data.
      * @return static
-     * @throws \InvalidArgumentException if an unsupported argument type is provided.
      */
     public function withParsedBody($data)
     {
