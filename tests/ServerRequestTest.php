@@ -36,6 +36,33 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->baseRequest = new ServerRequest();
     }
     
+    /**
+     * Get mock with original methods and constructor disabled
+     * 
+     * @param string $classname
+     * @return \PHPUnit_Framework_MockObject_MockObject
+     */
+    protected function getSimpleMock($classname)
+    {
+        return $this->getMockBuilder($classname)
+            ->disableOriginalConstructor()
+            ->disableProxyingToOriginalMethods()
+            ->disableOriginalClone()
+            ->getMock();
+    }
+    
+    /**
+     * Assert the last error
+     * 
+     * @param int    $type     Expected error type, E_* constant
+     * @param string $message  Expected error message
+     */
+    protected function assertLastError($type, $message = null)
+    {
+        $expected = compact('type') + (isset($message) ? compact('message') : []);
+        $this->assertArraySubset($expected, error_get_last());
+    }
+    
     
     public function testWithSuperGlobals()
     {
@@ -249,11 +276,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithBody()
     {
-        $stream = $this->getMockBuilder(Stream::class)
-            ->disableOriginalConstructor()
-            ->disableProxyingToOriginalMethods()
-            ->getMock();
-        
+        $stream = $this->getSimpleMock(Stream::class);
         $request = $this->baseRequest->withBody($stream);
         
         $this->assertInstanceof(ServerRequest::class, $request);
@@ -386,12 +409,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithUri()
     {
-        $uri = $this->getMockBuilder(Uri::class)
-            ->disableOriginalConstructor()
-            ->setMethods(['getHost'])
-            ->disableProxyingToOriginalMethods()
-            ->getMock();
-        
+        $uri = $this->getSimpleMock(Uri::class);
         $uri->expects($this->once())->method('getHost')->willReturn('www.example.com');
         
         $request = $this->baseRequest->withUri($uri);
@@ -405,12 +423,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithUriPreserveHost()
     {
-        $uri = $this->getMockBuilder(Uri::class)
-            ->disableOriginalConstructor()
-            ->setMethods(['getHost'])
-            ->disableProxyingToOriginalMethods()
-            ->getMock();
-        
+        $uri = $this->getSimpleMock(Uri::class);
         $uri->expects($this->never())->method('getHost');
         
         $request = $this->baseRequest->withUri($uri, true);
@@ -578,11 +591,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithUploadedFiles()
     {
-        $uploadedFile = $this->getMockBuilder(UploadedFile::class)
-            ->disableOriginalConstructor()
-            ->disableProxyingToOriginalMethods()
-            ->getMock();
-        
+        $uploadedFile = $this->getSimpleMock(UploadedFile::class);
         $request = $this->baseRequest->withUploadedFiles(['file' => $uploadedFile]);
         
         $this->assertInstanceof(ServerRequest::class, $request);
@@ -593,11 +602,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithUploadedFilesStructure()
     {
-        $file = $this->getMockBuilder(UploadedFile::class)
-            ->disableOriginalConstructor()
-            ->disableProxyingToOriginalMethods()
-            ->getMock();
-        
+        $file = $this->getSimpleMock(UploadedFile::class);
         $blue = clone $file;
         $red = clone $file;
         
@@ -617,14 +622,165 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
      */
     public function testWithUploadedFilesInvalidStructure()
     {
-        $file = $this->getMockBuilder(UploadedFile::class)
-            ->disableOriginalConstructor()
-            ->disableProxyingToOriginalMethods()
-            ->getMock();
-        
+        $file = $this->getSimpleMock(UploadedFile::class);
         $blue = clone $file;
         $red = 'hello';
         
         $this->baseRequest->withUploadedFiles(['file' => $file, 'colors' => compact('blue', 'red')]);
+    }
+    
+    
+    public function testGetDefaultParsedBody()
+    {
+        $this->assertNull($this->baseRequest->getParsedBody());
+    }
+    
+    public function testParseUrlEncodedBody()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->once())->method('__toString')->willReturn('foo=bar&color=red');
+        
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
+            ->withBody($body);
+        
+        $this->assertEquals(['foo' => 'bar', 'color' => 'red'], $request->getParsedBody());
+    }
+    
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Parsing multipart/form-data isn't supported
+     */
+    public function testParseMultipartBody()
+    {
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'multipart/form-data');
+        
+        $request->getParsedBody();
+    }
+    
+    public function testParseJsonBody()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->once())->method('__toString')->willReturn('{"foo":"bar","color":"red"}');
+        
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'application/json')
+            ->withBody($body);
+        
+        $this->assertEquals(['foo' => 'bar', 'color' => 'red'], $request->getParsedBody());
+    }
+    
+    public function testParseInvalidJsonBody()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->once())->method('__toString')->willReturn('not json');
+        
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'application/json')
+            ->withBody($body);
+        
+        $this->assertNull(@$request->getParsedBody());
+        $this->assertLastError(E_USER_WARNING, 'Failed to parse json body: Syntax error');
+    }
+    
+    public function testParseXmlBody()
+    {
+        if (!function_exists('simplexml_load_string')) {
+            return $this->markTestSkipped('SimpleXML extension not loaded');
+        }
+        
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->once())->method('__toString')->willReturn('<foo>bar</foo>');
+        
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'text/xml')
+            ->withBody($body);
+        
+        $parsedBody = $request->getParsedBody();
+        
+        $this->assertInstanceOf(\SimpleXMLElement::class, $parsedBody);
+        $this->assertXmlStringEqualsXmlString('<foo>bar</foo>', $parsedBody->asXML());
+    }
+    
+    public function testParseInvalidXmlBody()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->once())->method('__toString')->willReturn('not xml');
+        
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'text/xml')
+            ->withBody($body);
+        
+        $this->assertNull(@$request->getParsedBody());
+        $this->assertLastError(E_WARNING);
+    }
+    
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Unable to parse body: 'Content-Type' header is missing
+     */
+    public function testParseUnknownBody()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->once())->method('getSize')->willReturn(4);
+        
+        $request = $this->baseRequest->withBody($body);
+        $request->getParsedBody();
+    }
+    
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Parsing application/x-foo isn't supported
+     */
+    public function testParseUnsupportedBody()
+    {
+        $request = $this->baseRequest->withHeader('Content-Type', 'application/x-foo');
+        $request->getParsedBody();
+    }
+    
+    /**
+     * ServerRequest::setPostData is protected, because it should only be used for $_POST
+     */
+    public function testSetPostData()
+    {
+        $data = ['foo' => 'bar'];
+        
+        $refl = new \ReflectionMethod(ServerRequest::class, 'setPostData');
+        $refl->setAccessible(true);
+        
+        $request = $this->baseRequest->withHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        $refl->invokeArgs($request, [&$data]);
+        
+        $this->assertSame($data, $request->getParsedBody());
+        
+        // Test if data is set by reference
+        $data['qux'] = 'zoo';
+        $this->assertSame($data, $request->getParsedBody());
+    }
+    
+    /**
+     * ServerRequest::setPostData is protected, because it should only be used for $_POST
+     */
+    public function testSetPostDataVsJsonContent()
+    {
+        $data = [];
+        
+        $body = $this->getSimpleMock(Stream::class);
+        $body->expects($this->once())->method('__toString')->willReturn('{"foo": "bar"}');
+        
+        $refl = new \ReflectionMethod(ServerRequest::class, 'setPostData');
+        $refl->setAccessible(true);
+        
+        $request = $this->baseRequest
+            ->withHeader('Content-Type', 'application/json')
+            ->withBody($body);
+        
+        $refl->invokeArgs($request, [&$data]); // Should have no effect
+        $this->assertEquals(['foo' => 'bar'], $request->getParsedBody());
+        
+        $refl->invokeArgs($request, [&$data]); // Should still have no effect
+        $this->assertEquals(['foo' => 'bar'], $request->getParsedBody());
     }
 }

@@ -16,6 +16,11 @@ trait Body
     protected $body;
     
     /**
+     * Reset the parsed body, excepted if it was explicitly set
+     */
+    abstract protected function resetParsedBody();
+    
+    /**
      * Gets the body of the message.
      *
      * @return StreamInterface Returns the body as a stream.
@@ -37,6 +42,7 @@ trait Body
     protected function setBody(StreamInterface $body)
     {
         $this->body = $body;
+        $this->resetParsedBody();
     }
     
     /**

@@ -55,8 +55,7 @@ class ServerRequest implements ServerRequestInterface
         $request->cookies =& $_COOKIE;
         $request->queryParams =& $_GET;
         
-        $request->postData =& $_POST;
-        $request->parsedBodyStats = null;
+        $request->setPostData($_POST);
         $request->setUploadedFiles($_FILES);
         
         $request->body = Stream::open('php://input', 'r');
