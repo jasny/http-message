@@ -13,6 +13,7 @@ use Jasny\HttpMessage\DerivedAttribute;
 
 /**
  * @covers Jasny\HttpMessage\ServerRequest
+ * @covers Jasny\HttpMessage\ServerRequest\GlobalEnvironment
  * @covers Jasny\HttpMessage\ServerRequest\ProtocolVersion
  * @covers Jasny\HttpMessage\ServerRequest\Headers
  * @covers Jasny\HttpMessage\ServerRequest\Body
@@ -73,6 +74,71 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
             ->withGlobalEnvironment();
         
         $this->assertEquals('', $request->getMethod());
+    }
+    
+    /**
+     * ServerRequest::setPostData is protected, because it should only be used for $_POST
+     */
+    public function testSetPostDataAndTurnStale()
+    {
+        $data = ['foo' => 'bar'];
+        
+        $request = $this->baseRequest->withHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        $refl = new \ReflectionMethod(ServerRequest::class, 'setPostData');
+        $refl->setAccessible(true);
+        $refl->invokeArgs($request, [&$data]);
+        
+        $this->assertSame($data, $request->getParsedBody());
+        
+        // Test if data is set by reference
+        $data['qux'] = 'zoo';
+        $this->assertSame($data, $request->getParsedBody());
+        
+        // Test becoming stale
+        $isStale = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $isStale->setAccessible(true);
+        $isStale->setValue($request, false);
+        
+        $newRequest = $request->withParsedBody(['color' => 'blue']);
+        $this->assertTrue($request->isStale());
+        $this->assertFalse($newRequest->isStale());
+        
+        $this->assertSame(['color' => 'blue'], $data);
+        $this->assertSame(['color' => 'blue'], $newRequest->getParsedBody());
+        $this->assertSame(['foo' => 'bar', 'qux' => 'zoo'], $request->getParsedBody());
+        
+        $data = ['color' => 'red'];
+        $this->assertSame($data, $newRequest->getParsedBody());
+    }
+
+    public function testWithoutGlobalEnvironmentDefault()
+    {
+        $this->assertSame($this->baseRequest, $this->baseRequest->withoutGlobalEnvironment());
+    }
+    
+    public function testWithoutGlobalEnvironment()
+    {
+        $data = ['foo' => 'bar'];
+        
+        $request = $this->baseRequest->withHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        $refl = new \ReflectionMethod(ServerRequest::class, 'setPostData');
+        $refl->setAccessible(true);
+        $refl->invokeArgs($request, [&$data]);
+        
+        // Test becoming stale
+        $isStale = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $isStale->setAccessible(true);
+        $isStale->setValue($request, false);
+        
+        $detached = $request->withoutGlobalEnvironment();
+        $this->assertFalse($request->isStale());
+        $this->assertNull($detached->isStale());
+        
+        $data['qux'] = 'zoo';
+        $this->assertEquals($data, $request->getParsedBody());
+        $this->assertEquals(['foo' => 'bar'], $detached->getParsedBody());
     }
     
     public function testIsStale()
@@ -908,42 +974,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         
         $request = $originalRequest->withBody($body);
         $this->assertEquals(['foo' => 'do', 'color' => 'blue'], $request->getParsedBody());
-    }
-    
-    /**
-     * ServerRequest::setPostData is protected, because it should only be used for $_POST
-     */
-    public function testSetPostData()
-    {
-        $data = ['foo' => 'bar'];
-        
-        $request = $this->baseRequest->withHeader('Content-Type', 'application/x-www-form-urlencoded');
-        
-        $refl = new \ReflectionMethod(ServerRequest::class, 'setPostData');
-        $refl->setAccessible(true);
-        $refl->invokeArgs($request, [&$data]);
-        
-        $this->assertSame($data, $request->getParsedBody());
-        
-        // Test if data is set by reference
-        $data['qux'] = 'zoo';
-        $this->assertSame($data, $request->getParsedBody());
-        
-        // Test becoming stale
-        $isStale = new \ReflectionProperty(ServerRequest::class, 'isStale');
-        $isStale->setAccessible(true);
-        $isStale->setValue($request, false);
-        
-        $newRequest = $request->withParsedBody(['color' => 'blue']);
-        $this->assertTrue($request->isStale());
-        $this->assertFalse($newRequest->isStale());
-        
-        $this->assertSame(['color' => 'blue'], $data);
-        $this->assertSame(['color' => 'blue'], $newRequest->getParsedBody());
-        $this->assertSame(['foo' => 'bar', 'qux' => 'zoo'], $request->getParsedBody());
-        
-        $data = ['color' => 'red'];
-        $this->assertSame($data, $newRequest->getParsedBody());
     }
     
     /**

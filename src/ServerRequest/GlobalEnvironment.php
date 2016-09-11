@@ -65,8 +65,12 @@ trait GlobalEnvironment
      * 
      * @return self
      */
-    public function witoutGlobalEnvironment()
+    public function withoutGlobalEnvironment()
     {
+        if ($this->isStale !== false) {
+            return $this;
+        }
+        
         $request = clone $this;
         
         $request->turnStale();
