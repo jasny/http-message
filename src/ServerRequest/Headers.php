@@ -69,7 +69,7 @@ trait Headers
     protected function assertHeaderName($name)
     {
         if (!is_string($name)) {
-            throw new \InvalidArgumentException("Header name should be a string or an array of strings");
+            throw new \InvalidArgumentException("Header name should be a string");
         }
         
         if (!preg_match('/^[a-zA-Z]\w*(\-\w+)*$/', $name)) {
@@ -241,6 +241,17 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        unset($this->headers[$name]);
+        if (is_string($name)) {
+            $key = $this->headerCase($name);
+        }
+        
+        if (!isset($key) || !isset($this->headers[$key])) {
+            return $this;
+        }
+        
+        $request = clone $this;
+        unset($request->headers[$key]);
+        
+        return $request;
     }
 }

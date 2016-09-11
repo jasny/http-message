@@ -10,13 +10,19 @@ use Jasny\HttpMessage\DerivedAttribute;
 trait Attributes
 {
     /**
+     * @var array
+     */
+    protected $attributes;
+    
+    /**
      * Create derived attribute objects
      */
     protected function createDerivedAttributes()
     {
         $this->attributes = [
             'client_ip' => new DerivedAttribute\ClientIp(),
-            'is_xhr' => new DerivedAttribute\IsXhr()
+            'is_xhr' => new DerivedAttribute\IsXhr(),
+            'local_referer' => new DerivedAttribute\LocalReferer()
         ];
     }
     

@@ -9,6 +9,7 @@ use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\Stream;
 use Jasny\HttpMessage\Uri;
 use Jasny\HttpMessage\UploadedFile;
+use Jasny\HttpMessage\DerivedAttribute;
 
 /**
  * @covers Jasny\HttpMessage\ServerRequest
@@ -75,7 +76,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testGetDefaultServerParams()
+    public function testGetServerParamsDefault()
     {
         $this->assertSame([], $this->baseRequest->getServerParams());
     }
@@ -150,7 +151,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->baseRequest->withProtocolVersion('0.2');
     }
     
-    public function testGetDefaultHeaders()
+    public function testGetHeadersDefault()
     {
         $headers = $this->baseRequest->getHeaders();
         $this->assertSame([], $headers);
@@ -203,22 +204,126 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     /**
      * @depends testWithHeader
      */
-    public function testWithHeaderAddAnother($origRequest)
+    public function testWithHeaderAddAnother(ServerRequest $origRequest)
     {
         $request = $origRequest->withHeader('QUX', 'white');
         $this->assertEquals([
             'Foo-Zoo' => ['red & blue'],
             'Qux' => ['white']
         ], $request->getHeaders());
+        
+        return $request;
     }
     
     /**
      * @depends testWithHeader
      */
-    public function testWithHeaderOverwrite($origRequest)
+    public function testWithHeaderOverwrite(ServerRequest $origRequest)
     {
         $request = $origRequest->withHeader('foo-zoo', 'silver & gold');
         $this->assertEquals(['Foo-Zoo' => ['silver & gold']], $request->getHeaders());
+    }
+    
+    /**
+     * @depends testWithHeader
+     */
+    public function testWithAddedHeader(ServerRequest $origRequest)
+    {
+        $request = $origRequest->withAddedHeader('foo-zoo', 'silver & gold');
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals(['Foo-Zoo' => ['red & blue', 'silver & gold']], $request->getHeaders());
+    }
+    
+    public function testWithAddedHeaderNew()
+    {
+        $request = $this->baseRequest->withAddedHeader('QUX', 'white');
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals(['Qux' => ['white']], $request->getHeaders());
+    }
+    
+    /**
+     * @depends testWithHeaderAddAnother
+     */
+    public function testWithoutHeader(ServerRequest $origRequest)
+    {
+        $request = $origRequest->withoutHeader('foo-zoo');
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals(['Qux' => ['white']], $request->getHeaders());
+    }
+    
+    public function testWithoutHeaderNotExists()
+    {
+        $request = $this->baseRequest->withoutHeader('not-exists');
+        $this->assertSame($this->baseRequest, $request);
+    }
+    
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Header name should be a string
+     */
+    public function testWithHeaderArrayAsName()
+    {
+        $this->baseRequest->withHeader(['foo' => 'bar'], 'zoo');
+    }
+    
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Invalid header name 'foo bar'
+     */
+    public function testWithHeaderInvalidName()
+    {
+        $this->baseRequest->withHeader('foo bar', 'zoo');
+    }
+    
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Header value should be a string or an array of strings
+     */
+    public function testWithHeaderArrayAsValue()
+    {
+        $this->baseRequest->withHeader('foo', ['bar', ['zoo', 'woo']]);
+    }
+    
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Header name should be a string
+     */
+    public function testWithAddedHeaderArrayAsName()
+    {
+        $this->baseRequest->withAddedHeader(['foo' => 'bar'], 'zoo');
+    }
+    
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Invalid header name 'foo bar'
+     */
+    public function testWithAddedHeaderInvalidName()
+    {
+        $this->baseRequest->withAddedHeader('foo bar', 'zoo');
+    }
+    
+    public function testWithoutHeaderArrayAsName()
+    {
+        $request = $this->baseRequest->withoutHeader(['foo', 'bar']);
+        $this->assertSame($this->baseRequest, $request);
+    }
+    
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Header value should be a string or an array of strings
+     */
+    public function testWithAddedHeaderArrayAsValue()
+    {
+        $this->baseRequest->withAddedHeader('foo', ['bar', ['zoo', 'woo']]);
     }
     
     public function testHasHeader()
@@ -257,7 +362,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testGetDefaultBody()
+    public function testGetBodyDefault()
     {
         $body = $this->baseRequest->getBody();
         
@@ -277,7 +382,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testGetDefaultRequestTarget()
+    public function testGetRequestTargetDefault()
     {
         $this->assertEquals('/', $this->baseRequest->getRequestTarget());
     }
@@ -314,7 +419,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testGetDefaultMethod()
+    public function testGetMethodDefault()
     {
         $this->assertSame('', $this->baseRequest->getMethod());
     }
@@ -339,7 +444,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Invalid method 'foo bar': Method may only contain letters and dashes
      */
-    public function testWithInvalidMethod()
+    public function testWithMethodInvalid()
     {
         $this->baseRequest->withMethod("foo bar");
     }
@@ -348,13 +453,13 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Method should be a string, not a stdClass object
      */
-    public function testWithMethodWithInvalidArgument()
+    public function testWithMethodInvalidArgument()
     {
         $this->baseRequest->withMethod((object)['foo' => 1, 'bar' => 2]);
     }
     
     
-    public function testGetDefaultUri()
+    public function testGetUriDefault()
     {
         $uri = $this->baseRequest->getUri();
         
@@ -427,7 +532,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testGetDefaultCookieParams()
+    public function testGetCookieParamsDefault()
     {
         $this->assertSame([], $this->baseRequest->getCookieParams());
     }
@@ -443,7 +548,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testGetDefaultQueryParams()
+    public function testGetQueryParamsDefault()
     {
         $this->assertSame([], $this->baseRequest->getQueryParams());
     }
@@ -459,7 +564,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testGetDefaultUploadedFiles()
+    public function testGetUploadedFilesDefault()
     {
         $this->assertSame([], $this->baseRequest->getUploadedFiles());
     }
@@ -621,7 +726,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testGetDefaultParsedBody()
+    public function testGetParsedBodyDefault()
     {
         $this->assertNull($this->baseRequest->getParsedBody());
     }
@@ -847,5 +952,102 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         
         // Third call with no reparse
         $this->assertEquals(['foo' => 'bar', 'color' => 'red'], $request->getParsedBody());
+    }
+    
+    
+    /**
+     * `ServerRequest::createDerivedAttributes` is protected, but we don't want to execute the derived attributes
+     */
+    public function testCreateDerivedAttributes()
+    {
+        $refl = new \ReflectionProperty(ServerRequest::class, 'attributes');
+        $refl->setAccessible(true);
+        
+        $attributes = $refl->getValue($this->baseRequest);
+        
+        $this->assertArrayHasKey('client_ip', $attributes);
+        $this->assertInstanceOf(DerivedAttribute\ClientIp::class, $attributes['client_ip']);
+        
+        $this->assertArrayHasKey('is_xhr', $attributes);
+        $this->assertInstanceOf(DerivedAttribute\IsXhr::class, $attributes['is_xhr']);
+        
+        $this->assertArrayHasKey('local_referer', $attributes);
+        $this->assertInstanceOf(DerivedAttribute\LocalReferer::class, $attributes['local_referer']);
+    }
+    
+    public function testWithAttribute()
+    {
+        $request = $this->baseRequest->withAttribute('foo', ['bar', 'zoo']);
+        
+        $this->assertInstanceOf(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertEquals(['bar', 'zoo'], $request->getAttribute('foo'));
+        
+        return $request;
+    }
+
+    /**
+     * @depends testWithAttribute
+     */
+    public function testWithAttributeOverride(ServerRequest $originalRequest)
+    {
+        $request = $originalRequest->withAttribute('foo', 'black');
+        $this->assertEquals('black', $request->getAttribute('foo'));
+    }
+    
+    public function testWithAttributeAsCallback()
+    {
+        $request = null;
+        
+        $request = $this->baseRequest->withAttribute('foo', function($arg) use (&$request) {
+            $this->assertSame($request, $arg);
+            return ['bar', 'zoo'];
+        });
+        
+        $this->assertInstanceOf(ServerRequest::class, $request);
+        $this->assertEquals(['bar', 'zoo'], $request->getAttribute('foo'));
+    }
+    
+    public function testWithAttributeAsObject()
+    {
+        $attribute = $this->getMock(DerivedAttribute::class);
+        $request = $this->baseRequest->withAttribute('foo', $attribute);
+        
+        $attribute->expects($this->once())->method('__invoke')
+            ->with($this->identicalTo($request))
+            ->willReturn(['bar', 'zoo']);
+        
+        $this->assertInstanceOf(ServerRequest::class, $request);
+        $this->assertEquals(['bar', 'zoo'], $request->getAttribute('foo'));
+    }
+    
+    /**
+     * @depends testWithAttribute
+     */
+    public function testWithoutAttribute(ServerRequest $originalRequest)
+    {
+        $request = $originalRequest->withoutAttribute('foo');
+        
+        $this->assertInstanceOf(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertNull($request->getAttribute('foo'));
+    }
+    
+    public function testGetAttributes()
+    {
+        // Remove all attributes, as we don't want to them
+        $refl = new \ReflectionProperty(ServerRequest::class, 'attributes');
+        $refl->setAccessible(true);
+        $refl->setValue($this->baseRequest, []);
+        
+        $request = $this->baseRequest
+            ->withAttribute('foo', function() {
+                return ['bar', 'zoo'];
+            })
+            ->withAttribute('color', 'red');
+            
+        $this->assertEquals(['foo' => ['bar', 'zoo'], 'color' => 'red'], $request->getAttributes());
     }
 }
