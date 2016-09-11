@@ -4,6 +4,7 @@ namespace Jasny\HttpMessage\DerivedAttribute;
 
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject;
+use Jasny\HttpMessage\Tests\AssertLastError;
 
 use Jasny\HttpMessage\DerivedAttribute\ClientIp;
 use Jasny\HttpMessage\ServerRequest;
@@ -13,6 +14,8 @@ use Jasny\HttpMessage\ServerRequest;
  */
 class ClientIpTest extends PHPUnit_Framework_TestCase
 {
+    use AssertLastError;
+    
     /**
      * @var ServerRequest|PHPUnit_Framework_MockObject_MockObject
      */
@@ -52,7 +55,7 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testNoTrustedProxyClientIp()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', '192.168.0.1'], ['X-Forwarded-For', null]]);
+            ->willReturnMap([['Client-Ip', '192.168.0.1']]);
         
         $clientIp = new ClientIp();
         
@@ -65,7 +68,7 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testNoTrustedProxyForwardedFor()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', null], ['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
+            ->willReturnMap([['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
         
         $clientIp = new ClientIp();
         
@@ -78,7 +81,7 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
      */
     public function testTrustAnyProxy()
     {
-        $clientIp = new ClientIp(true);
+        $clientIp = new ClientIp(['trusted_proxy' => true]);
         
         $this->assertEquals('10.0.0.1', $clientIp($this->request));
     }
@@ -89,9 +92,9 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testTrustAnyProxyClientIp()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', '192.168.0.1'], ['X-Forwarded-For', null]]);
+            ->willReturnMap([['Client-Ip', '192.168.0.1']]);
         
-        $clientIp = new ClientIp(true);
+        $clientIp = new ClientIp(['trusted_proxy' => true]);
         
         $this->assertEquals('192.168.0.1', $clientIp($this->request));
     }
@@ -102,9 +105,9 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testTrustAnyProxyForwardedFor()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', null], ['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
+            ->willReturnMap([['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
         
-        $clientIp = new ClientIp(true);
+        $clientIp = new ClientIp(['trusted_proxy' => true]);
         
         $this->assertEquals('192.168.1.100', $clientIp($this->request));
     }
@@ -115,7 +118,7 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
      */
     public function testTrustConnectedIp()
     {
-        $clientIp = new ClientIp('10.0.0.1');
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.1']);
         
         $this->assertEquals('10.0.0.1', $clientIp($this->request));
     }
@@ -126,9 +129,9 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testTrustConnectedIpClientIp()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', '192.168.0.1'], ['X-Forwarded-For', null]]);
+            ->willReturnMap([['Client-Ip', '192.168.0.1']]);
         
-        $clientIp = new ClientIp('10.0.0.1');
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.1']);
         
         $this->assertEquals('192.168.0.1', $clientIp($this->request));
     }
@@ -139,9 +142,9 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testTrustConnectedIpForwardedFor()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', null], ['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
+            ->willReturnMap([['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
         
-        $clientIp = new ClientIp('10.0.0.1');
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.1']);
         
         $this->assertEquals('192.168.0.1', $clientIp($this->request));
     }
@@ -152,7 +155,7 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
      */
     public function testTrustConnectedCidr()
     {
-        $clientIp = new ClientIp('10.0.0.0/24');
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.0/24']);
         
         $this->assertEquals('10.0.0.1', $clientIp($this->request));
     }
@@ -163,9 +166,9 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testTrustConnectedCidrClientIp()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', '192.168.0.1'], ['X-Forwarded-For', null]]);
+            ->willReturnMap([['Client-Ip', '192.168.0.1']]);
         
-        $clientIp = new ClientIp('10.0.0.0/24');
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.0/24']);
         
         $this->assertEquals('192.168.0.1', $clientIp($this->request));
     }
@@ -176,9 +179,9 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testTrustConnectedCidrForwardedFor()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', null], ['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
+            ->willReturnMap([['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
         
-        $clientIp = new ClientIp('10.0.0.0/24');
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.0/24']);
         
         $this->assertEquals('192.168.0.1', $clientIp($this->request));
     }
@@ -189,7 +192,7 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
      */
     public function testTrustIrrelevant()
     {
-        $clientIp = new ClientIp('172.0.0.0/24');
+        $clientIp = new ClientIp(['trusted_proxy' => '172.0.0.0/24']);
         
         $this->assertEquals('10.0.0.1', $clientIp($this->request));
     }
@@ -200,9 +203,9 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testTrustIrrelevantClientIp()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', '192.168.0.1'], ['X-Forwarded-For', null]]);
+            ->willReturnMap([['Client-Ip', '192.168.0.1']]);
         
-        $clientIp = new ClientIp('172.0.0.0/24');
+        $clientIp = new ClientIp(['trusted_proxy' => '172.0.0.0/24']);
         
         $this->assertEquals('10.0.0.1', $clientIp($this->request));
     }
@@ -213,10 +216,98 @@ class ClientIpTest extends PHPUnit_Framework_TestCase
     public function testTrustIrrelevantForwardedFor()
     {
         $this->request->expects($this->any())->method('getHeaderLine')
-            ->willReturnMap([['Client-Ip', null], ['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
+            ->willReturnMap([['X-Forwarded-For', '192.168.0.1, 192.168.1.100']]);
         
-        $clientIp = new ClientIp('172.0.0.0/24');
+        $clientIp = new ClientIp(['trusted_proxy' => '172.0.0.0/24']);
         
         $this->assertEquals('10.0.0.1', $clientIp($this->request));
+    }
+
+    
+    /**
+     * Trust connected client in CIDR as proxy, where there are two trusted proxies that forwarded the request
+     */
+    public function testTrustForwardedTwice()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->willReturnMap([['X-Forwarded-For', '10.0.0.88, 192.168.0.1, 10.0.0.90, 192.168.1.100']]);
+        
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.0/24']);
+        
+        $this->assertEquals('192.168.0.1', $clientIp($this->request));
+    }
+    
+    /**
+     * Use the Forwarded header instead of X-Forwarded-For
+     * @see https://tools.ietf.org/html/rfc7239
+     */
+    public function testForwardedHeader()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->willReturnMap([['Forwarded', 'for=192.168.0.1, for=192.168.1.100']]);
+        
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.0/24']);
+        
+        $this->assertEquals('192.168.0.1', $clientIp($this->request));
+    }
+    
+
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Only one of `X-Forwarded-For`, `Forwarded` or `Client-Ip` headers should be set
+     */
+    public function testTwoHeaders()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->willReturnMap([['Client-Ip', '192.168.0.1'], ['X-Forwarded-For', '192.168.0.2']]);
+        
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.0/24']);
+        $clientIp($this->request);
+    }
+
+    public function testTwoHeadersNoProxy()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->willReturnMap([['Client-Ip', '192.168.0.1'], ['X-Forwarded-For', '192.168.0.2']]);
+        
+        $clientIp = new ClientIp();
+        
+        $this->assertEquals('10.0.0.1', $clientIp($this->request));
+    }
+
+    public function testAllHeadersAllSame()
+    {
+        $this->request->expects($this->any())->method('getHeaderLine')
+            ->willReturnMap([
+                ['Client-Ip', '192.168.0.1'],
+                ['X-Forwarded-For', '192.168.0.1'],
+                ['Forwarded', 'for=192.168.0.1']
+            ]);
+        
+        $clientIp = new ClientIp(['trusted_proxy' => '10.0.0.0/24']);
+        
+        $this->assertEquals('192.168.0.1', $clientIp($this->request));
+    }
+
+    public function testNoRemoteIp()
+    {
+        // Workaround
+        $this->request->getServerParams();
+        
+        $request = $this->getMockBuilder(ServerRequest::class)
+            ->setMethods(['getServerParams', 'getHeaderLine'])
+            ->disableOriginalConstructor()
+            ->disableProxyingToOriginalMethods()
+            ->getMock();
+        
+        $request->expects($this->once())->method('getServerParams')
+            ->willReturn([]);
+        
+        $request->expects($this->any())->method('getHeaderLine')
+            ->willReturnMap([['X-Forwarded-For', '192.168.0.1']]);
+        
+        $clientIp = new ClientIp(['trusted_proxy' => true]);
+        
+        $this->assertNull($clientIp($request));
     }
 }

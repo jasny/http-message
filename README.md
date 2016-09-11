@@ -97,8 +97,7 @@ class DetectBot implements DerivedAttribute
 
 $request = (new ServerRequest())
     ->withAttribute('is_friendly_bot', new DetectBot(['google', 'yahoo']))
-    ->withAttribute('is_annoying_bot', new DetectBot(['magpie']))
-;
+    ->withAttribute('is_annoying_bot', new DetectBot(['magpie']));
 ```
 
 _Remember that a `ServerRequest` method is immutability, so `withAttribute()` will create a new object._
@@ -117,7 +116,7 @@ $request->getAttribute('client_ip'); // always returns $_SERVER['REMOTE_ADDR']
 ```
 
 You can specificy an IP or CIDR address for trusted proxies. When used, addresses send as HTTP header through
-`X-Forwarded-For` or `Client-Ip` are taken into consideration.
+`X-Forwarded-For`, `Client-Ip` or [`Forwarded`](https://tools.ietf.org/html/rfc7239) are taken into consideration.
 
 ```php
 use Jasny\HttpMessage\ServerRequest;
@@ -125,10 +124,24 @@ use Jasny\HttpMessage\DerivedAttribute\ClientIp;
 
 $request = (new ServerRequest())
     ->withSuperGlobals()
-    ->withAttribute('client_ip', new ClientIp('10.0.0.0/24'))
-;
+    ->withAttribute('client_ip', new ClientIp(['trusted_proxy => '10.0.0.0/24']);
 
 $ip = $request->getAttribute('client_ip'); // for a request from the internal network, use the `X-Forwarded-For` header
+```
+
+Note: If more than one of these headers are set, a `RuntimeException` is thrown. This prevents a user injecting a
+`Client-Ip` address to fake his ip, where your proxy is setting the `X-Forwarded-For` header. To make sure this
+exception doesn't occur, remove all unexpected forward headers.
+
+```php
+use Jasny\HttpMessage\ServerRequest;
+use Jasny\HttpMessage\DerivedAttribute\ClientIp;
+
+$request = (new ServerRequest())
+    ->withSuperGlobals()
+    ->withoutHeader('Client-Ip')
+    ->withoutHeader('Forwarded')
+    ->withAttribute('client_ip', new ClientIp(['trusted_proxy => '10.0.0.0/24']);
 ```
 
 #### IsXhr

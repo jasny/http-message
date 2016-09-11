@@ -1,8 +1,9 @@
 <?php
 
-namespace Jasny\HttpMessage\DerivedAttribute;
+namespace Jasny\HttpMessage;
 
 use PHPUnit_Framework_TestCase;
+use Jasny\HttpMessage\Tests\AssertLastError;
 
 use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\Stream;
@@ -26,6 +27,8 @@ use Jasny\HttpMessage\UploadedFile;
  */
 class ServerRequestTest extends PHPUnit_Framework_TestCase
 {
+    use AssertLastError;
+    
     /**
      * @var ServerRequest
      */
@@ -49,18 +52,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
             ->disableProxyingToOriginalMethods()
             ->disableOriginalClone()
             ->getMock();
-    }
-    
-    /**
-     * Assert the last error
-     * 
-     * @param int    $type     Expected error type, E_* constant
-     * @param string $message  Expected error message
-     */
-    protected function assertLastError($type, $message = null)
-    {
-        $expected = compact('type') + (isset($message) ? compact('message') : []);
-        $this->assertArraySubset($expected, error_get_last());
     }
     
     
