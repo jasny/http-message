@@ -4,6 +4,13 @@ This library provides an abstraction around PHPs various superglobals as well as
 practice helps reduce coupling to the superglobals by consumers, and encourages and promotes the ability to test request
 consumers.
 
+### Why does this library exist?
+
+This PSR-7 implementation is an abstraction layer over the normal input/output methods and variables like `echo`,
+`header()`, `$_POST`, etc. This maskes is different from other implementations. It directly interacts with the global
+environment when you're not testing. This means the behaviour of your application will not change by using this
+abstraction.
+
 The library only implements those [PSR-7 interfaces](http://www.php-fig.org/psr/psr-7/) focussed on handling a received
 HTTP request. If you want to send HTTP request to other webservices, I recommend using
 [Guzzle](http://docs.guzzlephp.org/).
@@ -29,16 +36,88 @@ it defines one interface
 
 ### ServerRequest
 
+The `ServerRequest` class represents an HTTP request as received by the webserver and processed by PHP.
+
 For the full documentation about the `ServerRequest`, please see
 [PSR-7 `RequestInterface`](http://www.php-fig.org/psr/psr-7/#3-2-psr-http-message-requestinterface) and
 [PSR-7 `ServerRequestInterface`](http://www.php-fig.org/psr/psr-7/#3-2-1-psr-http-message-serverrequestinterface).
 
 To create a `ServerRequest` object with the `$_SERVER`, `$_COOKIE`, `$_GET`, `$_POST` and `$_FILES` superglobals and
-with `php://input` as input stream, use the `withSuperGlobals()` method.
+with `php://input` as input stream, use the `withGlobalEnvironment()` method.
 
 ```php
-$request = (new Jasny\HttpMessage\ServerRequest())->withSuperGlobals();
+$request = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
 ```
+
+The `withGlobalEnvironment()` links the superglobals by reference to the object. You SHOULD NOT modify these variables,
+but if you do the changes will be reflected in the `ServerRequest` object.
+
+
+### Response
+
+The `Response` class allows you to create the outgoing HTTP response.
+
+For the full documentation about the `Response` class, please see
+[PSR-7 `ResponseInterface`](http://www.php-fig.org/psr/psr-7/#3-3-psr-http-message-responseinterface).
+
+By default a `Response` object will stream to `php://memory` and simply hold a list of all set headers.
+
+```
+$request = new Jasny\HttpMessage\ServerRequest();
+```
+
+To create a `Response` object which uses the [`header()`](http://php.net/manual/en/function.header.php) method and
+with `php://output` as output stream, use the `withGlobalEnvironment()` method.
+
+```php
+$request = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
+```
+
+You SHOULD NOT write to `php://output` directly (by using `echo`). Still, the changes will be reflected in the
+`Response` object when `withGlobalEnvironment()` is used.
+
+You SHOULD NOT use the `header()` and `header_remove()` functions directly (by using `echo`). Still, the changes will be
+reflected in the `Response` object when `withGlobalEnvironment()` is used.
+
+
+### Uri
+
+The `Uri` class is meant to represent URIs according to [RFC 3986](https://www.ietf.org/rfc/rfc3986.txt). It allows you
+to get and change any specific part of an uri.
+
+For the full documentation about the `Uri` class, please see
+[PSR-7 `UriInterface`](http://www.php-fig.org/psr/psr-7/#3-5-psr-http-message-uriinterface).
+
+When creating an Uri you can pass the URL as string or pass the URL in parts as associative array. For the URL parts
+see the [`parse_url`](http://www.php.net/parse_url) function.
+
+The `Jasny\HttpMessage\Uri` object only supports the `http` and `https` schemes.
+
+```php
+$uri = new Jasny\HttpMessage\Uri("http://www.example.com/foo");
+```
+
+
+### Stream
+
+The `Stream` class is a wrapper around [php streams](http://php.net/manual/en/book.stream.php) implementing the
+[PSR-7 `StreamInterface`](http://www.php-fig.org/psr/psr-7/#3-4-psr-http-message-streaminterface).
+
+```php
+$input = new Jasny\HttpMessage\Stream('php://input', 'r');
+$output = new Jasny\HttpMessage\Stream('php://output', 'w');
+```
+
+For testing purposes use the `php://memory` stream.
+
+```php
+$input = new Jasny\HttpMessage\Stream('php://memory');
+$input->write(json_encode(['foo' => 'bar', 'color' => 'red']));
+
+$output = new Jasny\HttpMessage\Stream('php://memory');
+```
+
+After running the test case, cast `$output` to a string to assert the output.
 
 
 ### DerivedAttribute
@@ -111,7 +190,7 @@ Get the client IP. By default only `$_SERVER['REMOTE_ADDR']` is returned.
 ```php
 use Jasny\HttpMessage\ServerRequest;
 
-$request = (new ServerRequest())->withSuperGlobals();
+$request = (new ServerRequest())->withGlobalEnvironment();
 $request->getAttribute('client_ip'); // always returns $_SERVER['REMOTE_ADDR']
 ```
 
@@ -123,7 +202,7 @@ use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\DerivedAttribute\ClientIp;
 
 $request = (new ServerRequest())
-    ->withSuperGlobals()
+    ->withGlobalEnvironment()
     ->withAttribute('client_ip', new ClientIp(['trusted_proxy => '10.0.0.0/24']);
 
 $ip = $request->getAttribute('client_ip'); // for a request from the internal network, use the `X-Forwarded-For` header
@@ -138,7 +217,7 @@ use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\DerivedAttribute\ClientIp;
 
 $request = (new ServerRequest())
-    ->withSuperGlobals()
+    ->withGlobalEnvironment()
     ->withoutHeader('Client-Ip')
     ->withoutHeader('Forwarded')
     ->withAttribute('client_ip', new ClientIp(['trusted_proxy => '10.0.0.0/24']);
@@ -154,7 +233,7 @@ attribute simply checks that header.
 ```php
 use Jasny\HttpMessage\ServerRequest;
 
-$request = (new ServerRequest())->withSuperGlobals();
+$request = (new ServerRequest())->withGlobalEnvironment();
 $isXhr = $request->getAttribute('is_xhr'); // true or false
 ```
 
@@ -166,7 +245,7 @@ and port.
 ```php
 use Jasny\HttpMessage\ServerRequest;
 
-$request = (new ServerRequest())->withSuperGlobals();
+$request = (new ServerRequest())->withGlobalEnvironment();
 $back = $request->getAttribute('local_referer') ?: '/'; // Referer Uri path, defaults to `/` for no or external referer
 ```
 
@@ -177,45 +256,54 @@ use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\DerivedAttribute\LocalReferer;
 
 $request = (new ServerRequest())
-    ->withSuperGlobals()
+    ->withGlobalEnvironment()
     ->withAttribute('local_referer', new LocalReferer(['checkScheme' => false, 'checkPort' => false]));
 ```
 
+## Testing
 
-### Uri
-
-For the full documentation about the `Uri`, please see
-[PSR-7 `UriInterface`](http://www.php-fig.org/psr/psr-7/#3-5-psr-http-message-uriinterface).
-
-When creating an Uri you can pass the URL as string or pass the URL in parts as associative array. For the URL parts
-see the [`parse_url`](http://www.php.net/parse_url) function.
-
-The `Jasny\HttpMessage\Uri` object only supports the `http` and `https` schemes.
+When testing code that is fully PSR-7 compatible, create a `ServerRequest` with specific headers, parameters and data
+and a default `Response`.
 
 ```php
-$uri = new Jasny\HttpMessage\Uri("http://www.example.com/foo");
+$request = (new ServerRequest())
+    ->withMethod('GET')
+    ->withUri('/foo')
+    ->withQueryParams(['page' => 1]);
 ```
 
+PSR-7 compatible code MUST NOT access superglobals directly and also MUST NOT output headers and data directly.
 
-### Stream
+### Testing legacy code
 
-The `Stream` class is a wrapper around [php streams](http://php.net/manual/en/book.stream.php) implementing the
-[PSR-7 `StreamInterface`](http://www.php-fig.org/psr/psr-7/#3-4-psr-http-message-streaminterface).
+This library allows you to test code that isn't fully PSR-7 compatible. It might access the superglobals directly and/or
+output using `echo` and `headers()`.
 
 ```php
-$input = new Jasny\HttpMessage\Stream('php://input', 'r');
-$output = new Jasny\HttpMessage\Stream('php://output', 'w');
+// Start output buffering, so the output isn't send directly
+ob_start();
+
+// Create response with (actual) global enviroment. Modifying it, modifies the superglobals.
+$request = (new ServerRequest())->withGlobalEnvironment()
+    ->withServerParams(['REQUEST_METHOD' => 'GET', 'PATH_INFO' => '/foo'])
+    ->withQueryParams(['page' => 1]);
+
+// Create response with (actual) global enviroment.
+$response = (new Response())->withGlobalEnvironment();
+
+// Some PSR-7 compatible router handles the request. The code uses `header` and `echo` to output.
+$router->route($request, $response);
+
+// Disconnect the global environment, copy the data and headers
+$response = $response->withoutGlobalEnviroment();
+
+// Remove all headers and output
+header_remove(); 
+ob_end_clean();
+
+// Assert response
+...
 ```
 
-For testing purposes use the `php://memory` stream.
-
-```php
-$input = new Jasny\HttpMessage\Stream('php://memory');
-$input->write(json_encode(['foo' => 'bar', 'color' => 'red']));
-
-$output = new Jasny\HttpMessage\Stream('php://memory');
-```
-
-After running the test case, cast `$output` to a string to assert the output.
-
-
+Using this technique allows you to start using PSR-7 without having to rewrite your whole code base. Instead you can
+refactor your code bit by bit.
