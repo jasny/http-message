@@ -56,9 +56,9 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testWithSuperGlobals()
+    public function testWithGlobalEnvironment()
     {
-        $request = $this->baseRequest->withSuperGlobals();
+        $request = $this->baseRequest->withGlobalEnvironment();
         
         $this->assertInstanceof(ServerRequest::class, $request);
         $this->assertNotSame($this->baseRequest, $request);
@@ -66,15 +66,28 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('php://input', $request->getBody()->getMetadata('uri'));
     }
     
-    public function testWithSuperGlobalsReset()
+    public function testWithGlobalEnvironmentReset()
     {
         $request = $this->baseRequest
             ->withMethod('POST')
-            ->withSuperGlobals();
+            ->withGlobalEnvironment();
         
         $this->assertEquals('', $request->getMethod());
     }
     
+    public function testIsStale()
+    {
+        $refl = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $refl->setAccessible(true);
+        
+        $this->assertNull($this->baseRequest->isStale());
+
+        $refl->setValue($this->baseRequest, false);
+        $this->assertFalse($this->baseRequest->isStale());
+
+        $refl->setValue($this->baseRequest, true);
+        $this->assertTrue($this->baseRequest->isStale());
+    }
     
     public function testGetServerParamsDefault()
     {
@@ -107,6 +120,18 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
             ->withServerParams([]);
         
         $this->assertEquals('', $request->getMethod());
+    }
+    
+    public function testWithServerParamsTurnStale()
+    {
+        $refl = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $refl->setAccessible(true);
+        $refl->setValue($this->baseRequest, false);
+        
+        $request = $this->baseRequest->withServerParams([]);
+        
+        $this->assertTrue($this->baseRequest->isStale());
+        $this->assertFalse($request->isStale());
     }
     
     
@@ -547,6 +572,18 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertSame(['foo' => 'bar', 'color' => 'red'], $request->getCookieParams());
     }
     
+    public function testWithCookieParamsTurnStale()
+    {
+        $refl = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $refl->setAccessible(true);
+        $refl->setValue($this->baseRequest, false);
+        
+        $request = $this->baseRequest->withCookieParams([]);
+        
+        $this->assertTrue($this->baseRequest->isStale());
+        $this->assertFalse($request->isStale());
+    }
+    
     
     public function testGetQueryParamsDefault()
     {
@@ -561,6 +598,18 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertNotSame($this->baseRequest, $request);
         
         $this->assertSame(['foo' => 'bar', 'color' => 'red'], $request->getQueryParams());
+    }
+    
+    public function testWithQueryParamsTurnStale()
+    {
+        $refl = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $refl->setAccessible(true);
+        $refl->setValue($this->baseRequest, false);
+        
+        $request = $this->baseRequest->withQueryParams([]);
+        
+        $this->assertTrue($this->baseRequest->isStale());
+        $this->assertFalse($request->isStale());
     }
     
     
@@ -725,6 +774,18 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->baseRequest->withUploadedFiles(['file' => $file, 'colors' => compact('blue', 'red')]);
     }
     
+    public function testWithUploadedFilesTurnStale()
+    {
+        $refl = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $refl->setAccessible(true);
+        $refl->setValue($this->baseRequest, false);
+        
+        $request = $this->baseRequest->withUploadedFiles([]);
+        
+        $this->assertTrue($this->baseRequest->isStale());
+        $this->assertFalse($request->isStale());
+    }
+    
     
     public function testGetParsedBodyDefault()
     {
@@ -856,11 +917,10 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     {
         $data = ['foo' => 'bar'];
         
-        $refl = new \ReflectionMethod(ServerRequest::class, 'setPostData');
-        $refl->setAccessible(true);
-        
         $request = $this->baseRequest->withHeader('Content-Type', 'application/x-www-form-urlencoded');
         
+        $refl = new \ReflectionMethod(ServerRequest::class, 'setPostData');
+        $refl->setAccessible(true);
         $refl->invokeArgs($request, [&$data]);
         
         $this->assertSame($data, $request->getParsedBody());
@@ -868,6 +928,22 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         // Test if data is set by reference
         $data['qux'] = 'zoo';
         $this->assertSame($data, $request->getParsedBody());
+        
+        // Test becoming stale
+        $isStale = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $isStale->setAccessible(true);
+        $isStale->setValue($request, false);
+        
+        $newRequest = $request->withParsedBody(['color' => 'blue']);
+        $this->assertTrue($request->isStale());
+        $this->assertFalse($newRequest->isStale());
+        
+        $this->assertSame(['color' => 'blue'], $data);
+        $this->assertSame(['color' => 'blue'], $newRequest->getParsedBody());
+        $this->assertSame(['foo' => 'bar', 'qux' => 'zoo'], $request->getParsedBody());
+        
+        $data = ['color' => 'red'];
+        $this->assertSame($data, $newRequest->getParsedBody());
     }
     
     /**
@@ -915,6 +991,18 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
             ->withParsedBody(['foo' => 'bar']);
         
         $this->assertEquals(['foo' => 'bar'], $request->getParsedBody());
+    }
+    
+    public function testWithParsedBodyTurnStale()
+    {
+        $refl = new \ReflectionProperty(ServerRequest::class, 'isStale');
+        $refl->setAccessible(true);
+        $refl->setValue($this->baseRequest, false);
+        
+        $request = $this->baseRequest->withParsedBody([]);
+        
+        $this->assertTrue($this->baseRequest->isStale());
+        $this->assertFalse($request->isStale());
     }
     
     /**

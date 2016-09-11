@@ -12,6 +12,15 @@ trait Cookies
      * @var array
      */
     protected $cookies = [];
+
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function turnStale();
+    
     
     /**
      * Retrieves cookies sent by the client to the server.
@@ -32,7 +41,7 @@ trait Cookies
      */
     public function withCookieParams(array $cookies)
     {
-        $request = clone $this;
+        $request = $this->turnStale();
         $request->cookies = $cookies;
         
         return $request;

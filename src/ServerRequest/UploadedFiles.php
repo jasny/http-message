@@ -17,6 +17,14 @@ trait UploadedFiles
      * @var array
      */
     protected $uploadedFiles = [];
+
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function turnStale();
     
     
     /**
@@ -123,7 +131,7 @@ trait UploadedFiles
     {
         $this->assertUploadedFilesStructure($uploadedFiles);
         
-        $request = clone $this;
+        $request = $this->turnStale();
         $request->uploadedFiles = $uploadedFiles;
         
         return $request;

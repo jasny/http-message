@@ -20,6 +20,14 @@ trait ParsedBody
      * @var array|null
      */
     protected $parseCondition;
+
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function turnStale();
     
     
     /**
@@ -85,7 +93,7 @@ trait ParsedBody
         $contentType = $this->getHeaderLine('Content-Type');
         
         if (in_array($contentType, ['application/x-www-form-urlencoded', 'multipart/form-data'])) {
-            $this->parsedBody = & $data;
+            $this->parsedBody =& $data;
             $this->parseCondition = ['content_type' => $contentType];
         }
     }
@@ -206,7 +214,8 @@ trait ParsedBody
      */
     public function withParsedBody($data)
     {
-        $request = clone $this;
+        $request = $this->turnStale();
+        
         $request->parsedBody = $data;
         $request->parseCondition = false;
         

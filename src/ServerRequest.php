@@ -3,15 +3,14 @@
 namespace Jasny\HttpMessage;
 
 use Psr\Http\Message\ServerRequestInterface;
-
 use Jasny\HttpMessage\ServerRequest;
-use Jasny\HttpMessage\Stream;
 
 /**
  * Representation of an incoming, server-side HTTP request.
  */
 class ServerRequest implements ServerRequestInterface
 {
+    use ServerRequest\GlobalEnvironment;
     use ServerRequest\ServerParams;
     use ServerRequest\ProtocolVersion;
     use ServerRequest\Headers;
@@ -32,37 +31,6 @@ class ServerRequest implements ServerRequestInterface
     public function __construct()
     {
         $this->createDerivedAttributes();
-    }
-    
-    /**
-     * Use super globals $_SERVER, $_COOKIE, $_GET, $_POST and $_FILES and the php://input stream.
-     * Note: this method is not part of the PSR-7 specs.
-     * 
-     * @global $_SERVER
-     * @global $_COOKIE
-     * @global $_GET
-     * @global $_POST
-     * @global $_FILES
-     * 
-     * @return self
-     * @throws RuntimeException if isn't not possible to open the 'php://input' stream
-     */
-    public function withSuperGlobals()
-    {
-        $request = clone $this;
-        
-        $request->serverParams =& $_SERVER;
-        $request->cookies =& $_COOKIE;
-        $request->queryParams =& $_GET;
-        
-        $request->setPostData($_POST);
-        $request->setUploadedFiles($_FILES);
-        
-        $request->body = Stream::open('php://input', 'r');
-        
-        $request->reset();
-        
-        return $request;
     }
     
     /**

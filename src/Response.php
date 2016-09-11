@@ -2,10 +2,12 @@
 
 namespace Jasny\HttpMessage;
 
+use Psr\Http\Message\ResponseInterface;
+
 /**
  * Http response
  */
-class Response
+class Response 
 {
     /**
      * Class constructor

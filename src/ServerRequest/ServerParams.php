@@ -12,6 +12,15 @@ trait ServerParams
      * @var array
      */
     protected $serverParams = [];
+
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function turnStale();
+
     
     /**
      * Retrieve server parameters.
@@ -36,7 +45,7 @@ trait ServerParams
      */
     public function withServerParams(array $params)
     {
-        $request = clone $this;
+        $request = $this->turnStale();
         $request->serverParams = $params;
         
         $request->reset();

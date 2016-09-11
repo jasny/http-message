@@ -12,6 +12,15 @@ trait QueryParams
      * @var array
      */
     protected $queryParams = [];
+
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function turnStale();
+    
     
     /**
      * Retrieves the deserialized query string arguments, if any.
@@ -32,9 +41,9 @@ trait QueryParams
      */
     public function withQueryParams(array $query)
     {
-        $request = clone $this;
-        $request->queryParams = $query;
+        $request = $this->turnStale();
         
+        $request->queryParams = $query;
         return $request;
     }
 }
