@@ -65,6 +65,18 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertNotSame($this->baseRequest, $request);
         
         $this->assertEquals('php://input', $request->getBody()->getMetadata('uri'));
+        
+        $this->assertSame(false, $request->isStale());
+    }
+    
+    public function testWithGlobalEnvironmentByValue()
+    {
+        $request = $this->baseRequest->withGlobalEnvironment(false);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        
+        $this->assertNull($request->isStale());
     }
     
     public function testWithGlobalEnvironmentReset()

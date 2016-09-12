@@ -50,8 +50,23 @@ $request = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
 ```
 
 The `withGlobalEnvironment()` links the superglobals by reference to the object. You SHOULD NOT modify these variables,
-but if you do the changes will be reflected in the `ServerRequest` object.
+but if you do the changes will be reflected in the `ServerRequest` object. Vise versa, using `withQueryParams()` will
+change `$_GET`, `withServerParams` changes `$_SERVER`, etc.
 
+If you do not want this behaviour and want the request to copy the values of the superglobals instead, set the first
+argument to `false`.
+
+```php
+// $_GET is affected
+$requestByRef = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
+$requestByRef = $request->withQueryParams(['foo' => 1]);
+var_dump($_GET); // array(1) { ["foo"]=> int(1) }
+
+// $_GET is not affected
+$requestByVal = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment(false);
+$requestByVal = $request->withQueryParams(['foo' => 1]);
+var_dump($_GET); // array(0) { }
+```
 
 ### Response
 
