@@ -25,10 +25,10 @@ HTTP request. If you want to send HTTP request to other webservices, I recommend
 
 The library implements the following PSR-7 interfaces
 
- * [`ServerRequest`](#ServerRequest) implements `Psr\Http\Message\ServerRequestInterface`
- * [`Response`](#Response) implements `Psr\Http\Message\ResponseInterface`
- * [`Stream`](#InputStream) implements `Psr\Http\Message\StreamInterface`
- * [`Uri`](#Uri) implements `Psr\Http\Message\UriInterface`
+ * [`ServerRequest`](#serverrequest) implements `Psr\Http\Message\ServerRequestInterface`
+ * [`Response`](#response) implements `Psr\Http\Message\ResponseInterface`
+ * [`Stream`](#stream) implements `Psr\Http\Message\StreamInterface`
+ * [`Uri`](#uri) implements `Psr\Http\Message\UriInterface`
 
 it defines one interface
 
