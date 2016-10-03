@@ -32,7 +32,7 @@ The library implements the following PSR-7 interfaces
 
 it defines one interface
 
- * [`DerivedAttribute`](#DerivedAttribute)
+ * [`DerivedAttribute`](#derivedattribute)
 
 ### ServerRequest
 
