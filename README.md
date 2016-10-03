@@ -91,8 +91,8 @@ $request = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
 You SHOULD NOT write to `php://output` directly (by using `echo`). Still, the changes will be reflected in the
 `Response` object when `withGlobalEnvironment()` is used.
 
-You SHOULD NOT use the `header()` and `header_remove()` functions directly (by using `echo`). Still, the changes will be
-reflected in the `Response` object when `withGlobalEnvironment()` is used.
+You SHOULD NOT use the `header()` and `header_remove()` functions directly. Still, the changes will be reflected in the 
+`Response` object when `withGlobalEnvironment()` is used.
 
 
 ### Uri
