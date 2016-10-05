@@ -20,7 +20,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      *
      * @var ServerRequest
      */
-    protected $request;
+    protected $response;
 
     public function setUp()
     {
@@ -54,26 +54,33 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testResponseProtocol()
     {
-        $request = $this->response->withProtocolVersion('2.0');
-        $this->assertEquals($request->getProtocolVersion(), '2');
+        $response = $this->response->withProtocolVersion('2.0');
+        $this->assertEquals('2', $response->getProtocolVersion());
         
-        $request2 = $this->response->withProtocolVersion('1.1');
-        $this->assertEquals($request2->getProtocolVersion(), '1.1');
+        $response2 = $this->response->withProtocolVersion('1.1');
+        $this->assertEquals('1.1', $response2->getProtocolVersion());
         
-        $request3 = $this->response->withProtocolVersion('1.0');
-        $this->assertEquals($request3->getProtocolVersion(), '1.0');
+        $response3 = $this->response->withProtocolVersion('1.0');
+        $this->assertEquals('1.0', $response3->getProtocolVersion());
+    }
+
+    public function testIstantResponceClass()
+    {
+        $response = $this->response->withProtocolVersion('1.1');
+        $this->assertInstanceof(Response::class, $response);
+        $this->assertInstanceof(Response::class, $response);
     }
 
     public function testResponseProtocolFloat()
     {
-        $request = $this->response->withProtocolVersion(2.0);
-        $this->assertEquals($request->getProtocolVersion(), '2');
+        $response = $this->response->withProtocolVersion(2.0);
+        $this->assertEquals('2', $response->getProtocolVersion());
         
-        $request2 = $this->response->withProtocolVersion(2);
-        $this->assertEquals($request2->getProtocolVersion(), '2');
+        $response2 = $this->response->withProtocolVersion(2);
+        $this->assertEquals('2', $response2->getProtocolVersion());
         
-        $request3 = $this->response->withProtocolVersion(1.1);
-        $this->assertEquals($request3->getProtocolVersion(), '1.1');
+        $response3 = $this->response->withProtocolVersion(1.1);
+        $this->assertEquals('1.1', $response3->getProtocolVersion());
     }
 
     /**
@@ -104,25 +111,34 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testAppendHeaders()
     {
-        $request = $this->response->withHeader('Serv', 'nginx/1.6.2');
-        $this->assertTrue($request !== $this->response);
-        $this->assertTrue($request->hasHeader('Serv'));
-    }
-    
-    public function testGetHeader()
-    {
-        $request = $this->response->withHeader('Serv', 'nginx/1.6.2');
-        $this->assertEquals(array('nginx/1.6.2'), $request->getHeader('Serv'));
-        $this->assertEquals('nginx/1.6.2', $request->getHeaderLine('Serv'));
-    }
-    
-    public function testGetHeaderLine()
-    {
-        $request = $this->response->withHeader('Serv', 'nginx/1.6.2');
-        $this->assertEquals('nginx/1.6.2', $request->getHeaderLine('Serv'));
+        $response = $this->response->withHeader('Serv', 'nginx/1.6.2');
+        $this->assertTrue($response !== $this->response);
+        $this->assertTrue($response->hasHeader('Serv'));
+        
+        return $response;
     }
 
-    public function testEmptyHeadersIntoOldObject()
+    /**
+     * @depends testAppendHeaders
+     */
+    public function testGetHeader(Response $response)
+    {
+        $this->assertEquals(array(
+            'nginx/1.6.2'
+        ), $response->getHeader('Serv'));
+        $this->assertEquals('nginx/1.6.2', $response->getHeaderLine('Serv'));
+    }
+
+    /**
+     * @depends testAppendHeaders
+     */
+    public function testGetHeaderLine(Response $response)
+    {
+        $response = $this->response->withHeader('Serv', 'nginx/1.6.2');
+        $this->assertEquals('nginx/1.6.2', $response->getHeaderLine('Serv'));
+    }
+
+    public function testEmptyHeadersOnInitObject()
     {
         $this->assertEmpty($this->response->getHeaders());
         $this->assertFalse($this->response->hasHeader('Serv'));
@@ -130,46 +146,85 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testHeaderMultipleValuesGetHeaderLine()
     {
-        $request = $this->response->withHeader('Data', array('bar','foo'));
-        $this->assertEquals('bar,foo', $request->getHeaderLine('Data'));
+        $response = $this->response->withHeader('Data', array(
+            'bar',
+            'foo'
+        ));
+        $this->assertEquals('bar,foo', $response->getHeaderLine('Data'));
     }
 
-    public function testAppendAnotherHeadersIntoOldObject()
+    /**
+     * @depends testAppendHeaders
+     */
+    public function testAppendAnotherHeaders(Response $responseWithHeader)
     {
-        $request = $this->response->withHeader('Data', array(
+        $response = $responseWithHeader->withHeader('Data', array(
+            'bar',
+            'foo'
+        ));
+        $this->assertTrue($response->hasHeader('Serv'));
+        $this->assertTrue($response->hasHeader('Data'));
+    }
+
+    public function testAppendHeadersAnotherValue()
+    {
+        $response = $this->response->withHeader('Data', array(
             'bar',
             'foo'
         ));
         
-        $request = $request->withAddedHeader('Data', 'new');
-        $this->assertTrue($request->hasHeader('Data'));
+        $response = $response->withAddedHeader('Data', 'new');
+        $this->assertTrue($response->hasHeader('Data'));
         $this->assertEquals(array(
             'bar',
             'foo',
             'new'
-        ), $request->getHeader('Data'));
-        $this->assertEquals('bar,foo,new', $request->getHeaderLine('Data'));
+        ), $response->getHeader('Data'));
+        $this->assertEquals('bar,foo,new', $response->getHeaderLine('Data'));
+    }
+
+    public function testStatusCodeDefaults()
+    {
+        $this->assertSame(200, $this->response->getStatusCode());
+        $this->assertSame('OK', $this->response->getReasonPhrase());
+    }
+
+    public function testStatusCodeChangeByRCF()
+    {
+        $response = $this->response->withStatus(404);
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('Not Found', $response->getReasonPhrase());
+    }
+
+    public function testStatusCodeChangeWithMessage()
+    {
+        $response = $this->response->withStatus(404, 'Some unique status');
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('Some unique status', $response->getReasonPhrase());
+        $this->assertSame('404 Some unique status', $response->getStatusString());
+    }
+    
+    public function testNotStandardStatusCode()
+    {
+        $response = $this->response->withStatus(999);
+        $this->assertSame(999, $response->getStatusCode());
+        $this->assertSame('', $response->getReasonPhrase());
     }
 
     /**
      * @expectedException InvalidArgumentException
      */
-    public function testStatusCode()
+    public function testWrongTypeStatusCode()
     {
-        $this->assertSame(200, $this->response->getStatusCode());
-        $this->assertSame('OK', $this->response->getReasonPhrase());
         $this->expectException($this->response->withStatus(1020.20));
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testWrongValueStatusCode()
+    {
         $this->expectException($this->response->withStatus(1020));
-        $request = $this->response->withStatus(404, 'Some unique status');
-        $this->assertSame(404, $request->getStatusCode());
-        $this->assertSame('Some unique status', $request->getReasonPhrase());
-        $this->assertSame('404 Some unique status', $request->getStatusString());
-        $request = $this->response->withStatus(404, '');
-        $this->assertSame(404, $request->getStatusCode());
-        $this->assertSame('Not Found', $request->getReasonPhrase());
-        $request = $this->response->withStatus(999);
-        $this->assertSame(999, $request->getStatusCode());
-        $this->assertSame('', $request->getReasonPhrase());
     }
 
     public function testBody()

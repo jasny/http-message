@@ -121,7 +121,7 @@ trait StatusCode
     /**
      * Gets the response reason phrase associated with the status code.
      *
-     * @return int(3)
+     * @return string
      */
     public function getReasonPhrase()
     {
