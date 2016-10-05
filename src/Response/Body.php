@@ -24,7 +24,7 @@ trait Body
     public function getBody()
     {
         if (! isset($this->body)) {
-            $this->body = Stream::open('php://memory', 'w+');
+            $this->body = Stream::open('file://temp', 'w+');
         }
         
         return $this->body;

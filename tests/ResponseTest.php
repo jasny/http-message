@@ -22,15 +22,24 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     protected $request;
 
-    /**
-     *
-     * @var example http_response
-     */
-    protected $http_response = "";
-
     public function setUp()
     {
         $this->response = new Response();
+    }
+
+    /**
+     * Get mock with original methods and constructor disabled
+     *
+     * @param string $classname            
+     * @return \PHPUnit_Framework_MockObject_MockObject
+     */
+    protected function getSimpleMock($classname)
+    {
+        return $this->getMockBuilder($classname)
+            ->disableOriginalConstructor()
+            ->disableProxyingToOriginalMethods()
+            ->disableOriginalClone()
+            ->getMock();
     }
 
     public function testResponceClass()
@@ -38,78 +47,108 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceof(Response::class, $this->response);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
+    public function testResponseProtocolDefaultValue()
+    {
+        $this->assertEquals('1.1', $this->response->getProtocolVersion());
+    }
+
     public function testResponseProtocol()
     {
-        $this->assertTrue('1.1' == $this->response->getProtocolVersion());
         $request = $this->response->withProtocolVersion('2.0');
-        $this->expectException($this->response->withProtocolVersion('3.0'));
-        $this->assertTrue($request->getProtocolVersion() === 2);
-        $request = $this->response->withProtocolVersion('2');
-        $this->assertTrue($request->getProtocolVersion() === '2');
-        $this->expectException($this->response->withProtocolVersion(array(
-            3.0
-        )));
-        $request = $this->response->withProtocolVersion('1.0');
-        $this->assertTrue($request->getProtocolVersion() === '1.0');
+        $this->assertEquals($request->getProtocolVersion(), '2');
+        
+        $request2 = $this->response->withProtocolVersion('1.1');
+        $this->assertEquals($request2->getProtocolVersion(), '1.1');
+        
+        $request3 = $this->response->withProtocolVersion('1.0');
+        $this->assertEquals($request3->getProtocolVersion(), '1.0');
+    }
+
+    public function testResponseProtocolFloat()
+    {
+        $request = $this->response->withProtocolVersion(2.0);
+        $this->assertEquals($request->getProtocolVersion(), '2');
+        
+        $request2 = $this->response->withProtocolVersion(2);
+        $this->assertEquals($request2->getProtocolVersion(), '2');
+        
+        $request3 = $this->response->withProtocolVersion(1.1);
+        $this->assertEquals($request3->getProtocolVersion(), '1.1');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage HTTP versions 0.1 are unknown
+     */
+    public function testFalseValueResponseProtocol()
+    {
+        $this->response->withProtocolVersion(0.1);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage HTTP version must be a string or float
+     */
+    public function testFalseTypeResponseProtocol()
+    {
+        $this->response->withProtocolVersion(array(
+            '1.0',
+            '1.1'
+        ));
     }
 
     public function testHeadersEmpty()
     {
-        $this->assertEquals(array(), $this->response->getHeaders());
+        $this->assertSame(array(), $this->response->getHeaders());
     }
 
     public function testAppendHeaders()
     {
         $request = $this->response->withHeader('Serv', 'nginx/1.6.2');
         $this->assertTrue($request !== $this->response);
-        $this->assertTrue($request !== $this->response);
         $this->assertTrue($request->hasHeader('Serv'));
-        $this->assertEquals(array(
-            'nginx/1.6.2'
-        ), $request->getHeader('Serv'));
+    }
+    
+    public function testGetHeader()
+    {
+        $request = $this->response->withHeader('Serv', 'nginx/1.6.2');
+        $this->assertEquals(array('nginx/1.6.2'), $request->getHeader('Serv'));
+        $this->assertEquals('nginx/1.6.2', $request->getHeaderLine('Serv'));
+    }
+    
+    public function testGetHeaderLine()
+    {
+        $request = $this->response->withHeader('Serv', 'nginx/1.6.2');
         $this->assertEquals('nginx/1.6.2', $request->getHeaderLine('Serv'));
     }
 
     public function testEmptyHeadersIntoOldObject()
     {
-        $this->assertFalse($this->response->getHeaders() == array(
-            'Server' => array(
-                'nginx/1.6.2'
-            )
-        ));
-        $this->assertTrue($this->response->getHeaders() == array());
+        $this->assertEmpty($this->response->getHeaders());
         $this->assertFalse($this->response->hasHeader('Serv'));
+    }
+
+    public function testHeaderMultipleValuesGetHeaderLine()
+    {
+        $request = $this->response->withHeader('Data', array('bar','foo'));
+        $this->assertEquals('bar,foo', $request->getHeaderLine('Data'));
     }
 
     public function testAppendAnotherHeadersIntoOldObject()
     {
-        $this->assertFalse($this->response->hasHeader('Serv'));
         $request = $this->response->withHeader('Data', array(
             'bar',
             'foo'
         ));
         
+        $request = $request->withAddedHeader('Data', 'new');
         $this->assertTrue($request->hasHeader('Data'));
-        $this->assertFalse($request->hasHeader('Serv'));
-        
-        $this->assertEquals(array(
-            'bar',
-            'foo'
-        ), $request->getHeader('Data'));
-        $this->assertEquals('bar,foo', $request->getHeaderLine('Data'));
-        
-        
-        $requestTwo = $request->withAddedHeader('Data', 'new');
-        $this->assertTrue($requestTwo->hasHeader('Data'));
         $this->assertEquals(array(
             'bar',
             'foo',
             'new'
-        ), $requestTwo->getHeader('Data'));
-        $this->assertEquals('bar,foo,new', $requestTwo->getHeaderLine('Data'));
+        ), $request->getHeader('Data'));
+        $this->assertEquals('bar,foo,new', $request->getHeaderLine('Data'));
     }
 
     /**
@@ -135,26 +174,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testBody()
     {
-        $this->assertSame($this->response->getBody()
-            ->getContents(), '');
-        $this->assertSame($this->response->getBody()
-            ->getSize(), 0);
-        $this->assertTrue($this->response->getBody()
-            ->isReadable());
-        $this->assertTrue($this->response->getBody()
-            ->isWritable());
-        $body = $this->response->getBody();
-        $this->assertTrue($this->response->getBody()
-            ->isWritable());
-        $string = 'Cool string!';
-        $this->response->getBody()->write($string);
-        $this->response->getBody()->rewind();
-        $this->assertSame($this->response->getBody()
-            ->getContents(), $string);
-        $stringTwo = ' All ok!';
-        $this->response->getBody()->write($stringTwo);
-        $this->response->getBody()->rewind();
-        $this->assertSame($this->response->getBody()
-            ->getContents(), $string . $stringTwo);
+        $body = $this->response->withBody($this->getSimpleMock(Stream::class));
+        $this->assertInstanceof(Stream::class, $body->getBody());
     }
 }

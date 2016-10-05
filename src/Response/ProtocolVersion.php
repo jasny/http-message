@@ -36,7 +36,7 @@ trait protocolVersion
      */
     protected function setProtocolVersion($version)
     {
-        if (is_float($version)) {
+        if (is_numeric($version)) {
             $version = (string) number_format($version, 1, '.', '');
         }
         
