@@ -1,6 +1,7 @@
 <?php
 namespace Jasny\HttpMessage\Response;
 
+
 /**
  * ServerRequest header methods
  */
@@ -13,49 +14,6 @@ trait Headers
      * @var array
      */
     protected $headers = array();
-
-    /**
-     * Turn upper case param into header case.
-     * (SOME_HEADER -> Some-Header)
-     *
-     * @param string $param            
-     * @return string
-     */
-    protected function headerCase($param)
-    {
-        $sentence = preg_replace('/[\W_]+/', ' ', $param);
-        return str_replace(' ', '-', ucwords(strtolower($sentence)));
-    }
-
-    /**
-     * Determine the headers based on the server parameters
-     *
-     * @return array
-     */
-    protected function determineHeaders()
-    {
-        $headers = [];
-        $params = $this->getServerParams();
-        
-        foreach ($params as $param => $value) {
-            if (\Jasny\str_starts_with($param, 'HTTP_')) {
-                $key = $this->headerCase(substr($param, 5));
-            } elseif (in_array($param, [
-                'CONTENT_TYPE',
-                'CONTENT_LENGTH'
-            ])) {
-                $key = $this->headerCase($param, 5);
-            } else {
-                continue;
-            }
-            
-            $headers[$key] = [
-                $value
-            ];
-        }
-        
-        return $headers;
-    }
 
     /**
      * Assert that the header value is a string
@@ -111,10 +69,6 @@ trait Headers
      */
     public function getHeaders()
     {
-        if (! isset($this->headers)) {
-            $this->headers = $this->determineHeaders();
-        }
-        
         return $this->headers;
     }
 
@@ -129,7 +83,6 @@ trait Headers
      */
     public function hasHeader($name)
     {
-        $key = $this->headerCase($name);
         return isset($this->getHeaders()[$key]);
     }
 
@@ -147,7 +100,6 @@ trait Headers
      */
     public function getHeader($name)
     {
-        $key = $this->headerCase($name);
         return $this->hasHeader($key) ? $this->getHeaders()[$key] : [];
     }
 
@@ -194,11 +146,9 @@ trait Headers
     {
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
-        
-        $key = $this->headerCase($name);
-        
+
         $request = clone $this;
-        $request->headers[$key] = (array) $value;
+        $request->headers[$key] = (array)$value;
         
         return $request;
     }
@@ -222,15 +172,13 @@ trait Headers
     {
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
-        
-        $key = $this->headerCase($name);
-        
+
         $request = clone $this;
         
         if (isset($this->headers[$key])) {
-            $request->headers[$key] = array_merge($request->headers[$key], (array) $value);
+            $request->headers[$key] = array_merge($request->headers[$key], (array)$value);
         } else {
-            $request->headers[$key] = (array) $value;
+            $request->headers[$key] = (array)$value;
         }
         
         return $request;
@@ -245,14 +193,10 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        if (is_string($name)) {
-            $key = $this->headerCase($name);
-        }
-        
         if (! isset($key) || ! isset($this->headers[$key])) {
             return $this;
         }
-        
+
         $request = clone $this;
         unset($request->headers[$key]);
         
