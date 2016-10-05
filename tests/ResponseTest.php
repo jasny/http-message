@@ -7,7 +7,7 @@ use Jasny\HttpMessage\Response;
 
 /**
  * @covers Jasny\HttpMessage\Response
- * @covers Jasny\HttpMessage\Response\protocolVersion
+ * @covers Jasny\HttpMessage\Response\ProtocolVersion
  * @covers Jasny\HttpMessage\Response\StatusCode
  * @covers Jasny\HttpMessage\Response\Headers
  * @covers Jasny\HttpMessage\Response\Body
@@ -17,8 +17,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     use AssertLastError;
 
     /**
-     *
-     * @var ServerRequest
+     * @var Response
      */
     protected $response;
 
@@ -42,52 +41,55 @@ class ResponseTest extends PHPUnit_Framework_TestCase
             ->getMock();
     }
 
-    public function testResponceClass()
+    
+    public function testProtocolVersionDefaultValue()
     {
-        $this->assertInstanceof(Response::class, $this->response);
+        $this->assertEquals('1.0', $this->response->getProtocolVersion());
     }
 
-    public function testResponseProtocolDefaultValue()
+    public function testProtocolVersion()
     {
-        $this->assertEquals('1.1', $this->response->getProtocolVersion());
-    }
-
-    public function testResponseProtocol()
-    {
-        $response = $this->response->withProtocolVersion('2.0');
-        $this->assertEquals('2', $response->getProtocolVersion());
+        $response20 = $this->response->withProtocolVersion('2.0');
+        $this->assertEquals('2', $response20->getProtocolVersion());
         
-        $response2 = $this->response->withProtocolVersion('1.1');
-        $this->assertEquals('1.1', $response2->getProtocolVersion());
+        $response2 = $this->response->withProtocolVersion('2');
+        $this->assertEquals('2', $response2->getProtocolVersion());
         
-        $response3 = $this->response->withProtocolVersion('1.0');
-        $this->assertEquals('1.0', $response3->getProtocolVersion());
+        $response11 = $this->response->withProtocolVersion('1.1');
+        $this->assertEquals('1.1', $response11->getProtocolVersion());
+        
+        $response10 = $this->response->withProtocolVersion('1.0');
+        $this->assertEquals('1.0', $response10->getProtocolVersion());
     }
 
-    public function testIstantResponceClass()
+    public function testWithProtocolVersionImmutable()
     {
+        $version = $this->response->getProtocolVersion();
         $response = $this->response->withProtocolVersion('1.1');
+        
         $this->assertInstanceof(Response::class, $response);
-        $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->response, $response);
+        
+        $this->assertEquals($version, $this->response->getProtocolVersion());
     }
 
-    public function testResponseProtocolFloat()
+    public function testProtocolVersionFloat()
     {
-        $response = $this->response->withProtocolVersion(2.0);
-        $this->assertEquals('2', $response->getProtocolVersion());
+        $response20 = $this->response->withProtocolVersion(2.0);
+        $this->assertEquals('2', $response20->getProtocolVersion());
         
         $response2 = $this->response->withProtocolVersion(2);
         $this->assertEquals('2', $response2->getProtocolVersion());
         
-        $response3 = $this->response->withProtocolVersion(1.1);
-        $this->assertEquals('1.1', $response3->getProtocolVersion());
+        $response11 = $this->response->withProtocolVersion(1.1);
+        $this->assertEquals('1.1', $response11->getProtocolVersion());
     }
 
     /**
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage HTTP versions 0.1 are unknown
      */
-    public function testFalseValueResponseProtocol()
+    public function testInvalidValueProtocolVersion()
     {
         $this->response->withProtocolVersion(0.1);
     }
@@ -96,14 +98,12 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage HTTP version must be a string or float
      */
-    public function testFalseTypeResponseProtocol()
+    public function testInvalidTypeProtocolVersion()
     {
-        $this->response->withProtocolVersion(array(
-            '1.0',
-            '1.1'
-        ));
+        $this->response->withProtocolVersion(['1.0', '1.1']);
     }
 
+    
     public function testHeadersEmpty()
     {
         $this->assertSame(array(), $this->response->getHeaders());
@@ -214,17 +214,17 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     /**
      * @expectedException InvalidArgumentException
      */
-    public function testWrongTypeStatusCode()
+    public function testInvalidTypeStatusCode()
     {
-        $this->expectException($this->response->withStatus(1020.20));
+        $this->response->withStatus(1020.20);
     }
 
     /**
      * @expectedException InvalidArgumentException
      */
-    public function testWrongValueStatusCode()
+    public function testInvalidValueStatusCode()
     {
-        $this->expectException($this->response->withStatus(1020));
+        $this->response->withStatus(1020);
     }
 
     public function testBody()

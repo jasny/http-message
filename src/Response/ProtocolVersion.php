@@ -4,15 +4,14 @@ namespace Jasny\HttpMessage\Response;
 /**
  * ServerRequest header methods
  */
-trait protocolVersion
+trait ProtocolVersion
 {
-
     /**
      * HTTP Response version
      *
      * @var string
      */
-    protected $version = '1.1';
+    protected $version = '1.0';
 
     /**
      * Default aviable http version
