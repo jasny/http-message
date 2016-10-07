@@ -1,13 +1,13 @@
 <?php
-namespace Jasny\HttpMessage\Response;
 
+namespace Jasny\HttpMessage\Response;
 
 /**
  * ServerRequest header methods
  */
 trait Headers
 {
-
+    
     /**
      * HTTP headers
      *
@@ -23,11 +23,11 @@ trait Headers
      */
     protected function assertHeaderName($name)
     {
-        if (! is_string($name)) {
+        if (!is_string($name)) {
             throw new \InvalidArgumentException("Header name should be a string");
         }
         
-        if (! preg_match('/^[a-zA-Z]\w*(\-\w+)*$/', $name)) {
+        if (!preg_match('/^[a-zA-Z]\w*(\-\w+)*$/', $name)) {
             throw new \InvalidArgumentException("Invalid header name '$name'");
         }
     }
@@ -40,7 +40,7 @@ trait Headers
      */
     protected function assertHeaderValue($value)
     {
-        if (! is_string($value) && (! is_array($value) || array_product(array_map('is_string', $value)) === 0)) {
+        if (!is_string($value) && (!is_array($value) || array_product(array_map('is_string', $value)) === 0)) {
             throw new \InvalidArgumentException("Header value should be a string or an array of strings");
         }
     }
@@ -146,7 +146,7 @@ trait Headers
     {
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
-
+        
         $request = clone $this;
         $request->headers[$key] = (array)$value;
         
@@ -172,7 +172,7 @@ trait Headers
     {
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
-
+        
         $request = clone $this;
         
         if (isset($this->headers[$key])) {
@@ -193,10 +193,10 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        if (! isset($key) || ! isset($this->headers[$key])) {
+        if (!isset($key) || !isset($this->headers[$key])) {
             return $this;
         }
-
+        
         $request = clone $this;
         unset($request->headers[$key]);
         

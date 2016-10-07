@@ -1,4 +1,5 @@
 <?php
+
 namespace Jasny\HttpMessage\Response;
 
 /**
@@ -11,48 +12,7 @@ trait ProtocolVersion
      *
      * @var string
      */
-    protected $version = '1.0';
-
-    /**
-     * Default aviable http version
-     * 
-     * @see https://tools.ietf.org/html/rfc1945 HTTP/1.0
-     * @see https://tools.ietf.org/html/rfc2068 HTTP/1.1
-     * @see https://tools.ietf.org/html/rfc7540 HTTP/2
-     * @var string
-     */
-    private $defVersions = array(
-        '1.0',
-        '1.1',
-        '2'
-    );
-
-    /**
-     * Set HTTP version
-     * 
-     * @param string/float $version            
-     * @throws \InvalidArgumentException
-     */
-    protected function setProtocolVersion($version)
-    {
-        if (is_numeric($version)) {
-            $version = (string) number_format($version, 1, '.', '');
-        }
-        
-        if (! is_string($version)) {
-            throw new \InvalidArgumentException("HTTP version must be a string or float");
-        }
-        
-        if ($version == '2.0') {
-            $version == '2';
-        }
-        
-        if (! in_array($version, $this->defVersions)) {
-            throw new \InvalidArgumentException("HTTP versions {$version} are unknown");
-        }
-        
-        $this->version = $version;
-    }
+    protected $protocolVersion;
 
     /**
      * Get response HTTP version
@@ -61,7 +21,11 @@ trait ProtocolVersion
      */
     public function getProtocolVersion()
     {
-        return $this->version;
+        if (!isset($this->protocolVersion)) {
+            $this->protocolVersion = $this->setProtocolVersion(reset($this->defVersions));
+        }
+        
+        return $this->protocolVersion;
     }
 
     /**
@@ -71,7 +35,7 @@ trait ProtocolVersion
      */
     public function getProtocolString()
     {
-        return 'HTTP/' + $this->version;
+        return 'HTTP/' + $this->protocolVersionn;
     }
 
     /**
@@ -86,5 +50,40 @@ trait ProtocolVersion
         $request->setProtocolVersion($version);
         
         return $request;
+    }
+
+    /**
+     * Set the HTTP protocol version.
+     *
+     * @param string $version HTTP protocol version
+     * @throws \InvalidArgumentException for invalid versions
+     */
+    protected function assertProtocolVersion($version)
+    {
+        if ($version !== "1.0" && $version !== "1.1" && $version !== "2") {
+            throw new \InvalidArgumentException("Invalid HTTP protocol version '$version'");
+        }
+    }
+
+    /**
+     * Set HTTP version
+     * 
+     * @param string/float $version            
+     * @throws \InvalidArgumentException
+     */
+    protected function setProtocolVersion($version)
+    {
+        if (is_numeric($version)) {
+            $version = (string) number_format($version, 1, '.', '');
+        }
+        
+        if ($version == '2.0') {
+            $version == '2';
+        }
+        
+        $this->assertProtocolVersion($version);
+        $this->protocolVersion = $version;
+        
+        return $this->protocolVersion;
     }
 }

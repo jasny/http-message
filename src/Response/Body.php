@@ -1,4 +1,5 @@
 <?php
+
 namespace Jasny\HttpMessage\Response;
 
 use Psr\Http\Message\StreamInterface;
@@ -9,7 +10,7 @@ use Jasny\HttpMessage\Stream;
  */
 trait Body
 {
-
+    
     /**
      *
      * @var StreamInterface
@@ -23,8 +24,8 @@ trait Body
      */
     public function getBody()
     {
-        if (! isset($this->body)) {
-            $this->body = Stream::open('file://temp', 'w+');
+        if (!isset($this->body)) {
+            $this->body = Stream::open('php://temp', 'w+');
         }
         
         return $this->body;
