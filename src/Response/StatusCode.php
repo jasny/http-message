@@ -152,7 +152,7 @@ trait StatusCode
      */
     public function withStatus($code, $reasonPhrase = '')
     {
-        $code = $this->setStatusCode($code);
+        $this->setStatusCode($code);
         if ($reasonPhrase === '' && array_key_exists($code , $this->defaultStatuses)) {
             $this->setReasonPhrase($this->defaultStatuses[$code]);
         } else {

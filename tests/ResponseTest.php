@@ -41,7 +41,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
             ->getMock();
     }
 
-    
+     
     public function testProtocolVersionDefaultValue()
     {
         $this->assertEquals('1.0', $this->response->getProtocolVersion());
@@ -49,9 +49,6 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testProtocolVersion()
     {
-        $response20 = $this->response->withProtocolVersion('2.0');
-        $this->assertEquals('2', $response20->getProtocolVersion());
-        
         $response2 = $this->response->withProtocolVersion('2');
         $this->assertEquals('2', $response2->getProtocolVersion());
         
@@ -72,31 +69,18 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         
         $this->assertEquals($version, $this->response->getProtocolVersion());
     }
-
-    public function testProtocolVersionFloat()
-    {
-        $response20 = $this->response->withProtocolVersion(2.0);
-        $this->assertEquals('2', $response20->getProtocolVersion());
-        
-        $response2 = $this->response->withProtocolVersion(2);
-        $this->assertEquals('2', $response2->getProtocolVersion());
-        
-        $response11 = $this->response->withProtocolVersion(1.1);
-        $this->assertEquals('1.1', $response11->getProtocolVersion());
-    }
-
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage HTTP versions 0.1 are unknown
+     * @expectedExceptionMessage Invalid HTTP protocol version '0.1'
      */
     public function testInvalidValueProtocolVersion()
     {
-        $this->response->withProtocolVersion(0.1);
+        $this->response->withProtocolVersion('0.1');
     }
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage HTTP version must be a string or float
+     * @expectedExceptionMessage HTTP version must be a string
      */
     public function testInvalidTypeProtocolVersion()
     {

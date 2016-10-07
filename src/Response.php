@@ -9,9 +9,10 @@ use Jasny\HttpMessage\Response;
  */
 class Response  implements ResponseInterface
 {
-    use Response\ProtocolVersion;
+    use Message\ProtocolVersion;
     use Response\StatusCode;
-    use Response\Headers;
+    use Message\Headers;
+    use Message\Body;
     use Response\Body;
 
     /**

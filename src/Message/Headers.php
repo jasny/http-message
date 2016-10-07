@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage\Response;
+namespace Jasny\HttpMessage\Message;
 
 /**
  * ServerRequest header methods
@@ -13,12 +13,12 @@ trait Headers
      *
      * @var array
      */
-    protected $headers = array();
+    protected $headers;
 
     /**
      * Assert that the header value is a string
      *
-     * @param string $name            
+     * @param string $name
      * @throws \InvalidArgumentException
      */
     protected function assertHeaderName($name)
@@ -35,7 +35,7 @@ trait Headers
     /**
      * Assert that the header value is a string
      *
-     * @param string|string[] $value            
+     * @param string|string[] $value
      * @throws \InvalidArgumentException
      */
     protected function assertHeaderValue($value)
@@ -69,6 +69,10 @@ trait Headers
      */
     public function getHeaders()
     {
+        if (!isset($this->headers)) {
+            $this->headers = array();
+        }
+        
         return $this->headers;
     }
 
@@ -83,7 +87,28 @@ trait Headers
      */
     public function hasHeader($name)
     {
-        return isset($this->getHeaders()[$key]);
+        return isset($this->getHeaders()[$name]);
+    }
+
+    /**
+     * Retrieves a comma-separated string of the values for a single header.
+     *
+     * This method returns all of the header values of the given
+     * case-insensitive header name as a string concatenated together using
+     * a comma.
+     *
+     * NOTE: Not all header values may be appropriately represented using
+     * comma concatenation. For such headers, use getHeader() instead
+     * and supply your own delimiter when concatenating.
+     *
+     * @param string $name Case-insensitive header field name.
+     * @return string A string of values as provided for the given header
+     *    concatenated together using a comma. If the header does not appear in
+     *    the message, this method returns an empty string.
+     */
+    public function getHeaderLine($name)
+    {
+        return join(',', $this->getHeader($name));
     }
 
     /**
@@ -100,29 +125,7 @@ trait Headers
      */
     public function getHeader($name)
     {
-        return $this->hasHeader($key) ? $this->getHeaders()[$key] : [];
-    }
-
-    /**
-     * Retrieves a comma-separated string of the values for a single header.
-     *
-     * This method returns all of the header values of the given
-     * case-insensitive header name as a string concatenated together using
-     * a comma.
-     *
-     * NOTE: Not all header values may be appropriately represented using
-     * comma concatenation. For such headers, use getHeader() instead
-     * and supply your own delimiter when concatenating.
-     *
-     * @param string $name
-     *            Case-insensitive header field name.
-     * @return string A string of values as provided for the given header
-     *         concatenated together using a comma. If the header does not appear in
-     *         the message, this method returns an empty string.
-     */
-    public function getHeaderLine($name)
-    {
-        return join(',', $this->getHeader($name));
+        return $this->hasHeader($name) ? $this->getHeaders()[$name] : [];
     }
 
     /**
@@ -135,10 +138,8 @@ trait Headers
      * immutability of the message, and MUST return an instance that has the
      * new and/or updated header and value.
      *
-     * @param string $name
-     *            Case-insensitive header field name.
-     * @param string|string[] $value
-     *            Header value(s).
+     * @param string $name Case-insensitive header field name.
+     * @param string|string[] $value Header value(s).
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
@@ -148,7 +149,7 @@ trait Headers
         $this->assertHeaderValue($value);
         
         $request = clone $this;
-        $request->headers[$key] = (array)$value;
+        $request->headers[$name] = (array)$value;
         
         return $request;
     }
@@ -160,10 +161,8 @@ trait Headers
      * value(s) will be appended to the existing list. If the header did not
      * exist previously, it will be added.
      *
-     * @param string $name
-     *            Case-insensitive header field name to add.
-     * @param string|string[] $value
-     *            Header value(s).
+     * @param string $name Case-insensitive header field name to add.
+     * @param string|string[] $value Header value(s).
      * @return static
      * @throws \InvalidArgumentException for invalid header names.
      * @throws \InvalidArgumentException for invalid header values.
@@ -175,10 +174,10 @@ trait Headers
         
         $request = clone $this;
         
-        if (isset($this->headers[$key])) {
-            $request->headers[$key] = array_merge($request->headers[$key], (array)$value);
+        if (isset($this->headers[$name])) {
+            $request->headers[$name] = array_merge($request->headers[$name], (array)$value);
         } else {
-            $request->headers[$key] = (array)$value;
+            $request->headers[$name] = (array)$value;
         }
         
         return $request;
@@ -187,18 +186,17 @@ trait Headers
     /**
      * Return an instance without the specified header.
      *
-     * @param string $name
-     *            Case-insensitive header field name to remove.
+     * @param string $name Case-insensitive header field name to remove.
      * @return static
      */
     public function withoutHeader($name)
     {
-        if (!isset($key) || !isset($this->headers[$key])) {
+        if (!isset($name) || !isset($this->headers[$name])) {
             return $this;
         }
         
         $request = clone $this;
-        unset($request->headers[$key]);
+        unset($request->headers[$name]);
         
         return $request;
     }

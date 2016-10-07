@@ -10,31 +10,21 @@ use Jasny\HttpMessage\Stream;
  */
 trait Body
 {
-    
     /**
-     *
-     * @var StreamInterface
+     * 
+     * @var string
      */
-    protected $body;
-
+    protected $defaultStream = 'php://temp';
     /**
-     * Gets the body of the message.
-     *
-     * @return StreamInterface Returns the body as a stream.
+     * 
+     * @var string
      */
-    public function getBody()
-    {
-        if (!isset($this->body)) {
-            $this->body = Stream::open('php://temp', 'w+');
-        }
-        
-        return $this->body;
-    }
+    protected $defaultMode = 'w+';
 
     /**
      * Set the body
      *
-     * @param StreamInterface $body            
+     * @param StreamInterface $body
      */
     protected function setBody(StreamInterface $body)
     {
@@ -53,19 +43,5 @@ trait Body
         $this->getBody()->write($string);
         
         return $this->body;
-    }
-
-    /**
-     * Return an instance with the specified message body.
-     *
-     * @param StreamInterface $body            
-     * @return static
-     */
-    public function withBody(StreamInterface $body)
-    {
-        $response = clone $this;
-        $response->setBody($body);
-        
-        return $response;
     }
 }

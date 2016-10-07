@@ -7,11 +7,7 @@ namespace Jasny\HttpMessage\ServerRequest;
  */
 trait ProtocolVersion
 {
-    /**
-     * @var string 
-     */
-    protected $protocolVersion;
-    
+    use Message\ProtocolVersion;
     
     /**
      * Get the server parameters
@@ -49,42 +45,5 @@ trait ProtocolVersion
         }
 
         return $this->protocolVersion;
-    }
-
-    /**
-     * Set the HTTP protocol version.
-     * 
-     * @param string $version HTTP protocol version
-     * @throws \InvalidArgumentException for invalid versions
-     */
-    protected function assertProtocolVersion($version)
-    {
-        if ($version != '' && $version !== "1.0" && $version !== "1.1" && $version !== "2.0") {
-            throw new \InvalidArgumentException("Invalid HTTP protocol version '$version'");
-        }
-    }
-    
-    /**
-     * Return an instance with the specified HTTP protocol version.
-     *
-     * The version string MUST contain only the HTTP version number (e.g.,
-     * "1.1", "1.0").
-     *
-     * @param string|float $version HTTP protocol version
-     * @return static
-     * @throws \InvalidArgumentException for invalid versions
-     */
-    public function withProtocolVersion($version)
-    {
-        if (is_float($version)) {
-            $version = number_format($version, 1, '.', '');
-        }
-        
-        $this->assertProtocolVersion((string)$version);
-        
-        $request = clone $this;
-        $request->protocolVersion = (string)$version;
-        
-        return $request;
     }
 }
