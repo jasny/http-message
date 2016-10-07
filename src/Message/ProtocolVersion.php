@@ -40,8 +40,8 @@ trait ProtocolVersion
      */
     protected function assertProtocolVersion($version)
     {
-        if (!is_string($version)) {
-            throw new \InvalidArgumentException("HTTP version must be a string");
+        if (!is_string($version) && !is_numeric($version)) {
+            throw new \InvalidArgumentException("HTTP version must be a string or float");
         }
         
         if ($version != '' && $version !== "1.0" && $version !== "1.1" && $version !== "2") {
@@ -61,10 +61,15 @@ trait ProtocolVersion
      */
     public function withProtocolVersion($version)
     {
+        if (is_numeric($version)) {
+            $version = number_format((float)$version, 1, '.', '');
+        }
+        if ($version === '2.0') $version = '2';
+        
         $this->assertProtocolVersion($version);
         
         $request = clone $this;
-        $request->protocolVersion = (string)$version;
+        $request->protocolVersion = $version;
         
         return $request;
     }
