@@ -46,6 +46,11 @@ trait Headers
     }
 
     /**
+     * Determine headers from $_SERVER for request
+     */
+    abstract protected function determineHeaders();
+    
+    /**
      * Retrieves all message header values.
      *
      * The keys represent the header name as it will be sent over the wire, and
@@ -70,7 +75,7 @@ trait Headers
     public function getHeaders()
     {
         if (!isset($this->headers)) {
-            $this->headers = array();
+            $this->headers = $this->determineHeaders();
         }
         
         return $this->headers;

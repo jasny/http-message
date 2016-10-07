@@ -1,4 +1,5 @@
 <?php
+
 namespace Jasny\HttpMessage;
 
 use PHPUnit_Framework_TestCase;
@@ -15,7 +16,7 @@ use Jasny\HttpMessage\Response;
 class ResponseTest extends PHPUnit_Framework_TestCase
 {
     use AssertLastError;
-
+    
     /**
      * @var Response
      */
@@ -41,21 +42,20 @@ class ResponseTest extends PHPUnit_Framework_TestCase
             ->getMock();
     }
 
-     
     public function testProtocolVersionDefaultValue()
     {
-        $this->assertEquals('1.0', $this->response->getProtocolVersion());
+        $this->assertEquals('1.1', $this->response->getProtocolVersion());
     }
 
-    public function testProtocolVersion()
+    public function testChangeProtocolVersion()
     {
         $response2 = $this->response->withProtocolVersion('2');
         $this->assertEquals('2', $response2->getProtocolVersion());
         
-        $response11 = $this->response->withProtocolVersion('1.1');
+        $response11 = $response2->withProtocolVersion('1.1');
         $this->assertEquals('1.1', $response11->getProtocolVersion());
         
-        $response10 = $this->response->withProtocolVersion('1.0');
+        $response10 = $response11->withProtocolVersion('1.0');
         $this->assertEquals('1.0', $response10->getProtocolVersion());
     }
 
@@ -69,6 +69,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         
         $this->assertEquals($version, $this->response->getProtocolVersion());
     }
+
     /**
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Invalid HTTP protocol version '0.1'
@@ -87,8 +88,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->response->withProtocolVersion(['1.0', '1.1']);
     }
 
-    
-    public function testHeadersEmpty()
+    public function testDefaultHeaders()
     {
         $this->assertSame(array(), $this->response->getHeaders());
     }
@@ -107,9 +107,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testGetHeader(Response $response)
     {
-        $this->assertEquals(array(
-            'nginx/1.6.2'
-        ), $response->getHeader('Serv'));
+        $this->assertEquals(array('nginx/1.6.2'), $response->getHeader('Serv'));
         $this->assertEquals('nginx/1.6.2', $response->getHeaderLine('Serv'));
     }
 
@@ -130,10 +128,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testHeaderMultipleValuesGetHeaderLine()
     {
-        $response = $this->response->withHeader('Data', array(
-            'bar',
-            'foo'
-        ));
+        $response = $this->response->withHeader('Data', array('bar', 'foo'));
         $this->assertEquals('bar,foo', $response->getHeaderLine('Data'));
     }
 
@@ -142,28 +137,18 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testAppendAnotherHeaders(Response $responseWithHeader)
     {
-        $response = $responseWithHeader->withHeader('Data', array(
-            'bar',
-            'foo'
-        ));
+        $response = $responseWithHeader->withHeader('Data', array('bar', 'foo'));
         $this->assertTrue($response->hasHeader('Serv'));
         $this->assertTrue($response->hasHeader('Data'));
     }
 
     public function testAppendHeadersAnotherValue()
     {
-        $response = $this->response->withHeader('Data', array(
-            'bar',
-            'foo'
-        ));
+        $response = $this->response->withHeader('Data', array('bar', 'foo'));
         
         $response = $response->withAddedHeader('Data', 'new');
         $this->assertTrue($response->hasHeader('Data'));
-        $this->assertEquals(array(
-            'bar',
-            'foo',
-            'new'
-        ), $response->getHeader('Data'));
+        $this->assertEquals(array('bar', 'foo', 'new'), $response->getHeader('Data'));
         $this->assertEquals('bar,foo,new', $response->getHeaderLine('Data'));
     }
 
@@ -187,7 +172,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->assertSame('Some unique status', $response->getReasonPhrase());
         $this->assertSame('404 Some unique status', $response->getStatusString());
     }
-    
+
     public function testNotStandardStatusCode()
     {
         $response = $this->response->withStatus(999);

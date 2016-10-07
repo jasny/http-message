@@ -13,6 +13,12 @@ trait ProtocolVersion
     protected $protocolVersion;
 
     /**
+     * Return default setted protocol for request from 
+     * $_SERVER['SERVER_PROTOCOL'] or to response 
+     */
+    abstract protected function determineProtocolVersion();
+
+    /**
      * Retrieves the HTTP protocol version as a string.
      *
      * @return string HTTP protocol version.
@@ -20,7 +26,7 @@ trait ProtocolVersion
     public function getProtocolVersion()
     {
         if (!isset($this->protocolVersion)) {
-            $this->protocolVersion = '1.0';
+            $this->protocolVersion = $this->determineProtocolVersion();
         }
         
         return $this->protocolVersion;
@@ -34,7 +40,7 @@ trait ProtocolVersion
      */
     protected function assertProtocolVersion($version)
     {
-        if (!is_string($version)){
+        if (!is_string($version)) {
             throw new \InvalidArgumentException("HTTP version must be a string");
         }
         

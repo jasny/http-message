@@ -2,21 +2,22 @@
 
 namespace Jasny\HttpMessage\ServerRequest;
 
+use Jasny\HttpMessage\Message;
+
 /**
  * ServerRequest protocol version methods
  */
 trait ProtocolVersion
 {
     use Message\ProtocolVersion;
-    
+
     /**
      * Get the server parameters
      * 
      * @return array
      */
     abstract public function getServerParams();
-    
-    
+
     /**
      * Determine the protocol versions based on the server params
      * 
@@ -31,19 +32,5 @@ trait ProtocolVersion
         }
         
         return isset($protocol) && $protocol === 'HTTP' ? $version : "1.0";
-    }
-    
-    /**
-     * Retrieves the HTTP protocol version as a string.
-     *
-     * @return string HTTP protocol version.
-     */
-    public function getProtocolVersion()
-    {
-        if (!isset($this->protocolVersion)) {
-            $this->protocolVersion = $this->determineProtocolVersion();
-        }
-
-        return $this->protocolVersion;
     }
 }

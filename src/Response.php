@@ -1,7 +1,8 @@
 <?php
+
 namespace Jasny\HttpMessage;
 
-use Psr\Http\Message\ResponseInterface; 
+use Psr\Http\Message\ResponseInterface;
 use Jasny\HttpMessage\Response;
 
 /**
@@ -19,4 +20,4 @@ class Response implements ResponseInterface
      */
     public function __construct()
     {}
-}
+} 
