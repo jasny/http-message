@@ -2,22 +2,26 @@
 
 namespace Jasny\HttpMessage\ServerRequest;
 
+use Psr\Http\Message\StreamInterface;
+use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\Message;
+
 /**
  * ServerRequest body methods
  */
 trait Body
 {
     use Message\Body;
+
     /**
-     *
-     * @var string
+     * Create the default body stream
+     * 
+     * @return Stream
      */
-    protected $defaultStream = 'data://text/plain,';
-    /**
-     *
-     * @var string
-     */
-    protected $defaultMode = 'r';
+    protected function createDefaultBody()
+    {
+        return Stream::open('data://text/plain,', 'r');
+    }
 
     /**
      * Reset the parsed body, excepted if it was explicitly set

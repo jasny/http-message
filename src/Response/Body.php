@@ -4,38 +4,29 @@ namespace Jasny\HttpMessage\Response;
 
 use Psr\Http\Message\StreamInterface;
 use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\Message;
 
 /**
  * ServerRequest body methods
  */
 trait Body
 {
-    /**
-     * 
-     * @var string
-     */
-    protected $defaultStream = 'php://temp';
-    /**
-     * 
-     * @var string
-     */
-    protected $defaultMode = 'w+';
+    use Message\Body;
 
     /**
-     * Set the body
-     *
-     * @param StreamInterface $body
+     * Create the default body stream
+     * 
+     * @return Stream
      */
-    protected function setBody(StreamInterface $body)
+    protected function createDefaultBody()
     {
-        $this->body = $body;
+        return Stream::open('php://temp', 'w+');
     }
 
     /**
      * Append to body
      *
-     * @param
-     *            $string
+     * @param string $string
      * @return StreamInterface Returns the body as a stream.
      */
     protected function appendToBody($string)

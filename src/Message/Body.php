@@ -14,6 +14,14 @@ trait Body
      * @var StreamInterface
      */
     protected $body;
+
+    /**
+     * Create the default body stream
+     * 
+     * @return Stream
+     */
+    abstract protected function createDefaultBody();
+    
     /**
      * Gets the body of the message.
      *
@@ -22,12 +30,22 @@ trait Body
     public function getBody()
     {
         if (!isset($this->body)) {
-            $this->body = Stream::open($this->defaultStream, $this->defaultMode);
+            $this->body = $this->createDefaultBody();
         }
         
         return $this->body;
     }
 
+    /**
+     * Set the body
+     *
+     * @param StreamInterface $body
+     */
+    protected function setBody(StreamInterface $body)
+    {
+        $this->body = $body;
+    }
+    
     /**
      * Return an instance with the specified message body.
      *
