@@ -7,12 +7,11 @@ use Jasny\HttpMessage\Response;
 /**
  * Http response
  */
-class Response  implements ResponseInterface
+class Response implements ResponseInterface
 {
-    use Message\ProtocolVersion;
+    use Response\ProtocolVersion;
     use Response\StatusCode;
-    use Message\Headers;
-    use Message\Body;
+    use Response\Headers;
     use Response\Body;
 
     /**

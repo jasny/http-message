@@ -12,11 +12,8 @@ class ServerRequest implements ServerRequestInterface
 {
     use ServerRequest\GlobalEnvironment;
     use ServerRequest\ServerParams;
-    use Message\ProtocolVersion;
     use ServerRequest\ProtocolVersion;
-    use Message\Headers;
     use ServerRequest\Headers;
-    use Message\Body;
     use ServerRequest\Body;
     use ServerRequest\RequestTarget;
     use ServerRequest\Method;
