@@ -80,7 +80,7 @@ trait StatusCode
      */
     protected function setStatusCode($code)
     {
-        if (! is_int($code)) {
+        if (!is_int($code)) {
             throw new \InvalidArgumentException("Response code must be integer");
         }
         
@@ -99,7 +99,7 @@ trait StatusCode
      */
     protected function setReasonPhrase($phrase)
     {
-        if (! is_string($phrase)) {
+        if (!is_string($phrase)) {
             throw new \InvalidArgumentException("Response message must be a string");
         }
         $this->phrase = $phrase;
