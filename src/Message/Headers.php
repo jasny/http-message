@@ -92,7 +92,7 @@ trait Headers
      */
     public function hasHeader($name)
     {
-        return (in_array(strtolower($name), array_change_key_case($this->getHeaders())));
+        return in_array(strtolower($name), array_map('strtolower', array_keys($this->getHeaders())));
     }
 
     /**
@@ -228,16 +228,10 @@ trait Headers
     {
         $request = clone $this;
         
-        if (!isset($name)) {
-            return $request;
-        }
-        
         $oldName = $this->getHeaderCaseSensetiveKey($name);
-        if (!isset($oldName)) {
-            return $request;
+        if (isset($oldName)) {
+            unset($request->headers[$oldName]);
         }
-        
-        unset($request->headers[$oldName]);
         
         return $request;
     }
