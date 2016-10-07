@@ -49,7 +49,7 @@ trait Headers
      * Determine headers from $_SERVER for request
      */
     abstract protected function determineHeaders();
-    
+
     /**
      * Retrieves all message header values.
      *
@@ -92,7 +92,7 @@ trait Headers
      */
     public function hasHeader($name)
     {
-        return isset($this->getHeaders()[$name]);
+        return (in_array(strtolower($name), array_change_key_case($this->getHeaders())));
     }
 
     /**
@@ -130,7 +130,37 @@ trait Headers
      */
     public function getHeader($name)
     {
-        return $this->hasHeader($name) ? $this->getHeaders()[$name] : [];
+        $value = [];
+        $headers = $this->getHeaders();
+        $originalName = $this->getHeaderCaseSensetiveKey($name);
+        if ($originalName !== false) {
+            $value = $headers[$originalName];
+        }
+        
+        return $value;
+    }
+
+    /**
+     * Return Case-sensitive name of existed header. This function are uses 
+     * for the getting header value and create/change header values
+     *
+     *  @param string $name
+     *              Case-insensitive name of header
+     *  @return string/float  
+     */
+    protected function getHeaderCaseSensetiveKey($name)
+    {
+        if (!$this->hasHeader($name)) {
+            return false;
+        }
+        
+        foreach ($this->getHeaders() as $k => $v) {
+            if (strtolower($name) == strtolower($k)) {
+                return $k;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -153,7 +183,7 @@ trait Headers
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
         
-        $request = clone $this;
+        $request = $this->withoutHeader($name);
         $request->headers[$name] = (array)$value;
         
         return $request;
@@ -178,9 +208,9 @@ trait Headers
         $this->assertHeaderValue($value);
         
         $request = clone $this;
-        
-        if (isset($this->headers[$name])) {
-            $request->headers[$name] = array_merge($request->headers[$name], (array)$value);
+        $oldName = $this->getHeaderCaseSensetiveKey($name);
+        if ($oldName !== false) {
+            $request->headers[$oldName] = array_merge($request->headers[$oldName], (array)$value);
         } else {
             $request->headers[$name] = (array)$value;
         }
@@ -196,12 +226,18 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        if (!isset($name) || !isset($this->headers[$name])) {
-            return $this;
+        $request = clone $this;
+        
+        if (!isset($name)) {
+            return $request;
         }
         
-        $request = clone $this;
-        unset($request->headers[$name]);
+        $oldName = $this->getHeaderCaseSensetiveKey($name);
+        if (!isset($oldName)) {
+            return $request;
+        }
+        
+        unset($request->headers[$oldName]);
         
         return $request;
     }
