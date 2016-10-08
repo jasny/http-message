@@ -2,7 +2,6 @@
 
 namespace Jasny\HttpMessage\Header;
 
-
 /**
  * HTTP messages consist of requests from a client to a server and responses
  * from a server to a client. This interface defines the methods for 
@@ -15,7 +14,7 @@ namespace Jasny\HttpMessage\Header;
  * @link http://www.ietf.org/rfc/rfc7230.txt
  * @link http://www.ietf.org/rfc/rfc7231.txt
  */
-interface HeaderInterface
+interface HeadersInterface
 {
 
     /**

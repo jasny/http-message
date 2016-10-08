@@ -25,7 +25,6 @@ trait Headers
      */
     protected function determineHeaders()
     {
-        $headers = [];
         $params = $this->getServerParams();
         
         foreach ($params as $param => $value) {
