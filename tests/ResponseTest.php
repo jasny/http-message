@@ -5,6 +5,7 @@ namespace Jasny\HttpMessage;
 use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\Tests\AssertLastError;
 use Jasny\HttpMessage\Response;
+use Jasny\HttpMessage\Headers as HeaderObject;
 
 /**
  * @covers Jasny\HttpMessage\Response
@@ -24,12 +25,12 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->response = new Response();
+        $refl = new \ReflectionProperty(Response::class, 'headers');
+        $refl->setAccessible(true);
         
-        $refl = new \ReflectionClass($this->response);
-        $headers = $refl->getProperty('headers');
-        $headers->setAccessible(true);
-        $headers->setValue($this->response, $this->getSimpleMock(Headers::class));
+        $this->response = new Response();
+        $refl->setValue($this->response, $this->getSimpleMock(HeaderObject::class));
+        $this->response->initHeaders();
     }
 
     /**
@@ -142,7 +143,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $newRequest = $this->response->withHeader('Foo', 'Baz');
         
         $this->assertTrue($newRequest->hasHeader('Foo'));
-        $this->assertSame('Baz', $newRequest->getHeader('Foo'));
+        $this->assertSame(['Baz'], $newRequest->getHeader('Foo'));
         
         return $newRequest;
     }
@@ -153,10 +154,10 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testHeadersAppend(Response $request)
     {
-        $secondRequest = $request->withAddHeader('Qux', 'white');
-        $this->assertTrue($newRequest->hasHeader('Foo'));
-        $this->assertTrue($newRequest->hasHeader('Qux'));
-        $this->assertSame(['white'], $newRequest->getHeader('Qux'));
+        $secondRequest = $request->withAddedHeader('Qux', 'white');
+        $this->assertTrue($secondRequest->hasHeader('Foo'));
+        $this->assertTrue($secondRequest->hasHeader('Qux'));
+        $this->assertSame(['white'], $secondRequest->getHeader('Qux'));
         
         return $secondRequest;
     }
@@ -168,8 +169,8 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     public function testRemoveHeaders(Response $request)
     {
         $secondRequest = $request->withoutHeader('Foo');
-        $this->assertFalse($newRequest->hasHeader('Foo'));
-        $this->assertTrue($newRequest->hasHeader('Qux'));
+        $this->assertFalse($secondRequest->hasHeader('Foo'));
+        $this->assertTrue($secondRequest->hasHeader('Qux'));
     }
 
     /**
@@ -178,7 +179,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testNotExistHeaders(Response $request)
     {
-        $this->assertFalse($newRequest->hasHeader('not-exist'));
+        $this->assertFalse($request->hasHeader('not-exist'));
     }
 
     /**
@@ -188,9 +189,9 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     public function testAppendValueToHeaders(Response $request)
     {
         $secondRequest = $request->withAddedHeader('Qux', 'blue');
-        $this->assertTrue($newRequest->hasHeader('Foo'));
-        $this->assertTrue($newRequest->hasHeader('Qux'));
-        $this->assertSame(['white', 'blue'], $newRequest->getHeader('Qux'));
+        $this->assertTrue($secondRequest->hasHeader('Foo'));
+        $this->assertTrue($secondRequest->hasHeader('Qux'));
+        $this->assertSame(['white', 'blue'], $secondRequest->getHeader('Qux'));
         
         return $secondRequest;
     }
@@ -201,7 +202,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testHeaderLine(Response $request)
     {
-        $this->assertSame('white, blue', $newRequest->getHeaderLine('Qux'));
+        $this->assertSame('white, blue', $request->getHeaderLine('Qux'));
     }
 
     public function testBody()

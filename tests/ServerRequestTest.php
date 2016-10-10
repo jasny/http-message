@@ -9,6 +9,7 @@ use Jasny\HttpMessage\Stream;
 use Jasny\HttpMessage\Uri;
 use Jasny\HttpMessage\UploadedFile;
 use Jasny\HttpMessage\DerivedAttribute;
+use Jasny\HttpMessage\Headers as HeaderObject;
 
 /**
  * @covers Jasny\HttpMessage\ServerRequest
@@ -36,7 +37,12 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
+        $refl = new \ReflectionProperty(ServerRequest::class, 'headers');
+        $refl->setAccessible(true);
+        
         $this->baseRequest = new ServerRequest();
+        $refl->setValue($this->baseRequest, $this->getSimpleMock(HeaderObject::class));
+        $this->baseRequest->initHeaders();
     }
 
     /**
@@ -243,32 +249,15 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->baseRequest->withProtocolVersion('0.2');
     }
 
-    public function testHeadersObject()
+    public function testHeadersAdd()
     {
-        $this->assertInstanceOf(Headers::class, $this->baseRequest->headers);
-    }
-
-    public function testHeadersMock()
-    {
-        //Create mock object of Headers
-        $request->header = $this->getSimpleMock('Headers');
-        $this->assertInstanceOf(Headers::class, $request->headers);
+        $secondRequest = $this->baseRequest->withHeader('Foo', 'Baz');
         
-        return $request;
-    }
-
-    /**
-     * @depends testHeadersMock
-     */
-    public function testHeadersAdd(ServerRequest $request)
-    {
-        $newRequest = $request->withHeader('Foo', 'Baz');
+        $this->assertInstanceOf(ServerRequest::class, $secondRequest);
+        $this->assertTrue($secondRequest->hasHeader('Foo'));
+        $this->assertSame(['Baz'], $secondRequest->getHeader('Foo'));
         
-        $this->assertInstanceOf(Headers::class, $newRequest->headers);
-        $this->assertTrue($newRequest->hasHeader('Foo'));
-        $this->assertSame('Baz', $newRequest->getHeader('Foo'));
-        
-        return $newRequest;
+        return $secondRequest;
     }
 
     /**
@@ -277,10 +266,12 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
      */
     public function testHeadersAppend(ServerRequest $request)
     {
-        $secondRequest = $request->withAddHeader('Qux', 'white');
-        $this->assertTrue($newRequest->hasHeader('Foo'));
-        $this->assertTrue($newRequest->hasHeader('Qux'));
-        $this->assertSame(['white'], $newRequest->getHeader('Qux'));
+        $secondRequest = $request->withAddedHeader('Qux', 'white');
+        
+        $this->assertInstanceOf(ServerRequest::class, $secondRequest);
+        $this->assertTrue($secondRequest->hasHeader('Foo'));
+        $this->assertTrue($secondRequest->hasHeader('Qux'));
+        $this->assertSame(['white'], $secondRequest->getHeader('Qux'));
         
         return $secondRequest;
     }
@@ -292,8 +283,24 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     public function testRemoveHeaders(ServerRequest $request)
     {
         $secondRequest = $request->withoutHeader('Foo');
-        $this->assertFalse($newRequest->hasHeader('Foo'));
-        $this->assertTrue($newRequest->hasHeader('Qux'));
+        
+        $this->assertInstanceOf(ServerRequest::class, $secondRequest);
+        $this->assertFalse($secondRequest->hasHeader('Foo'));
+        $this->assertTrue($secondRequest->hasHeader('Qux'));
+    }
+
+    /**
+     *
+     * @depends testHeadersAppend
+     */
+    public function testRemoveNotExistsHeaders(ServerRequest $request)
+    {
+        $secondRequest = $request->withoutHeader('Not-exists');
+        
+        $this->assertInstanceOf(ServerRequest::class, $secondRequest);
+        $this->assertTrue($secondRequest->hasHeader('Foo'));
+        $this->assertTrue($secondRequest->hasHeader('Qux'));
+        $this->assertEquals($request, $secondRequest);
     }
 
     /**
@@ -302,7 +309,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
      */
     public function testNotExistHeaders(ServerRequest $request)
     {
-        $this->assertFalse($newRequest->hasHeader('not-exist'));
+        $this->assertFalse($request->hasHeader('not-exist'));
     }
 
     /**
@@ -312,9 +319,9 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     public function testAppendValueToHeaders(ServerRequest $request)
     {
         $secondRequest = $request->withAddedHeader('Qux', 'blue');
-        $this->assertTrue($newRequest->hasHeader('Foo'));
-        $this->assertTrue($newRequest->hasHeader('Qux'));
-        $this->assertSame(['white', 'blue'], $newRequest->getHeader('Qux'));
+        $this->assertTrue($secondRequest->hasHeader('Foo'));
+        $this->assertTrue($secondRequest->hasHeader('Qux'));
+        $this->assertSame(['white', 'blue'], $secondRequest->getHeader('Qux'));
         
         return $secondRequest;
     }
@@ -325,7 +332,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
      */
     public function testHeaderLine(ServerRequest $request)
     {
-        $this->assertSame('white, blue', $newRequest->getHeaderLine('Qux'));
+        $this->assertSame('white, blue', $request->getHeaderLine('Qux'));
     }
 
     public function testGetBodyDefault()
@@ -473,7 +480,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertNotSame($this->baseRequest, $request);
         
         $this->assertSame($uri, $request->getUri());
-        $this->markTestIncomplete('Need implement Headers');
         $this->assertEquals(['www.example.com'], $request->getHeader('Host'));
     }
 
@@ -489,7 +495,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertNotSame($this->baseRequest, $request);
         
         $this->assertSame($uri, $request->getUri());
-        $this->markTestIncomplete('Need implement Headers');
         $this->assertEquals([], $request->getHeader('Host'));
     }
 

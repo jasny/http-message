@@ -31,6 +31,7 @@ class ServerRequest implements ServerRequestInterface
     public function __construct()
     {
         $this->createDerivedAttributes();
+        $this->initHeaders();
     }
     
     /**

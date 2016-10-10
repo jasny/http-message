@@ -126,7 +126,7 @@ class Headers implements HeadersInterface
      */
     public function getHeaderLine($name)
     {
-        return join(',', $this->getHeader($name));
+        return join(', ', $this->getHeader($name));
     }
 
     /**

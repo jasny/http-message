@@ -19,5 +19,7 @@ class Response implements ResponseInterface
      * Class constructor
      */
     public function __construct()
-    {}
+    {
+        $this->initHeaders();
+    }
 } 
