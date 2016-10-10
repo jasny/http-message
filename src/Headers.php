@@ -2,7 +2,7 @@
 
 namespace Jasny\HttpMessage;
 
-use Jasny\HttpMessage\Header\HeadersInterface;
+use Jasny\HttpMessage\Headers\HeadersInterface;
 
 /**
  * ServerRequest header methods
