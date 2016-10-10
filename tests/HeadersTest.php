@@ -38,6 +38,8 @@ class HeadersTest extends PHPUnit_Framework_TestCase
         
         $this->assertEquals(['Foo-Zoo' => ['red & blue']], $request->getHeaders());
         
+        $this->assertTrue($request->hasHeader('Foo-Zoo'));
+        
         return $request;
     }
 
@@ -58,8 +60,7 @@ class HeadersTest extends PHPUnit_Framework_TestCase
      */
     public function testHasHeaderCaseSensetive(Headers $request)
     {
-        $this->assertTrue($request->hasHeader('FoO'));
-        $this->assertTrue($request->hasHeader('foo'));
+        $this->assertTrue($request->hasHeader('Foo-Zoo'));
     }
 
     /**
@@ -87,6 +88,7 @@ class HeadersTest extends PHPUnit_Framework_TestCase
      */
     public function testWithAddedHeader(Headers $origRequest)
     {
+        $this->assertTrue($origRequest->hasHeader('Foo-Zoo'));
         $request = $origRequest->withAddedHeader('foo-zoo', 'silver & gold');
         
         $this->assertInstanceof(Headers::class, $request);
@@ -116,7 +118,7 @@ class HeadersTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Header name should be a string
+     * @expectedExceptionMessage Header name must be a string
      */
     public function testWithHeaderArrayAsName()
     {
@@ -143,7 +145,7 @@ class HeadersTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Header name should be a string
+     * @expectedExceptionMessage Header name must be a string
      */
     public function testWithAddedHeaderArrayAsName()
     {
@@ -190,7 +192,7 @@ class HeadersTest extends PHPUnit_Framework_TestCase
      */
     public function testGetHeaderLineOneValue(Headers $request)
     {
-        $this->assertEquals('red & blue', $request->getHeaderLine('FoO'));
+        $this->assertEquals('red & blue', $request->getHeaderLine('FoO-zoo'));
     }
 
     /**
@@ -200,7 +202,7 @@ class HeadersTest extends PHPUnit_Framework_TestCase
     {
         $request = $origRequest->withAddedHeader('foo-zoo', 'silver & gold');
         
-        $this->assertEquals('red & blue, silver & gold', $request->getHeaderLine('FoO'));
+        $this->assertEquals('red & blue, silver & gold', $request->getHeaderLine('FoO-zoo'));
     }
 
     public function testGetHeaderLineNotExists()

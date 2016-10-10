@@ -27,7 +27,7 @@ class Headers implements HeadersInterface
     {
         $this->headers = [];
         foreach ($incomingArray as $key => $value) {
-            $this->headers[] = [$key => $value];
+            $this->headers[strtolowers($key)] = ['k' => $key, 'v' => $value];
         }
         
         return $this;
@@ -87,11 +87,12 @@ class Headers implements HeadersInterface
      */
     public function getHeaders()
     {
-        if (!isset($this->headers)) {
-            $this->headers = $this->determineHeaders();
+        $headers = [];
+        foreach ($this->headers as $name => $a) {
+            $headers[$a['k']] = $a['v'];
         }
         
-        return $this->headers;
+        return $headers;
     }
 
     /**
@@ -105,7 +106,7 @@ class Headers implements HeadersInterface
      */
     public function hasHeader($name)
     {
-        return in_array(strtolower($name), array_map('strtolower', array_keys($this->getHeaders())));
+        return isset($this->headers[strtolower($name)]);
     }
 
     /**
@@ -143,37 +144,13 @@ class Headers implements HeadersInterface
      */
     public function getHeader($name)
     {
-        $value = [];
-        $headers = $this->getHeaders();
-        $originalName = $this->getHeaderCaseSensetiveKey($name);
-        if ($originalName !== false) {
-            $value = $headers[$originalName];
-        }
+        $this->assertHeaderName($name);
         
-        return $value;
-    }
-
-    /**
-     * Return Case-sensitive name of existed header. This function are uses 
-     * for the getting header value and create/change header values
-     *
-     *  @param string $name
-     *              Case-insensitive name of header
-     *  @return string|float  
-     */
-    protected function getHeaderCaseSensetiveKey($name)
-    {
-        if (!$this->hasHeader($name)) {
-            return false;
+        $return = [];
+        if (isset($this->headers[strtolower($name)])) {
+            $return = $this->headers[strtolower($name)]['v'];
         }
-        
-        foreach ($this->getHeaders() as $k => $v) {
-            if (strtolower($name) == strtolower($k)) {
-                return $k;
-            }
-        }
-        
-        return false;
+        return $return;
     }
 
     /**
@@ -196,8 +173,8 @@ class Headers implements HeadersInterface
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
         
-        $request = $this->withoutHeader($name);
-        $request->headers[$name] = (array)$value;
+        $request = clone $this;
+        $request->headers[strtolower($name)] = ['k' => $name, 'v' => (array)$value];
         
         return $request;
     }
@@ -221,11 +198,10 @@ class Headers implements HeadersInterface
         $this->assertHeaderValue($value);
         
         $request = clone $this;
-        $oldName = $this->getHeaderCaseSensetiveKey($name);
-        if ($oldName !== false) {
-            $request->headers[$oldName] = array_merge($request->headers[$oldName], (array)$value);
+        if (isset($request->headers[strtolower($name)])) {
+            array_push($request->headers[strtolower($name)]['v'], $value);
         } else {
-            $request->headers[$name] = (array)$value;
+            $request->headers[strtolower($name)] = ['k' => $name, 'v' => (array)$value];
         }
         
         return $request;
@@ -241,13 +217,11 @@ class Headers implements HeadersInterface
     {
         $this->assertHeaderName($name);
         
-        $request = $this;
-        
-        $oldName = $this->getHeaderCaseSensetiveKey($name);
-        if (isset($oldName)) {
-            $request = clone $this;
-            unset($request->headers[$oldName]);
+        if (!isset($this->headers[strtolower($name)])) {
+            return $this;
         }
+        $request = clone $this;
+        unset($request->headers[strtolower($name)]);
         
         return $request;
     }
