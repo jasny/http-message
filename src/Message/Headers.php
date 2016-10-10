@@ -45,7 +45,7 @@ trait Headers
     public function getHeaders()
     {
         if (!isset($this->headers)) {
-            $this->headers = new Headers($this->determineHeaders());
+            $this->headers = new \Jasny\HttpMessage\Headers($this->determineHeaders());
         }
         
         return $this->headers->getHeaders();
@@ -62,6 +62,7 @@ trait Headers
      */
     public function hasHeader($name)
     {
+        $this->getHeaders();
         return $this->headers->hasHeader($name);
     }
 
@@ -83,6 +84,7 @@ trait Headers
      */
     public function getHeaderLine($name)
     {
+        $this->getHeaders();
         return $this->headers->getHeaderLine($name);
     }
 
@@ -100,6 +102,7 @@ trait Headers
      */
     public function getHeader($name)
     {
+        $this->getHeaders();
         return $this->header->getHeader($name);
     }
 
@@ -120,9 +123,10 @@ trait Headers
      */
     public function withHeader($name, $value)
     {
+        $this->getHeaders();
         $clone = clone $this;
         
-        $clone->headers = $this->headers->withHeaders($name, $value);
+        $clone->headers = $this->headers->withHeader($name, $value);
         return $clone;
     }
 
@@ -141,6 +145,7 @@ trait Headers
      */
     public function withAddedHeader($name, $value)
     {
+        $this->getHeaders();
         $clone = clone $this;
         
         $clone->headers = $this->headers->withAddedHeader($name, $value);
@@ -155,6 +160,7 @@ trait Headers
      */
     public function withoutHeader($name)
     {
+        $this->getHeaders();
         $clone = clone $this;
         
         $clone->headers = $this->headers->withoutHeader($name, $value);
