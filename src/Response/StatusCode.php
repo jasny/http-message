@@ -76,7 +76,8 @@ trait StatusCode
      * Turn upper case param into header case.
      * (SOME_HEADER -> Some-Header)
      *
-     * @param string $param            
+     * @param string $code
+     * @return void
      */
     protected function setStatusCode($code)
     {
@@ -94,8 +95,7 @@ trait StatusCode
     /**
      * Function to set Status phrase
      *
-     * @param
-     *            string
+     * @param string $phrase
      */
     protected function setReasonPhrase($phrase)
     {
@@ -153,7 +153,7 @@ trait StatusCode
     public function withStatus($code, $reasonPhrase = '')
     {
         $this->setStatusCode($code);
-        if ($reasonPhrase === '' && array_key_exists($code , $this->defaultStatuses)) {
+        if ($reasonPhrase === '' && array_key_exists($code, $this->defaultStatuses)) {
             $this->setReasonPhrase($this->defaultStatuses[$code]);
         } else {
             $this->setReasonPhrase($reasonPhrase);

@@ -15,6 +15,8 @@ trait ProtocolVersion
     /**
      * Return default setted protocol for request from 
      * $_SERVER['SERVER_PROTOCOL'] or to response 
+     * 
+     * @return string
      */
     abstract protected function determineProtocolVersion();
 
@@ -64,7 +66,9 @@ trait ProtocolVersion
         if (is_numeric($version)) {
             $version = number_format((float)$version, 1, '.', '');
         }
-        if ($version === '2.0') $version = '2';
+        if ($version === '2.0') {
+            $version = '2';
+        }
         
         $this->assertProtocolVersion($version);
         

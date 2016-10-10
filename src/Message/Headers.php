@@ -47,6 +47,8 @@ trait Headers
 
     /**
      * Determine headers from $_SERVER for request
+     * 
+     * @return array headers array with structure $key => array $value 
      */
     abstract protected function determineHeaders();
 
@@ -146,7 +148,7 @@ trait Headers
      *
      *  @param string $name
      *              Case-insensitive name of header
-     *  @return string/float  
+     *  @return string|float  
      */
     protected function getHeaderCaseSensetiveKey($name)
     {
