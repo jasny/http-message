@@ -25,6 +25,11 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->response = new Response();
+        
+        $refl = new \ReflectionClass($this->response);
+        $headers = $refl->getProperty('headers');
+        $headers->setAccessible(true);
+        $headers->setValue($this->response, $this->getSimpleMock(Headers::class));
     }
 
     /**
@@ -130,6 +135,73 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     public function testInvalidValueStatusCode()
     {
         $this->response->withStatus(1020);
+    }
+
+    public function testHeadersAdd()
+    {
+        $newRequest = $this->response->withHeader('Foo', 'Baz');
+        
+        $this->assertTrue($newRequest->hasHeader('Foo'));
+        $this->assertSame('Baz', $newRequest->getHeader('Foo'));
+        
+        return $newRequest;
+    }
+
+    /**
+     *
+     * @depends testHeadersAdd
+     */
+    public function testHeadersAppend(Response $request)
+    {
+        $secondRequest = $request->withAddHeader('Qux', 'white');
+        $this->assertTrue($newRequest->hasHeader('Foo'));
+        $this->assertTrue($newRequest->hasHeader('Qux'));
+        $this->assertSame(['white'], $newRequest->getHeader('Qux'));
+        
+        return $secondRequest;
+    }
+
+    /**
+     *
+     * @depends testHeadersAppend
+     */
+    public function testRemoveHeaders(Response $request)
+    {
+        $secondRequest = $request->withoutHeader('Foo');
+        $this->assertFalse($newRequest->hasHeader('Foo'));
+        $this->assertTrue($newRequest->hasHeader('Qux'));
+    }
+
+    /**
+     *
+     * @depends testHeadersAppend
+     */
+    public function testNotExistHeaders(Response $request)
+    {
+        $this->assertFalse($newRequest->hasHeader('not-exist'));
+    }
+
+    /**
+     *
+     * @depends testHeadersAppend
+     */
+    public function testAppendValueToHeaders(Response $request)
+    {
+        $secondRequest = $request->withAddedHeader('Qux', 'blue');
+        $this->assertTrue($newRequest->hasHeader('Foo'));
+        $this->assertTrue($newRequest->hasHeader('Qux'));
+        $this->assertSame(['white', 'blue'], $newRequest->getHeader('Qux'));
+        
+        return $secondRequest;
+    }
+
+    /**
+     *
+     * @depends testAppendValueToHeaders
+     */
+    public function testHeaderLine(Response $request)
+    {
+        $this->assertSame('white, blue', $newRequest->getHeaderLine('Qux'));
     }
 
     public function testBody()
