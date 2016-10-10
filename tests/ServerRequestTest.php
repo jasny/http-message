@@ -1147,7 +1147,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithAttributeAsObject()
     {
-        $attribute = $this->createMock(DerivedAttribute::class);
+        $attribute = $this->getMock(DerivedAttribute::class);
         $request = $this->baseRequest->withAttribute('foo', $attribute);
         
         $attribute->expects($this->once())->method('__invoke')
