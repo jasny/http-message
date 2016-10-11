@@ -259,26 +259,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->assertSame([], $headers);
     }
     
-    public function testDetermineHeaders()
-    {
-        $request = $this->baseRequest->withServerParams([
-            'SERVER_PROTOCOL' => 'HTTP/1.1',
-            'CONTENT_TYPE' => 'text/plain',
-            'CONTENT_LENGTH' => '20',
-            'HTTP_HOST' => 'example.com',
-            'HTTP_X_FOO' => 'bar',
-            'HTTP_CONTENT_TYPE' => 'text/plain',
-            'HTTPS' => 1
-        ]);
-        
-        $this->assertEquals([
-            'CONTENT_TYPE' => ['text/plain'],
-            'CONTENT_LENGTH' => ['20'],
-            'HOST' => ['example.com'],
-            'X_FOO' => ['bar']
-        ], $request->getHeaders());
-    }
-    
     public function testWithHeader()
     {
         $request = $this->baseRequest->withHeader('Foo-Zoo', 'red & blue');
@@ -313,7 +293,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
             'Foo-Zoo' => ['red & blue'],
             'Qux' => ['white']
         ], $request->getHeaders());
-        return $secondRequest;
+        return $request;
     }
     
     /**
@@ -327,29 +307,33 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     /**
      * 
-     * @depends testHeadersAdd
+     * @depends testWithHeader
      */
     public function testHeadersAppend(ServerRequest $request)
     {
         $secondRequest = $request->withAddedHeader('Qux', 'white');
         
         $this->assertInstanceOf(ServerRequest::class, $secondRequest);
-        $this->assertTrue($secondRequest->hasHeader('Foo'));
+        $this->assertNotSame($request, $secondRequest);
+        $this->assertTrue($secondRequest->hasHeader('Foo-Zoo'));
         $this->assertTrue($secondRequest->hasHeader('Qux'));
         $this->assertSame(['white'], $secondRequest->getHeader('Qux'));
         
         return $secondRequest;
     }
 
-    
-    public function testWithAddedHeaderNew()
+    /**
+     *
+     * @depends testHeadersAppend
+     */
+    public function testAppendValueToHeaders(ServerRequest $request)
     {
-        $request = $this->baseRequest->withAddedHeader('Qux', 'white');
-        
-        $this->assertInstanceof(ServerRequest::class, $request);
-        $this->assertNotSame($this->baseRequest, $request);
-        
-        $this->assertEquals(['Qux' => ['white']], $request->getHeaders());
+        $secondRequest = $request->withAddedHeader('Qux', 'blue');
+        $this->assertTrue($secondRequest->hasHeader('Foo-Zoo'));
+        $this->assertTrue($secondRequest->hasHeader('Qux'));
+        $this->assertSame(['white', 'blue'], $secondRequest->getHeader('Qux'));
+    
+        return $secondRequest;
     }
     
     /**
@@ -358,11 +342,13 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
      */
     public function testRemoveHeaders(ServerRequest $request)
     {
-        $secondRequest = $request->withoutHeader('Foo');
+        $this->assertTrue($request->hasHeader('Foo-Zoo'));
+        
+        $secondRequest = $request->withoutHeader('Foo-Zoo');
         $this->assertInstanceOf(ServerRequest::class, $secondRequest);
-        $this->assertFalse($secondRequest->hasHeader('Foo'));
+        $this->assertFalse($secondRequest->hasHeader('Foo-Zoo'));
         $this->assertTrue($secondRequest->hasHeader('Qux'));
-        $this->assertEquals(['Qux' => ['white']], $request->getHeaders());
+        $this->assertEquals(['Qux' => ['white']], $secondRequest->getHeaders());
     }
     
     public function testWithoutHeaderNotExists()
@@ -380,7 +366,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $secondRequest = $request->withoutHeader('Not-exists');
         
         $this->assertInstanceOf(ServerRequest::class, $secondRequest);
-        $this->assertTrue($secondRequest->hasHeader('Foo'));
+        $this->assertTrue($secondRequest->hasHeader('Foo-Zoo'));
         $this->assertTrue($secondRequest->hasHeader('Qux'));
         $this->assertEquals($request, $secondRequest);
     }
@@ -395,8 +381,9 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     *
-     * @depends testHeadersAppend
+     * 
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Invalid header name 'foo bar'
      */
 
     public function testWithAddedHeaderInvalidName()
@@ -406,7 +393,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Header name should be a string
+     * @expectedExceptionMessage Header name must be a string
      */
     public function testWithoutHeaderArrayAsName()
     {

@@ -106,6 +106,8 @@ class Headers implements HeadersInterface
      */
     public function hasHeader($name)
     {
+        $this->assertHeaderName($name);
+        
         return isset($this->headers[strtolower($name)]);
     }
 
@@ -127,6 +129,8 @@ class Headers implements HeadersInterface
      */
     public function getHeaderLine($name)
     {
+        $this->assertHeaderName($name);
+        
         return join(', ', $this->getHeader($name));
     }
 
