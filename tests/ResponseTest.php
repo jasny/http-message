@@ -25,6 +25,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      * @var Response
      */
     protected $response;
+    protected $headers;
 
     public function setUp()
     {
@@ -32,7 +33,8 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $refl->setAccessible(true);
         
         $this->response = new Response();
-        $refl->setValue($this->response, $this->getSimpleMock(HeaderObject::class));
+        $this->headers = $this->getSimpleMock(HeaderObject::class);
+        $refl->setValue($this->response, $this->headers);
     }
 
     /**
@@ -142,68 +144,87 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testHeadersAdd()
     {
+        $this->headers->expects($this->once())
+            ->method('withHeader')
+            ->will($this->returnSelf());
+        $this->headers->expects($this->once())
+            ->method('getHeader')
+            ->will($this->returnValue(['Foo' => ['Baz']]));;
         $newRequest = $this->response->withHeader('Foo', 'Baz');
         
-        $this->assertTrue($newRequest->hasHeader('Foo'));
-        $this->assertSame(['Baz'], $newRequest->getHeader('Foo'));
-        
-        return $newRequest;
+        $this->assertInstanceof(Response::class, $newRequest);
+        $this->assertSame(['Foo' => ['Baz']], $newRequest->getHeader('Foo'));
     }
 
-    /**
-     *
-     * @depends testHeadersAdd
-     */
-    public function testHeadersAppend(Response $request)
+    public function testHeadersAppend()
     {
+        $this->headers->expects($this->once())
+            ->method('withHeader')
+            ->will($this->returnSelf());
+        $request = $this->response->withHeader('Foo', 'Baz');
+        
+        
+        $this->headers->expects($this->once())
+            ->method('withAddedHeader')
+            ->will($this->returnSelf());
         $secondRequest = $request->withAddedHeader('Qux', 'white');
+        
+        $this->headers->expects($this->atLeastOnce())
+            ->method('hasHeader')
+            ->will($this->returnValue(true));
+        
         $this->assertTrue($secondRequest->hasHeader('Foo'));
         $this->assertTrue($secondRequest->hasHeader('Qux'));
-        $this->assertSame(['white'], $secondRequest->getHeader('Qux'));
         
-        return $secondRequest;
+        
+        $this->headers->expects($this->once())
+            ->method('getHeader')
+            ->will($this->returnValue(['Foo' => ['Baz'], 'Qux' => ['white']]));
+        $this->assertSame(['Foo' => ['Baz'], 'Qux' => ['white']], $secondRequest->getHeader('Qux'));
     }
 
-    /**
-     *
-     * @depends testHeadersAppend
-     */
-    public function testRemoveHeaders(Response $request)
+    public function testRemoveHeaders()
     {
-        $secondRequest = $request->withoutHeader('Foo');
-        $this->assertFalse($secondRequest->hasHeader('Foo'));
-        $this->assertTrue($secondRequest->hasHeader('Qux'));
+        $this->headers->expects($this->atLeastOnce())
+            ->method('hasHeader')
+            ->will($this->returnValue(false));
+        $request = $this->response->withoutHeader('Foo');
+        $this->assertFalse($request->hasHeader('Foo'));
     }
 
-    /**
-     *
-     * @depends testHeadersAppend
-     */
-    public function testNotExistHeaders(Response $request)
+    public function testNotExistHeaders()
     {
+        $this->headers->expects($this->atLeastOnce())
+            ->method('hasHeader')
+            ->will($this->returnValue(false));
+        
+        $request = $this->response->withHeader('Foo', 'Baz');
         $this->assertFalse($request->hasHeader('not-exist'));
     }
 
-    /**
-     *
-     * @depends testHeadersAppend
-     */
-    public function testAppendValueToHeaders(Response $request)
+    public function testAppendValueToHeaders()
     {
-        $secondRequest = $request->withAddedHeader('Qux', 'blue');
-        $this->assertTrue($secondRequest->hasHeader('Foo'));
-        $this->assertTrue($secondRequest->hasHeader('Qux'));
-        $this->assertSame(['white', 'blue'], $secondRequest->getHeader('Qux'));
+        $request = $this->response->withHeader('Qux', 'blue');
+        $secondRequest = $request->withAddedHeader('Qux', 'white');
+        $this->headers->expects($this->exactly(2))
+            ->method('hasHeader')
+            ->will($this->returnValue(true));
+        $this->assertTrue($request->hasHeader('Foo'));
+        $this->assertTrue($request->hasHeader('Qux'));
+        $this->headers->expects($this->once())
+            ->method('getHeader')
+            ->will($this->returnValue(['white', 'blue']));
         
-        return $secondRequest;
+        $this->assertSame(['white', 'blue'], $request->getHeader('Qux'));
     }
 
-    /**
-     *
-     * @depends testAppendValueToHeaders
-     */
-    public function testHeaderLine(Response $request)
+    public function testHeaderLine()
     {
+        $this->headers->expects($this->atLeastOnce())
+            ->method('getHeaderLine')
+            ->will($this->returnValue('white, blue'));
+        
+        $request = $this->response->withHeader('Qux', 'blue');
         $this->assertSame('white, blue', $request->getHeaderLine('Qux'));
     }
 
