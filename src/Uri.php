@@ -69,7 +69,9 @@ class Uri implements UriInterface
     protected function setUriParts(array $parts)
     {
         foreach ($parts as $key => $value) {
-            if (!method_exists($this, "set$key")) continue;
+            if (!method_exists($this, "set$key")) {
+                continue;
+            }
             $this->{"set$key"}($value);
         }
     }

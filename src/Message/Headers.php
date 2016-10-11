@@ -235,7 +235,7 @@ trait Headers
         $this->assertHeaderName($name);
         
         $oldName = $this->getHeaderCaseSensetiveKey($name);
-        if (!$oldName) {
+        if ($oldName == false) {
             return $this;
         }
         
