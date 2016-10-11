@@ -170,6 +170,6 @@ trait StatusCode
      */
     public function getStatusString()
     {
-        return $this->code .' '.$this->phrase;
+        return $this->code.' '.$this->phrase;
     }
 }

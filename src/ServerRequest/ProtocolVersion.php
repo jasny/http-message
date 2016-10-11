@@ -31,6 +31,6 @@ trait ProtocolVersion
             list($protocol, $version) = explode('/', $params['SERVER_PROTOCOL']) + [1 => null];
         }
         
-        return isset($protocol) && $protocol === 'HTTP' ? $version : "1.0";
+        return isset($protocol) && $protocol === 'HTTP' ? $version : "1.1";
     }
 }

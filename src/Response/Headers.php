@@ -18,6 +18,6 @@ trait Headers
      */
     protected function determineHeaders()
     {
-        return array();
+        return [];
     }
 }
