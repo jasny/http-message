@@ -24,7 +24,9 @@ trait GlobalEnvironment
     protected function dereferenceProperty(...$properties)
     {
         foreach ((array)$properties as $property) {
-            if (!property_exists($this, $property)) continue;
+            if (!property_exists($this, $property)) {
+                continue;
+            }
             
             $value = $this->$property;
             unset($this->$property);

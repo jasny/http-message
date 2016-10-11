@@ -3,19 +3,21 @@
 namespace Jasny\HttpMessage;
 
 use Psr\Http\Message\ResponseInterface;
+use Jasny\HttpMessage\Response;
 
 /**
  * Http response
  */
-class Response 
+class Response implements ResponseInterface
 {
+    use Response\ProtocolVersion;
+    use Response\StatusCode;
+    use Response\Headers;
+    use Response\Body;
+
     /**
      * Class constructor
-     * 
-     * @param int $statusCode  HTTP status code
      */
-    public function __construct($statusCode)
-    {
-        ;
-    }
-}
+    public function __construct()
+    {}
+} 

@@ -2,25 +2,22 @@
 
 namespace Jasny\HttpMessage\ServerRequest;
 
+use Jasny\HttpMessage\Message;
+
 /**
  * ServerRequest protocol version methods
  */
 trait ProtocolVersion
 {
-    /**
-     * @var string 
-     */
-    protected $protocolVersion;
-    
-    
+    use Message\ProtocolVersion;
+
     /**
      * Get the server parameters
      * 
      * @return array
      */
     abstract public function getServerParams();
-    
-    
+
     /**
      * Determine the protocol versions based on the server params
      * 
@@ -34,57 +31,6 @@ trait ProtocolVersion
             list($protocol, $version) = explode('/', $params['SERVER_PROTOCOL']) + [1 => null];
         }
         
-        return isset($protocol) && $protocol === 'HTTP' ? $version : "1.0";
-    }
-    
-    /**
-     * Retrieves the HTTP protocol version as a string.
-     *
-     * @return string HTTP protocol version.
-     */
-    public function getProtocolVersion()
-    {
-        if (!isset($this->protocolVersion)) {
-            $this->protocolVersion = $this->determineProtocolVersion();
-        }
-
-        return $this->protocolVersion;
-    }
-
-    /**
-     * Set the HTTP protocol version.
-     * 
-     * @param string $version HTTP protocol version
-     * @throws \InvalidArgumentException for invalid versions
-     */
-    protected function assertProtocolVersion($version)
-    {
-        if ($version != '' && $version !== "1.0" && $version !== "1.1" && $version !== "2.0") {
-            throw new \InvalidArgumentException("Invalid HTTP protocol version '$version'");
-        }
-    }
-    
-    /**
-     * Return an instance with the specified HTTP protocol version.
-     *
-     * The version string MUST contain only the HTTP version number (e.g.,
-     * "1.1", "1.0").
-     *
-     * @param string|float $version HTTP protocol version
-     * @return static
-     * @throws \InvalidArgumentException for invalid versions
-     */
-    public function withProtocolVersion($version)
-    {
-        if (is_float($version)) {
-            $version = number_format($version, 1, '.', '');
-        }
-        
-        $this->assertProtocolVersion((string)$version);
-        
-        $request = clone $this;
-        $request->protocolVersion = (string)$version;
-        
-        return $request;
+        return isset($protocol) && $protocol === 'HTTP' ? $version : "1.1";
     }
 }

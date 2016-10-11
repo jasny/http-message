@@ -53,7 +53,9 @@ trait Authority
         $host = $this->getHost();
         $port = $this->getPort();
         
-        if (!$host) return '';
+        if (!$host) {
+            return '';
+        }
         
         return ($userInfo ? $userInfo . '@' : '') . $host . ($port ? ':' . $port : '');
     }
