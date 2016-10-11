@@ -15,8 +15,11 @@ use Jasny\HttpMessage\DerivedAttribute;
  * @covers Jasny\HttpMessage\ServerRequest
  * @covers Jasny\HttpMessage\ServerRequest\GlobalEnvironment
  * @covers Jasny\HttpMessage\ServerRequest\ProtocolVersion
+ * @covers Jasny\HttpMessage\Message\ProtocolVersion
  * @covers Jasny\HttpMessage\ServerRequest\Headers
+ * @covers Jasny\HttpMessage\Message\Headers
  * @covers Jasny\HttpMessage\ServerRequest\Body
+ * @covers Jasny\HttpMessage\Message\Body
  * @covers Jasny\HttpMessage\ServerRequest\RequestTarget
  * @covers Jasny\HttpMessage\ServerRequest\Method
  * @covers Jasny\HttpMessage\ServerRequest\Uri
