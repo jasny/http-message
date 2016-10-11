@@ -10,9 +10,12 @@ use Jasny\HttpMessage\Headers as HeaderObject;
 /**
  * @covers Jasny\HttpMessage\Response
  * @covers Jasny\HttpMessage\Response\ProtocolVersion
+ * @covers Jasny\HttpMessage\Message\ProtocolVersion
  * @covers Jasny\HttpMessage\Response\StatusCode
  * @covers Jasny\HttpMessage\Response\Headers
+ * @covers Jasny\HttpMessage\Message\Headers
  * @covers Jasny\HttpMessage\Response\Body
+ * @covers Jasny\HttpMessage\Message\Body
  */
 class ResponseTest extends PHPUnit_Framework_TestCase
 {

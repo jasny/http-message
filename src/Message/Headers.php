@@ -17,11 +17,6 @@ trait Headers
     protected $headers;
 
     /**
-     * Determine headers from $_SERVER for request
-     */
-    abstract protected function determineHeaders();
-
-    /**
      * Public function to create header object 
      * 
      */
@@ -29,6 +24,13 @@ trait Headers
     {
         $this->headers = new HeaderObject($this->determineHeaders());
     }
+
+    /**
+     * Determine headers from $_SERVER for request
+     * 
+     * @return array headers array with structure $key => array $value 
+     */
+    abstract protected function determineHeaders();
 
     /**
      * Retrieves all message header values.
@@ -162,9 +164,13 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        $clone = clone $this;
+        if ($this->headers->hasHeader($name)) {
+            $clone = clone $this;
+            
+            $clone->headers = $this->headers->withoutHeader($name);
+            return $clone;
+        }
         
-        $clone->headers = $this->headers->withoutHeader($name);
-        return $clone;
+        return $this;
     }
 }

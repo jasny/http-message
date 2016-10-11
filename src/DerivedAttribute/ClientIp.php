@@ -121,7 +121,9 @@ class ClientIp implements DerivedAttribute
     {
         if (is_string($this->trustedProxy)) {
             foreach ($ips as $ip) {
-                if (\Jasny\ip_in_cidr($ip, $this->trustedProxy)) continue;
+                if (\Jasny\ip_in_cidr($ip, $this->trustedProxy)) {
+                    continue;
+                }
                 return $ip;
             }
         }
