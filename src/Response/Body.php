@@ -3,6 +3,8 @@
 namespace Jasny\HttpMessage\Response;
 
 use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\Message;
+
 
 /**
  * ServerRequest body methods
