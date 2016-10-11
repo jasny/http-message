@@ -33,7 +33,6 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         
         $this->response = new Response();
         $refl->setValue($this->response, $this->getSimpleMock(HeaderObject::class));
-        $this->response->initHeaders();
     }
 
     /**

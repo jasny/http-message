@@ -22,7 +22,9 @@ trait Headers
      */
     public function initHeaders()
     {
-        $this->headers = new HeaderObject($this->determineHeaders());
+        if ($this->headers === null) {
+            $this->headers = new HeaderObject($this->determineHeaders());
+        }
     }
 
     /**
@@ -56,6 +58,7 @@ trait Headers
      */
     public function getHeaders()
     {
+        $this->initHeaders();
         return $this->headers->getHeaders();
     }
 
@@ -70,6 +73,7 @@ trait Headers
      */
     public function hasHeader($name)
     {
+        $this->initHeaders();
         return $this->headers->hasHeader($name);
     }
 
@@ -91,6 +95,7 @@ trait Headers
      */
     public function getHeaderLine($name)
     {
+        $this->initHeaders();
         return $this->headers->getHeaderLine($name);
     }
 
@@ -108,6 +113,7 @@ trait Headers
      */
     public function getHeader($name)
     {
+        $this->initHeaders();
         return $this->headers->getHeader($name);
     }
 
@@ -128,6 +134,7 @@ trait Headers
      */
     public function withHeader($name, $value)
     {
+        $this->initHeaders();
         $clone = clone $this;
         
         $clone->headers = $this->headers->withHeader($name, $value);
@@ -150,6 +157,7 @@ trait Headers
      */
     public function withAddedHeader($name, $value)
     {
+        $this->initHeaders();
         $clone = clone $this;
         
         $clone->headers = $this->headers->withAddedHeader($name, $value);
@@ -164,6 +172,7 @@ trait Headers
      */
     public function withoutHeader($name)
     {
+        $this->initHeaders();
         if ($this->headers->hasHeader($name)) {
             $clone = clone $this;
             

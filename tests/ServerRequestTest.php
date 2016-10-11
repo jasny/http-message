@@ -46,7 +46,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         
         $this->baseRequest = new ServerRequest();
         $refl->setValue($this->baseRequest, $this->getSimpleMock(HeaderObject::class));
-        $this->baseRequest->initHeaders();
     }
 
     /**
