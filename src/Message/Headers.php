@@ -15,14 +15,20 @@ trait Headers
      * @var object Headers Class
      */
     protected $headers;
-
+    
+    /**
+     * Variable to check if headers variable are can be setted
+     * @var bool
+     */
+    protected $headers_init = true;
+    
     /**
      * Public function to create header object 
      * 
      */
     public function initHeaders()
     {
-        if ($this->headers === null) {
+        if (!isset($this->headers)) {
             $this->headers = new HeaderObject($this->determineHeaders());
         }
     }
