@@ -218,14 +218,14 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testDefaultProtocolVersion()
     {
-        $this->assertEquals('1.0', $this->baseRequest->getProtocolVersion());
+        $this->assertEquals('1.1', $this->baseRequest->getProtocolVersion());
     }
     
     public function testDetermineProtocolVersion()
     {
-        $request = $this->baseRequest->withServerParams(['SERVER_PROTOCOL' => 'HTTP/1.1']);
+        $request = $this->baseRequest->withServerParams(['SERVER_PROTOCOL' => 'HTTP/1.0']);
         
-        $this->assertEquals('1.1', $request->getProtocolVersion());
+        $this->assertEquals('1.0', $request->getProtocolVersion());
     }
     
     public function testWithProtocolVersion()
@@ -265,7 +265,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testDetermineHeaders()
     {
-        $this->markTestIncomplete('Wait until headers do not be changed');
+        
         $request = $this->baseRequest->withServerParams([
             'SERVER_PROTOCOL' => 'HTTP/1.1',
             'CONTENT_TYPE' => 'text/plain',
@@ -277,17 +277,16 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         ]);
         
         $this->assertEquals([
-            'Content-Type' => ['text/plain'],
-            'Content-Length' => ['20'],
-            'Host' => ['example.com'],
-            'X-Foo' => ['bar']
+            'CONTENT_TYPE' => ['text/plain'],
+            'CONTENT_LENGTH' => ['20'],
+            'HOST' => ['example.com'],
+            'X_FOO' => ['bar']
         ], $request->getHeaders());
     }
     
     public function testWithHeader()
     {
-        $this->markTestIncomplete('Wait until headers do not be changed');
-        $request = $this->baseRequest->withHeader('foo-zoo', 'red & blue');
+        $request = $this->baseRequest->withHeader('Foo-Zoo', 'red & blue');
         
         $this->assertInstanceof(ServerRequest::class, $request);
         $this->assertNotSame($this->baseRequest, $request);
@@ -299,8 +298,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithHeaderArray()
     {
-        $this->markTestIncomplete('Wait until headers do not be changed');
-        $request = $this->baseRequest->withHeader('foo-zoo', ['red', 'blue']);
+        $request = $this->baseRequest->withHeader('Foo-Zoo', ['red', 'blue']);
         
         $this->assertInstanceof(ServerRequest::class, $request);
         $this->assertNotSame($this->baseRequest, $request);
@@ -315,7 +313,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
      */
     public function testWithHeaderAddAnother(ServerRequest $origRequest)
     {
-        $request = $origRequest->withHeader('QUX', 'white');
+        $request = $origRequest->withHeader('Qux', 'white');
         $this->assertEquals([
             'Foo-Zoo' => ['red & blue'],
             'Qux' => ['white']
@@ -330,7 +328,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     public function testWithHeaderOverwrite(ServerRequest $origRequest)
     {
         $request = $origRequest->withHeader('foo-zoo', 'silver & gold');
-        $this->assertEquals(['Foo-Zoo' => ['silver & gold']], $request->getHeaders());
+        $this->assertEquals(['foo-zoo' => ['silver & gold']], $request->getHeaders());
     }
     
     /**
@@ -348,8 +346,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithAddedHeaderNew()
     {
-        $this->markTestIncomplete('Wait until headers do not be changed');
-        $request = $this->baseRequest->withAddedHeader('QUX', 'white');
+        $request = $this->baseRequest->withAddedHeader('Qux', 'white');
         
         $this->assertInstanceof(ServerRequest::class, $request);
         $this->assertNotSame($this->baseRequest, $request);
@@ -372,7 +369,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     
     public function testWithoutHeaderNotExists()
     {
-        $this->markTestIncomplete('Wait until headers do not be changed');
         $request = $this->baseRequest->withoutHeader('not-exists');
         $this->assertSame($this->baseRequest, $request);
     }
@@ -422,9 +418,12 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->baseRequest->withAddedHeader('foo bar', 'zoo');
     }
     
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Header name should be a string
+     */
     public function testWithoutHeaderArrayAsName()
     {
-        $this->markTestIncomplete('Wait until headers do not be changed');
         $request = $this->baseRequest->withoutHeader(['foo', 'bar']);
         $this->assertSame($this->baseRequest, $request);
     }

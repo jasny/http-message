@@ -185,7 +185,11 @@ trait Headers
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
         
-        $request = $this->withoutHeader($name);
+        if ($this->hasHeader($name)){
+            $request = $this->withoutHeader($name);
+        } else {
+            $request = clone $this;
+        }
         $request->headers[$name] = (array)$value;
         
         return $request;
@@ -228,13 +232,15 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        $request = clone $this;
+        $this->assertHeaderName($name);
         
         $oldName = $this->getHeaderCaseSensetiveKey($name);
-        if (isset($oldName)) {
-            unset($request->headers[$oldName]);
+        if (!$oldName) {
+            return $this;
         }
         
+        $request = clone $this;
+        unset($request->headers[$oldName]);
         return $request;
     }
 }
