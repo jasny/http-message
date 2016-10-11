@@ -20,8 +20,8 @@ class Headers implements HeadersInterface
     /**
      * Create header array from resived array in the Header дшые 
      * 
-     * @param array $defaltHeaders 
-     * @respomse Header class
+     * @param array $incomingArray 
+     * @response Header class object
      */
     public function __construct($incomingArray = [])
     {
@@ -29,8 +29,6 @@ class Headers implements HeadersInterface
         foreach ($incomingArray as $key => $value) {
             $this->headers[strtolowers($key)] = ['k' => $key, 'v' => $value];
         }
-        
-        return $this;
     }
 
     /**

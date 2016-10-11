@@ -12,7 +12,7 @@ trait Headers
     /**
      * HTTP headers
      *
-     * @var array
+     * @var object Headers Class
      */
     protected $headers;
 

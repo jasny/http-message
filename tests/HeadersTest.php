@@ -6,9 +6,6 @@ use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\Tests\AssertLastError;
 use Jasny\HttpMessage\Headers;
 
-/**
- * @covers Jasny\HttpMessage\Header
- */
 class HeadersTest extends PHPUnit_Framework_TestCase
 {
     use AssertLastError;
