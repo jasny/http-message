@@ -25,9 +25,8 @@ trait Headers
      */
     protected function determineHeaders()
     {
-        $headers = [];
         $params = $this->getServerParams();
-        
+        $headers = [];
         foreach ($params as $param => $value) {
             if (\Jasny\str_starts_with($param, 'HTTP_')) {
                 $key = substr($param, 5);

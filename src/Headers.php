@@ -1,44 +1,65 @@
 <?php
 
-namespace Jasny\HttpMessage\Message;
+namespace Jasny\HttpMessage;
 
-use Jasny\HttpMessage\Headers as HeaderObject;
+use Jasny\HttpMessage\Headers\HeadersInterface;
 
 /**
  * ServerRequest header methods
  */
-trait Headers
+class Headers implements HeadersInterface
 {
+    
     /**
      * HTTP headers
      *
-     * @var object Headers Class
+     * @var array
      */
     protected $headers;
-    
+
     /**
-     * Variable to check if headers variable are can be setted
-     * @var bool
-     */
-    protected $headers_init = true;
-    
-    /**
-     * Public function to create header object 
+     * Create header array from resived array in the Header дшые 
      * 
+     * @param array $incomingArray 
+     * @response Header class object
      */
-    public function initHeaders()
+    public function __construct($incomingArray = [])
     {
-        if (!isset($this->headers)) {
-            $this->headers = new HeaderObject($this->determineHeaders());
+        $this->headers = [];
+        foreach ($incomingArray as $key => $value) {
+            $this->headers[strtolowers($key)] = ['k' => $key, 'v' => $value];
         }
     }
 
     /**
-     * Determine headers from $_SERVER for request
-     * 
-     * @return array headers array with structure $key => array $value 
+     * Assert that the header value is a string
+     *
+     * @param string $name
+     * @throws \InvalidArgumentException
      */
-    abstract protected function determineHeaders();
+    protected function assertHeaderName($name)
+    {
+        if (!is_string($name)) {
+            throw new \InvalidArgumentException("Header name must be a string");
+        }
+        
+        if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*(\-[a-zA-Z0-9]+)*$/', $name)) {
+            throw new \InvalidArgumentException("Invalid header name '$name'");
+        }
+    }
+
+    /**
+     * Assert that the header value is a string
+     *
+     * @param string|string[] $value
+     * @throws \InvalidArgumentException
+     */
+    protected function assertHeaderValue($value)
+    {
+        if (!is_string($value) && (!is_array($value) || array_product(array_map('is_string', $value)) === 0)) {
+            throw new \InvalidArgumentException("Header value should be a string or an array of strings");
+        }
+    }
 
     /**
      * Retrieves all message header values.
@@ -64,8 +85,12 @@ trait Headers
      */
     public function getHeaders()
     {
-        $this->initHeaders();
-        return $this->headers->getHeaders();
+        $headers = [];
+        foreach ($this->headers as $name => $a) {
+            $headers[$a['k']] = $a['v'];
+        }
+        
+        return $headers;
     }
 
     /**
@@ -79,8 +104,9 @@ trait Headers
      */
     public function hasHeader($name)
     {
-        $this->initHeaders();
-        return $this->headers->hasHeader($name);
+        $this->assertHeaderName($name);
+        
+        return isset($this->headers[strtolower($name)]);
     }
 
     /**
@@ -101,8 +127,9 @@ trait Headers
      */
     public function getHeaderLine($name)
     {
-        $this->initHeaders();
-        return $this->headers->getHeaderLine($name);
+        $this->assertHeaderName($name);
+        
+        return join(', ', $this->getHeader($name));
     }
 
     /**
@@ -119,8 +146,13 @@ trait Headers
      */
     public function getHeader($name)
     {
-        $this->initHeaders();
-        return $this->headers->getHeader($name);
+        $this->assertHeaderName($name);
+        
+        $return = [];
+        if (isset($this->headers[strtolower($name)])) {
+            $return = $this->headers[strtolower($name)]['v'];
+        }
+        return $return;
     }
 
     /**
@@ -140,12 +172,13 @@ trait Headers
      */
     public function withHeader($name, $value)
     {
-        $this->initHeaders();
-        $clone = clone $this;
+        $this->assertHeaderName($name);
+        $this->assertHeaderValue($value);
         
-        $clone->headers = $this->headers->withHeader($name, $value);
+        $request = clone $this;
+        $request->headers[strtolower($name)] = ['k' => $name, 'v' => (array)$value];
         
-        return $clone;
+        return $request;
     }
 
     /**
@@ -163,11 +196,17 @@ trait Headers
      */
     public function withAddedHeader($name, $value)
     {
-        $this->initHeaders();
-        $clone = clone $this;
+        $this->assertHeaderName($name);
+        $this->assertHeaderValue($value);
         
-        $clone->headers = $this->headers->withAddedHeader($name, $value);
-        return $clone;
+        $request = clone $this;
+        if (isset($request->headers[strtolower($name)])) {
+            array_push($request->headers[strtolower($name)]['v'], $value);
+        } else {
+            $request->headers[strtolower($name)] = ['k' => $name, 'v' => (array)$value];
+        }
+        
+        return $request;
     }
 
     /**
@@ -178,14 +217,14 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        $this->initHeaders();
-        if ($this->headers->hasHeader($name)) {
-            $clone = clone $this;
-            
-            $clone->headers = $this->headers->withoutHeader($name);
-            return $clone;
-        }
+        $this->assertHeaderName($name);
         
-        return $this;
+        if (!isset($this->headers[strtolower($name)])) {
+            return $this;
+        }
+        $request = clone $this;
+        unset($request->headers[strtolower($name)]);
+        
+        return $request;
     }
 }

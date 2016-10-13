@@ -5,6 +5,7 @@ namespace Jasny\HttpMessage;
 use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\Tests\AssertLastError;
 use Jasny\HttpMessage\Response;
+use Jasny\HttpMessage\Headers as HeaderObject;
 
 /**
  * @covers Jasny\HttpMessage\Response
@@ -24,10 +25,16 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      * @var Response
      */
     protected $response;
+    protected $headers;
 
     public function setUp()
     {
+        $refl = new \ReflectionProperty(Response::class, 'headers');
+        $refl->setAccessible(true);
+        
         $this->response = new Response();
+        $this->headers = $this->getSimpleMock(HeaderObject::class);
+        $refl->setValue($this->response, $this->headers);
     }
 
     /**
@@ -91,70 +98,6 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->response->withProtocolVersion(['1.0', '1.1']);
     }
 
-    public function testDefaultHeaders()
-    {
-        $this->assertSame(array(), $this->response->getHeaders());
-    }
-
-    public function testAppendHeaders()
-    {
-        $response = $this->response->withHeader('Serv', 'nginx/1.6.2');
-        $this->assertTrue($response !== $this->response);
-        $this->assertTrue($response->hasHeader('Serv'));
-        
-        return $response;
-    }
-
-    /**
-     * @depends testAppendHeaders
-     */
-    public function testGetHeader(Response $response)
-    {
-        $this->assertEquals(array('nginx/1.6.2'), $response->getHeader('Serv'));
-        $this->assertEquals('nginx/1.6.2', $response->getHeaderLine('Serv'));
-    }
-
-    /**
-     * @depends testAppendHeaders
-     */
-    public function testGetHeaderLine(Response $response)
-    {
-        $response = $this->response->withHeader('Serv', 'nginx/1.6.2');
-        $this->assertEquals('nginx/1.6.2', $response->getHeaderLine('Serv'));
-    }
-
-    public function testEmptyHeadersOnInitObject()
-    {
-        $this->assertEmpty($this->response->getHeaders());
-        $this->assertFalse($this->response->hasHeader('Serv'));
-    }
-
-    public function testHeaderMultipleValuesGetHeaderLine()
-    {
-        $response = $this->response->withHeader('Data', array('bar', 'foo'));
-        $this->assertEquals('bar,foo', $response->getHeaderLine('Data'));
-    }
-
-    /**
-     * @depends testAppendHeaders
-     */
-    public function testAppendAnotherHeaders(Response $responseWithHeader)
-    {
-        $response = $responseWithHeader->withHeader('Data', array('bar', 'foo'));
-        $this->assertTrue($response->hasHeader('Serv'));
-        $this->assertTrue($response->hasHeader('Data'));
-    }
-
-    public function testAppendHeadersAnotherValue()
-    {
-        $response = $this->response->withHeader('Data', array('bar', 'foo'));
-        
-        $response = $response->withAddedHeader('Data', 'new');
-        $this->assertTrue($response->hasHeader('Data'));
-        $this->assertEquals(array('bar', 'foo', 'new'), $response->getHeader('Data'));
-        $this->assertEquals('bar,foo,new', $response->getHeaderLine('Data'));
-    }
-
     public function testStatusCodeDefaults()
     {
         $this->assertSame(200, $this->response->getStatusCode());
@@ -197,6 +140,63 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     public function testInvalidValueStatusCode()
     {
         $this->response->withStatus(1020);
+    }
+
+    public function testWithHeader()
+    {
+        $response = $this->response->withHeader('Foo', 'Baz');
+        $this->assertInstanceof(Response::class, $response);
+    }
+
+    public function testWithAddedHeader()
+    {
+        $response = $this->response->withAddedHeader('Foo', 'Baz');
+        $this->assertInstanceof(Response::class, $response);
+    }
+
+    public function testWithoutHeader()
+    {
+        $response = $this->response->withoutHeader('Foo', 'Baz');
+        $this->assertInstanceof(Response::class, $response);
+    }
+
+    public function testHeadersGet()
+    {
+        $this->headers->expects($this->once())
+            ->method('withHeader')
+            ->will($this->returnSelf());
+        $this->headers->expects($this->once())
+            ->method('getHeader')
+            ->will($this->returnValue(['Foo' => ['Baz']]));
+        
+        $response = $this->response->withHeader('Foo', 'Baz');
+        $this->assertSame(['Foo' => ['Baz']], $response->getHeader('Foo'));
+    }
+
+    public function testHasHeader()
+    {
+        $this->headers->expects($this->once())
+            ->method('withHeader')
+            ->will($this->returnSelf());
+        $this->headers->expects($this->once())
+            ->method('hasHeader')
+            ->will($this->returnValue(true));
+        
+        $response = $this->response->withHeader('Foo', 'Baz');
+        $this->assertTrue($response->hasHeader('Foo'));
+    }
+
+    public function testGetHeaderLine()
+    {
+        $this->headers->expects($this->once())
+            ->method('withHeader')
+            ->will($this->returnSelf());
+        $this->headers->expects($this->once())
+            ->method('getHeaderLine')
+            ->will($this->returnValue('Baz'));
+        
+        $response = $this->response->withHeader('Foo', 'Baz');
+        $this->assertSame('Baz', $response->getHeaderLine('Foo'));
     }
 
     public function testBody()
