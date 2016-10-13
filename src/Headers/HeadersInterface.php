@@ -16,7 +16,6 @@ namespace Jasny\HttpMessage\Headers;
  */
 interface HeadersInterface
 {
-
     /**
      * Retrieves all message header values.
      *
@@ -139,5 +138,4 @@ interface HeadersInterface
      * @return static
      */
     public function withoutHeader($name);
-    
 }

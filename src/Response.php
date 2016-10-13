@@ -14,11 +14,4 @@ class Response implements ResponseInterface
     use Response\StatusCode;
     use Response\Headers;
     use Response\Body;
-
-    /**
-     * Class constructor
-     */
-    public function __construct()
-    {
-    }
 }

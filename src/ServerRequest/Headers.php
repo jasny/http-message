@@ -21,7 +21,7 @@ trait Headers
     /**
      * Determine the headers based on the server parameters
      * 
-     * @return array headers array with structure $key => array $value 
+     * @return array headers array with structure $key => [$value, ...]
      */
     protected function determineHeaders()
     {

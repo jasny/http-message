@@ -10,14 +10,4 @@ use Jasny\HttpMessage\Message;
 trait Headers
 {
     use Message\Headers;
-
-    /**
-     * Determine the headers based on the server parameters
-     * 
-     * @return array headers array with structure $key => array $value 
-     */
-    protected function determineHeaders()
-    {
-        return [];
-    }
 }
