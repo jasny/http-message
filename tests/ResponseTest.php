@@ -165,6 +165,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->headers->expects($this->once())
             ->method('withHeader')
             ->will($this->returnSelf());
+        
         $this->headers->expects($this->once())
             ->method('getHeader')
             ->will($this->returnValue(['Foo' => ['Baz']]));
@@ -178,6 +179,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->headers->expects($this->once())
             ->method('withHeader')
             ->will($this->returnSelf());
+        
         $this->headers->expects($this->once())
             ->method('hasHeader')
             ->will($this->returnValue(true));
@@ -191,6 +193,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->headers->expects($this->once())
             ->method('withHeader')
             ->will($this->returnSelf());
+        
         $this->headers->expects($this->once())
             ->method('getHeaderLine')
             ->will($this->returnValue('Baz'));
@@ -199,9 +202,23 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->assertSame('Baz', $response->getHeaderLine('Foo'));
     }
 
-    public function testBody()
+    
+    /**
+     * @internal `createDefaultBody()` is thighly coupled, meaning `Stream::getMetadata()` must be working properly
+     */
+    public function testGetDefaultBody()
     {
-        $body = $this->response->withBody($this->getSimpleMock(Stream::class));
-        $this->assertInstanceof(Stream::class, $body->getBody());
+        $body = $this->response->getBody();
+        
+        $this->assertInstanceOf(Stream::class, $body);
+        $this->assertEquals('php://temp', $body->getMetadata('uri'));
+    }
+    
+    public function testWithBody()
+    {
+        $body = $this->getSimpleMock(Stream::class);
+        
+        $response = $this->response->withBody($body);
+        $this->assertSame($body, $response->getBody());
     }
 }
