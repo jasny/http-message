@@ -25,7 +25,7 @@ trait GlobalEnvironment
     {
         foreach ((array)$properties as $property) {
             if (!property_exists($this, $property)) {
-                continue;
+                continue; // @codeCoverageIgnore
             }
             
             $value = $this->$property;

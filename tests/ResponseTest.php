@@ -5,7 +5,7 @@ namespace Jasny\HttpMessage;
 use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\Tests\AssertLastError;
 use Jasny\HttpMessage\Response;
-use Jasny\HttpMessage\Headers as HeaderObject;
+use Jasny\HttpMessage\Headers;
 
 /**
  * @covers Jasny\HttpMessage\Response
@@ -24,7 +24,11 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     /**
      * @var Response
      */
-    protected $response;
+    protected $baseResponse;
+    
+    /**
+     * @var Headers|\PHPUnit_Framework_MockObject_MockObject;
+     */
     protected $headers;
 
     public function setUp()
@@ -32,34 +36,19 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $refl = new \ReflectionProperty(Response::class, 'headers');
         $refl->setAccessible(true);
         
-        $this->response = new Response();
-        $this->headers = $this->getSimpleMock(HeaderObject::class);
-        $refl->setValue($this->response, $this->headers);
-    }
-
-    /**
-     * Get mock with original methods and constructor disabled
-     *
-     * @param string $classname            
-     * @return \PHPUnit_Framework_MockObject_MockObject
-     */
-    protected function getSimpleMock($classname)
-    {
-        return $this->getMockBuilder($classname)
-            ->disableOriginalConstructor()
-            ->disableProxyingToOriginalMethods()
-            ->disableOriginalClone()
-            ->getMock();
+        $this->baseResponse = new Response();
+        $this->headers = $this->createMock(Headers::class);
+        $refl->setValue($this->baseResponse, $this->headers);
     }
 
     public function testProtocolVersionDefaultValue()
     {
-        $this->assertEquals('1.1', $this->response->getProtocolVersion());
+        $this->assertEquals('1.1', $this->baseResponse->getProtocolVersion());
     }
 
     public function testChangeProtocolVersion()
     {
-        $response2 = $this->response->withProtocolVersion('2');
+        $response2 = $this->baseResponse->withProtocolVersion('2');
         $this->assertEquals('2', $response2->getProtocolVersion());
         
         $response11 = $response2->withProtocolVersion('1.1');
@@ -71,13 +60,13 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testWithProtocolVersionImmutable()
     {
-        $version = $this->response->getProtocolVersion();
-        $response = $this->response->withProtocolVersion('1.1');
+        $version = $this->baseResponse->getProtocolVersion();
+        $response = $this->baseResponse->withProtocolVersion('1.1');
         
         $this->assertInstanceof(Response::class, $response);
-        $this->assertNotSame($this->response, $response);
+        $this->assertNotSame($this->baseResponse, $response);
         
-        $this->assertEquals($version, $this->response->getProtocolVersion());
+        $this->assertEquals($version, $this->baseResponse->getProtocolVersion());
     }
 
     /**
@@ -86,7 +75,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testInvalidValueProtocolVersion()
     {
-        $this->response->withProtocolVersion('0.1');
+        $this->baseResponse->withProtocolVersion('0.1');
     }
 
     /**
@@ -95,25 +84,25 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testInvalidTypeProtocolVersion()
     {
-        $this->response->withProtocolVersion(['1.0', '1.1']);
+        $this->baseResponse->withProtocolVersion(['1.0', '1.1']);
     }
 
     public function testStatusCodeDefaults()
     {
-        $this->assertSame(200, $this->response->getStatusCode());
-        $this->assertSame('OK', $this->response->getReasonPhrase());
+        $this->assertSame(200, $this->baseResponse->getStatusCode());
+        $this->assertSame('OK', $this->baseResponse->getReasonPhrase());
     }
 
     public function testStatusCodeChangeByRCF()
     {
-        $response = $this->response->withStatus(404);
+        $response = $this->baseResponse->withStatus(404);
         $this->assertSame(404, $response->getStatusCode());
         $this->assertSame('Not Found', $response->getReasonPhrase());
     }
 
     public function testStatusCodeChangeWithMessage()
     {
-        $response = $this->response->withStatus(404, 'Some unique status');
+        $response = $this->baseResponse->withStatus(404, 'Some unique status');
         $this->assertSame(404, $response->getStatusCode());
         $this->assertSame('Some unique status', $response->getReasonPhrase());
         $this->assertSame('404 Some unique status', $response->getStatusString());
@@ -121,7 +110,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
 
     public function testNotStandardStatusCode()
     {
-        $response = $this->response->withStatus(999);
+        $response = $this->baseResponse->withStatus(999);
         $this->assertSame(999, $response->getStatusCode());
         $this->assertSame('', $response->getReasonPhrase());
     }
@@ -131,7 +120,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testInvalidTypeStatusCode()
     {
-        $this->response->withStatus(1020.20);
+        $this->baseResponse->withStatus(1020.20);
     }
 
     /**
@@ -139,69 +128,128 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testInvalidValueStatusCode()
     {
-        $this->response->withStatus(1020);
+        $this->baseResponse->withStatus(1020);
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidValueStatusPhrase()
+    {
+        $this->baseResponse->withStatus(200, ['foo', 'bar']);
+    }
+
+    
+    public function testDetermineHeaders()
+    {
+        $response = new Response();
+        $this->assertEquals([], $response->getHeaders());
+    }
+    
     public function testWithHeader()
     {
-        $response = $this->response->withHeader('Foo', 'Baz');
+       $this->headers->expects($this->once())
+            ->method('withHeader')
+            ->will($this->returnSelf());
+        
+        $response = $this->baseResponse->withHeader('Foo', 'Baz');
+        
         $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
     }
 
     public function testWithAddedHeader()
     {
-        $response = $this->response->withAddedHeader('Foo', 'Baz');
+        $this->headers->expects($this->once())
+            ->method('withAddedHeader')
+            ->will($this->returnSelf());
+        
+        $response = $this->baseResponse->withAddedHeader('Foo', 'Baz');
+        
         $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
     }
 
     public function testWithoutHeader()
     {
-        $response = $this->response->withoutHeader('Foo', 'Baz');
+        $this->headers->expects($this->once())
+            ->method('withoutHeader')
+            ->will($this->returnSelf());
+
+        $this->headers->expects($this->atLeastOnce())
+            ->method('hasHeader')
+            ->with('Foo')
+            ->willReturn(true);
+        
+        $response = $this->baseResponse->withoutHeader('Foo');
+        
         $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
     }
 
-    public function testHeadersGet()
+    public function testWithoutNonExistantHeader()
     {
-        $this->headers->expects($this->once())
-            ->method('withHeader')
+        $this->headers->expects($this->never())
+            ->method('withoutHeader')
             ->will($this->returnSelf());
-        $this->headers->expects($this->once())
-            ->method('getHeader')
-            ->will($this->returnValue(['Foo' => ['Baz']]));
+
+        $this->headers->expects($this->atLeastOnce())
+            ->method('hasHeader')
+            ->with('Foo')
+            ->willReturn(false);
         
-        $response = $this->response->withHeader('Foo', 'Baz');
-        $this->assertSame(['Foo' => ['Baz']], $response->getHeader('Foo'));
+        $response = $this->baseResponse->withoutHeader('Foo');
+        
+        $this->assertSame($this->baseResponse, $response);
     }
 
     public function testHasHeader()
     {
         $this->headers->expects($this->once())
-            ->method('withHeader')
-            ->will($this->returnSelf());
-        $this->headers->expects($this->once())
             ->method('hasHeader')
-            ->will($this->returnValue(true));
+            ->with('Foo')
+            ->willReturn(true);
         
-        $response = $this->response->withHeader('Foo', 'Baz');
-        $this->assertTrue($response->hasHeader('Foo'));
+        $this->assertTrue($this->baseResponse->hasHeader('Foo'));
+    }
+
+    public function testGetHeader()
+    {
+        $this->headers->expects($this->once())
+            ->method('getHeader')
+            ->with('Foo')
+            ->willReturn(['Baz', 'Car']);
+        
+        $this->assertSame(['Baz', 'Car'], $this->baseResponse->getHeader('Foo'));
     }
 
     public function testGetHeaderLine()
     {
         $this->headers->expects($this->once())
-            ->method('withHeader')
-            ->will($this->returnSelf());
-        $this->headers->expects($this->once())
             ->method('getHeaderLine')
+            ->with('Foo')
             ->will($this->returnValue('Baz'));
         
-        $response = $this->response->withHeader('Foo', 'Baz');
-        $this->assertSame('Baz', $response->getHeaderLine('Foo'));
+        $this->assertSame('Baz', $this->baseResponse->getHeaderLine('Foo'));
     }
 
-    public function testBody()
+    
+    /**
+     * @internal `createDefaultBody()` is thighly coupled, meaning `Stream::getMetadata()` must be working properly
+     */
+    public function testGetDefaultBody()
     {
-        $body = $this->response->withBody($this->getSimpleMock(Stream::class));
-        $this->assertInstanceof(Stream::class, $body->getBody());
+        $body = $this->baseResponse->getBody();
+        
+        $this->assertInstanceOf(Stream::class, $body);
+        $this->assertEquals('php://temp', $body->getMetadata('uri'));
+    }
+    
+    public function testWithBody()
+    {
+        $body = $this->createMock(Stream::class);
+        
+        $response = $this->baseResponse->withBody($body);
+        $this->assertSame($body, $response->getBody());
     }
 }

@@ -2,26 +2,32 @@
 
 namespace Jasny\HttpMessage\Message;
 
-use Jasny\HttpMessage\Headers as HeaderObject;
+use Jasny\HttpMessage\HeadersInterface;
+use Jasny\HttpMessage\Headers as HeadersObject;
 
 /**
- * ServerRequest header methods
+ * Implementation of the PSR-7 MessageInterface header methods
  */
 trait Headers
 {
     /**
      * HTTP headers
      *
-     * @var object Headers Class
+     * @var HeadersInterface
      */
     protected $headers;
     
-    /**
-     * Variable to check if headers variable are can be setted
-     * @var bool
-     */
-    protected $headers_init = true;
     
+    /**
+     * Determine the headers based on other information
+     * 
+     * @return array headers array with structure $key => [$value, ...]
+     */
+    protected function determineHeaders()
+    {
+        return [];
+    }
+
     /**
      * Public function to create header object 
      * 
@@ -29,16 +35,9 @@ trait Headers
     public function initHeaders()
     {
         if (!isset($this->headers)) {
-            $this->headers = new HeaderObject($this->determineHeaders());
+            $this->headers = new HeadersObject($this->determineHeaders());
         }
     }
-
-    /**
-     * Determine headers from $_SERVER for request
-     * 
-     * @return array headers array with structure $key => array $value 
-     */
-    abstract protected function determineHeaders();
 
     /**
      * Retrieves all message header values.
@@ -46,21 +45,24 @@ trait Headers
      * The keys represent the header name as it will be sent over the wire, and
      * each value is an array of strings associated with the header.
      *
-     * // Represent the headers as a string
-     * foreach ($message->getHeaders() as $name => $values) {
-     * echo $name . ': ' . implode(', ', $values);
-     * }
+     *     // Represent the headers as a string
+     *     foreach ($message->getHeaders() as $name => $values) {
+     *         echo $name . ": " . implode(", ", $values);
+     *     }
      *
-     * // Emit headers iteratively:
-     * foreach ($message->getHeaders() as $name => $values) {
-     * foreach ($values as $value) {
-     * header(sprintf('%s: %s', $name, $value), false);
-     * }
-     * }
+     *     // Emit headers iteratively:
+     *     foreach ($message->getHeaders() as $name => $values) {
+     *         foreach ($values as $value) {
+     *             header(sprintf('%s: %s', $name, $value), false);
+     *         }
+     *     }
      *
-     * @return string[][] Returns an associative array of the message's headers.
-     *         Each key is a header name, and each value is an array of strings for
-     *         that header.
+     * While header names are not case-sensitive, getHeaders() will preserve the
+     * exact case in which headers were originally specified.
+     *
+     * @return string[][] Returns an associative array of the message's headers. Each
+     *     key MUST be a header name, and each value MUST be an array of strings
+     *     for that header.
      */
     public function getHeaders()
     {
@@ -141,8 +143,8 @@ trait Headers
     public function withHeader($name, $value)
     {
         $this->initHeaders();
-        $clone = clone $this;
         
+        $clone = clone $this;
         $clone->headers = $this->headers->withHeader($name, $value);
         
         return $clone;
@@ -164,9 +166,10 @@ trait Headers
     public function withAddedHeader($name, $value)
     {
         $this->initHeaders();
-        $clone = clone $this;
         
+        $clone = clone $this;
         $clone->headers = $this->headers->withAddedHeader($name, $value);
+        
         return $clone;
     }
 
@@ -179,6 +182,7 @@ trait Headers
     public function withoutHeader($name)
     {
         $this->initHeaders();
+        
         if ($this->headers->hasHeader($name)) {
             $clone = clone $this;
             
@@ -187,5 +191,18 @@ trait Headers
         }
         
         return $this;
+    }
+    
+    /**
+     * Turn upper case param into header case.
+     * (SOME_HEADER -> Some-Header)
+     * 
+     * @param string $param
+     * @return string
+     */
+    protected function headerCase($param)
+    {
+        $sentence = preg_replace('/[\W_]+/', ' ', $param);
+        return str_replace(' ', '-', ucwords(strtolower($sentence)));
     }
 }
