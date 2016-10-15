@@ -45,7 +45,8 @@ class UriTest extends PHPUnit_Framework_TestCase
             'port' => 3000,
             'path' => '/pages/foo',
             'query' => 'color=red&shape=round',
-            'fragment' => 'more'
+            'fragment' => 'more',
+            'foo' => 'bar' // should be ignored
         ]);
         
         $this->assertSame('https', $uri->getScheme());
@@ -63,6 +64,14 @@ class UriTest extends PHPUnit_Framework_TestCase
         );
     }
     
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testConstructInvalidArgument()
+    {
+        new Uri(2);
+    }
+
     public function testConstructFromPartsRelativePath()
     {
         $uri = new Uri([

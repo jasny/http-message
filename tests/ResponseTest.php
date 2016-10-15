@@ -131,64 +131,106 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->baseResponse->withStatus(1020);
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidValueStatusPhrase()
+    {
+        $this->baseResponse->withStatus(200, ['foo', 'bar']);
+    }
+
+    
+    public function testDetermineHeaders()
+    {
+        $response = new Response();
+        $this->assertEquals([], $response->getHeaders());
+    }
+    
     public function testWithHeader()
     {
+       $this->headers->expects($this->once())
+            ->method('withHeader')
+            ->will($this->returnSelf());
+        
         $response = $this->baseResponse->withHeader('Foo', 'Baz');
+        
         $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
     }
 
     public function testWithAddedHeader()
     {
+        $this->headers->expects($this->once())
+            ->method('withAddedHeader')
+            ->will($this->returnSelf());
+        
         $response = $this->baseResponse->withAddedHeader('Foo', 'Baz');
+        
         $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
     }
 
     public function testWithoutHeader()
     {
-        $response = $this->baseResponse->withoutHeader('Foo', 'Baz');
+        $this->headers->expects($this->once())
+            ->method('withoutHeader')
+            ->will($this->returnSelf());
+
+        $this->headers->expects($this->atLeastOnce())
+            ->method('hasHeader')
+            ->with('Foo')
+            ->willReturn(true);
+        
+        $response = $this->baseResponse->withoutHeader('Foo');
+        
         $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
     }
 
-    public function testHeadersGet()
+    public function testWithoutNonExistantHeader()
     {
-        $this->headers->expects($this->once())
-            ->method('withHeader')
+        $this->headers->expects($this->never())
+            ->method('withoutHeader')
             ->will($this->returnSelf());
+
+        $this->headers->expects($this->atLeastOnce())
+            ->method('hasHeader')
+            ->with('Foo')
+            ->willReturn(false);
         
-        $this->headers->expects($this->once())
-            ->method('getHeader')
-            ->will($this->returnValue(['Foo' => ['Baz']]));
+        $response = $this->baseResponse->withoutHeader('Foo');
         
-        $response = $this->baseResponse->withHeader('Foo', 'Baz');
-        $this->assertSame(['Foo' => ['Baz']], $response->getHeader('Foo'));
+        $this->assertSame($this->baseResponse, $response);
     }
 
     public function testHasHeader()
     {
         $this->headers->expects($this->once())
-            ->method('withHeader')
-            ->will($this->returnSelf());
-        
-        $this->headers->expects($this->once())
             ->method('hasHeader')
-            ->will($this->returnValue(true));
+            ->with('Foo')
+            ->willReturn(true);
         
-        $response = $this->baseResponse->withHeader('Foo', 'Baz');
-        $this->assertTrue($response->hasHeader('Foo'));
+        $this->assertTrue($this->baseResponse->hasHeader('Foo'));
+    }
+
+    public function testGetHeader()
+    {
+        $this->headers->expects($this->once())
+            ->method('getHeader')
+            ->with('Foo')
+            ->willReturn(['Baz', 'Car']);
+        
+        $this->assertSame(['Baz', 'Car'], $this->baseResponse->getHeader('Foo'));
     }
 
     public function testGetHeaderLine()
     {
         $this->headers->expects($this->once())
-            ->method('withHeader')
-            ->will($this->returnSelf());
-        
-        $this->headers->expects($this->once())
             ->method('getHeaderLine')
+            ->with('Foo')
             ->will($this->returnValue('Baz'));
         
-        $response = $this->baseResponse->withHeader('Foo', 'Baz');
-        $this->assertSame('Baz', $response->getHeaderLine('Foo'));
+        $this->assertSame('Baz', $this->baseResponse->getHeaderLine('Foo'));
     }
 
     
