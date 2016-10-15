@@ -7,12 +7,6 @@
     "authors": [
         {
             "name": "Arnold Daniels",
-            "email": "arnold@jasny.net"
-        }
-    ],
-    "authors": [
-        {
-            "name": "Arnold Daniels",
             "email": "arnold@jasny.net",
             "homepage": "http://www.jasny.net"
         }
@@ -27,7 +21,7 @@
         "jasny/php-functions": "^2.2"
     },
     "require-dev": {
-        "jasny/php-code-quality": "^1.2",
+        "jasny/php-code-quality": "^2.0",
         "mikey179/vfsStream": "^1.6"
     },
     "provides": {

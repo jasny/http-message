@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage\Headers;
+namespace Jasny\HttpMessage;
 
 /**
  * HTTP messages consist of requests from a client to a server and responses

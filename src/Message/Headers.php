@@ -2,7 +2,8 @@
 
 namespace Jasny\HttpMessage\Message;
 
-use Jasny\HttpMessage\Headers as HeaderObject;
+use Jasny\HttpMessage\HeadersInterface;
+use Jasny\HttpMessage\Headers as HeadersObject;
 
 /**
  * ServerRequest header methods
@@ -12,7 +13,7 @@ trait Headers
     /**
      * HTTP headers
      *
-     * @var object Headers Class
+     * @var HeadersInterface
      */
     protected $headers;
     
@@ -34,7 +35,7 @@ trait Headers
     public function initHeaders()
     {
         if (!isset($this->headers)) {
-            $this->headers = new HeaderObject($this->determineHeaders());
+            $this->headers = new HeadersObject($this->determineHeaders());
         }
     }
 
