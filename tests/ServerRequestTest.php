@@ -264,6 +264,25 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $this->baseRequest->withProtocolVersion('0.2');
     }
 
+    
+    /**
+     * @internal Tight coupling in `initHeaders()` means `Headers::getHeaders()` must work properly
+     */
+    public function testDetermineHeaders()
+    {
+        $request = (new ServerRequest())->withServerParams([
+            'CONTENT_TYPE' => 'text/plain',
+            'HTTP_FOO' => 'bar',
+            'HTTP_ACCEPT_CHARSET' => 'utf-8',
+            'HTTPS' => 'yes'
+        ]);
+        
+        $this->assertEquals([
+            'Content-Type' => ['text/plain'],
+            'Foo' => ['bar'],
+            'Accept-Charset' => ['utf-8']
+        ], $request->getHeaders());
+    }
 
     public function testWithHeader()
     {

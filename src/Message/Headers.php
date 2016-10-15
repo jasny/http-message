@@ -6,7 +6,7 @@ use Jasny\HttpMessage\HeadersInterface;
 use Jasny\HttpMessage\Headers as HeadersObject;
 
 /**
- * ServerRequest header methods
+ * Implementation of the PSR-7 MessageInterface header methods
  */
 trait Headers
 {
@@ -191,5 +191,18 @@ trait Headers
         }
         
         return $this;
+    }
+    
+    /**
+     * Turn upper case param into header case.
+     * (SOME_HEADER -> Some-Header)
+     * 
+     * @param string $param
+     * @return string
+     */
+    protected function headerCase($param)
+    {
+        $sentence = preg_replace('/[\W_]+/', ' ', $param);
+        return str_replace(' ', '-', ucwords(strtolower($sentence)));
     }
 }
