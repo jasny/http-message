@@ -3,15 +3,12 @@
 namespace Jasny\HttpMessage;
 
 use PHPUnit_Framework_TestCase;
-use Jasny\HttpMessage\Tests\AssertLastError;
 use Jasny\HttpMessage\Headers;
 
 class HeadersTest extends PHPUnit_Framework_TestCase
 {
-    use AssertLastError;
-    
     /**
-     * @var ServerRequest
+     * @var Headers
      */
     protected $headers;
 
@@ -20,6 +17,21 @@ class HeadersTest extends PHPUnit_Framework_TestCase
         $this->headers = new Headers();
     }
 
+    
+    public function testConstruct()
+    {
+        $headers = new Headers([
+            'Foo' => 'bar',
+            'Colors' => ['red', 'blue', 'green'],
+        ]);
+        
+        $this->assertEquals([
+            'Foo' => ['bar'],
+            'Colors' => ['red', 'blue', 'green'],
+        ], $headers->getHeaders());
+    }
+    
+    
     public function testDefaultEmptyHeaders()
     {
         $headers = $this->headers->getHeaders();
@@ -28,36 +40,36 @@ class HeadersTest extends PHPUnit_Framework_TestCase
 
     public function testWithHeader()
     {
-        $request = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $headers = $this->headers->withHeader('Foo-Zoo', 'red & blue');
         
-        $this->assertInstanceof(Headers::class, $request);
-        $this->assertNotSame($this->headers, $request);
+        $this->assertInstanceof(Headers::class, $headers);
+        $this->assertNotSame($this->headers, $headers);
         
-        $this->assertEquals(['Foo-Zoo' => ['red & blue']], $request->getHeaders());
+        $this->assertEquals(['Foo-Zoo' => ['red & blue']], $headers->getHeaders());
         
-        $this->assertTrue($request->hasHeader('Foo-Zoo'));
+        $this->assertTrue($headers->hasHeader('Foo-Zoo'));
         
-        return $request;
+        return $headers;
     }
 
     public function testWithHeaderCaseSensetive()
     {
-        $request = $this->headers->withHeader('FOO-ZoO', 'red & blue');
+        $headers = $this->headers->withHeader('FOO-ZoO', 'red & blue');
         
-        $this->assertInstanceof(Headers::class, $request);
-        $this->assertNotSame($this->headers, $request);
+        $this->assertInstanceof(Headers::class, $headers);
+        $this->assertNotSame($this->headers, $headers);
         
-        $this->assertEquals(['FOO-ZoO' => ['red & blue']], $request->getHeaders());
+        $this->assertEquals(['FOO-ZoO' => ['red & blue']], $headers->getHeaders());
         
-        return $request;
+        return $headers;
     }
 
     /**
      * @depends testWithHeader
      */
-    public function testHasHeaderCaseSensetive(Headers $request)
+    public function testHasHeaderCaseSensetive(Headers $headers)
     {
-        $this->assertTrue($request->hasHeader('Foo-Zoo'));
+        $this->assertTrue($headers->hasHeader('Foo-Zoo'));
     }
 
     /**
@@ -65,10 +77,10 @@ class HeadersTest extends PHPUnit_Framework_TestCase
      */
     public function testWithHeaderAddAnother(Headers $origRequest)
     {
-        $request = $origRequest->withHeader('QUX', 'white');
-        $this->assertEquals(['Foo-Zoo' => ['red & blue'], 'QUX' => ['white']], $request->getHeaders());
+        $headers = $origRequest->withHeader('QUX', 'white');
+        $this->assertEquals(['Foo-Zoo' => ['red & blue'], 'QUX' => ['white']], $headers->getHeaders());
         
-        return $request;
+        return $headers;
     }
 
     /**
@@ -76,8 +88,8 @@ class HeadersTest extends PHPUnit_Framework_TestCase
      */
     public function testWithHeaderOverwrite(Headers $origRequest)
     {
-        $request = $origRequest->withHeader('foo-zoo', 'silver & gold');
-        $this->assertEquals(['foo-zoo' => ['silver & gold']], $request->getHeaders());
+        $headers = $origRequest->withHeader('foo-zoo', 'silver & gold');
+        $this->assertEquals(['foo-zoo' => ['silver & gold']], $headers->getHeaders());
     }
 
     /**
@@ -86,31 +98,44 @@ class HeadersTest extends PHPUnit_Framework_TestCase
     public function testWithAddedHeader(Headers $origRequest)
     {
         $this->assertTrue($origRequest->hasHeader('Foo-Zoo'));
-        $request = $origRequest->withAddedHeader('foo-zoo', 'silver & gold');
+        $headers = $origRequest->withAddedHeader('foo-zoo', 'silver & gold');
         
-        $this->assertInstanceof(Headers::class, $request);
-        $this->assertNotSame($this->headers, $request);
+        $this->assertInstanceof(Headers::class, $headers);
+        $this->assertNotSame($this->headers, $headers);
         
-        $this->assertEquals(['Foo-Zoo' => ['red & blue', 'silver & gold']], $request->getHeaders());
+        $this->assertEquals(['Foo-Zoo' => ['red & blue', 'silver & gold']], $headers->getHeaders());
     }
 
     public function testWithAddedHeaderNew()
     {
-        $request = $this->headers->withAddedHeader('Qux', 'white');
+        $headers = $this->headers->withAddedHeader('Qux', 'white');
         
-        $this->assertInstanceof(Headers::class, $request);
-        $this->assertNotSame($this->headers, $request);
+        $this->assertInstanceof(Headers::class, $headers);
+        $this->assertNotSame($this->headers, $headers);
         
-        $this->assertEquals(['Qux' => ['white']], $request->getHeaders());
+        $this->assertEquals(['Qux' => ['white']], $headers->getHeaders());
     }
 
     /**
      * @depends testWithHeader
      */
-    public function testWithoutHeaderNotExists(Headers $request)
+    public function testWithoutHeader(Headers $headers)
     {
-        $requestDeleted = $request->withoutHeader('not-exists');
-        $this->assertSame($request, $requestDeleted);
+        $headersDeleted = $headers->withoutHeader('Foo-Zoo');
+        
+        $this->assertInstanceOf(Headers::class, $headersDeleted);
+        $this->assertNotSame($headers, $headersDeleted);
+        
+        $this->assertEquals([], $headersDeleted->getHeaders());
+    }
+
+    /**
+     * @depends testWithHeader
+     */
+    public function testWithoutHeaderNotExists(Headers $headers)
+    {
+        $headersDeleted = $headers->withoutHeader('not-exists');
+        $this->assertSame($headers, $headersDeleted);
     }
 
     /**
@@ -164,32 +189,32 @@ class HeadersTest extends PHPUnit_Framework_TestCase
      */
     public function testWithoutHeaderArrayAsName()
     {
-        $request = $this->headers->withoutHeader(['foo', 'bar']);
-        $this->assertSame($this->headers, $request);
+        $headers = $this->headers->withoutHeader(['foo', 'bar']);
+        $this->assertSame($this->headers, $headers);
     }
 
     /**
      * @depends testWithHeader
      */
-    public function testGetHeader(Headers $request)
+    public function testGetHeader(Headers $headers)
     {
-        $this->assertEquals(['red & blue'], $request->getHeader('Foo-Zoo'));
+        $this->assertEquals(['red & blue'], $headers->getHeader('Foo-Zoo'));
     }
 
     /**
      * @depends testWithHeader
      */
-    public function testGetHeaderCaseInsensetive(Headers $request)
+    public function testGetHeaderCaseInsensetive(Headers $headers)
     {
-        $this->assertEquals(['red & blue'], $request->getHeader('FOO-ZOO'));
+        $this->assertEquals(['red & blue'], $headers->getHeader('FOO-ZOO'));
     }
 
     /**
      * @depends testWithHeader
      */
-    public function testGetHeaderLineOneValue(Headers $request)
+    public function testGetHeaderLineOneValue(Headers $headers)
     {
-        $this->assertEquals('red & blue', $request->getHeaderLine('FoO-zoo'));
+        $this->assertEquals('red & blue', $headers->getHeaderLine('FoO-zoo'));
     }
 
     /**
@@ -197,9 +222,9 @@ class HeadersTest extends PHPUnit_Framework_TestCase
      */
     public function testGetHeaderLineMultipleValue(Headers $origRequest)
     {
-        $request = $origRequest->withAddedHeader('foo-zoo', 'silver & gold');
+        $headers = $origRequest->withAddedHeader('foo-zoo', 'silver & gold');
         
-        $this->assertEquals('red & blue, silver & gold', $request->getHeaderLine('FoO-zoo'));
+        $this->assertEquals('red & blue, silver & gold', $headers->getHeaderLine('FoO-zoo'));
     }
 
     public function testGetHeaderLineNotExists()
