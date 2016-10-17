@@ -2,7 +2,7 @@
 
 namespace Jasny\HttpMessage;
 
-use Jasny\HttpMessage\Headers\HeadersInterface;
+use Jasny\HttpMessage\HeadersInterface;
 
 /**
  * ServerRequest header methods
@@ -26,8 +26,10 @@ class Headers implements HeadersInterface
     public function __construct($incomingArray = [])
     {
         $this->headers = [];
-        foreach ($incomingArray as $key => $value) {
-            $this->headers[strtolowers($key)] = ['k' => $key, 'v' => $value];
+        
+        foreach ($incomingArray as $name => $values) {
+            $key = strtolower($name);
+            $this->headers[$key] = ['name' => $name, 'values' => (array)$values];
         }
     }
 
@@ -86,8 +88,9 @@ class Headers implements HeadersInterface
     public function getHeaders()
     {
         $headers = [];
-        foreach ($this->headers as $name => $a) {
-            $headers[$a['k']] = $a['v'];
+        
+        foreach ($this->headers as $header) {
+            $headers[$header['name']] = $header['values'];
         }
         
         return $headers;
@@ -96,8 +99,7 @@ class Headers implements HeadersInterface
     /**
      * Checks if a header exists by the given case-insensitive name.
      *
-     * @param string $name
-     *            Case-insensitive header field name.
+     * @param string $name Case-insensitive header field name.
      * @return bool Returns true if any header names match the given header
      *         name using a case-insensitive string comparison. Returns false if
      *         no matching header name is found in the message.
@@ -138,8 +140,7 @@ class Headers implements HeadersInterface
      * This method returns an array of all the header values of the given
      * case-insensitive header name.
      *
-     * @param string $name
-     *            Case-insensitive header field name.
+     * @param string $name Case-insensitive header field name.
      * @return string[] An array of string values as provided for the given
      *         header. If the header does not appear in the message, this method MUST
      *         return an empty array.
@@ -148,11 +149,9 @@ class Headers implements HeadersInterface
     {
         $this->assertHeaderName($name);
         
-        $return = [];
-        if (isset($this->headers[strtolower($name)])) {
-            $return = $this->headers[strtolower($name)]['v'];
-        }
-        return $return;
+        $key = strtolower($name);
+        
+        return isset($this->headers[$key]) ? $this->headers[$key]['values'] : [];
     }
 
     /**
@@ -175,10 +174,10 @@ class Headers implements HeadersInterface
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
         
-        $request = clone $this;
-        $request->headers[strtolower($name)] = ['k' => $name, 'v' => (array)$value];
+        $copy = clone $this;
+        $copy->headers[strtolower($name)] = ['name' => $name, 'values' => (array)$value];
         
-        return $request;
+        return $copy;
     }
 
     /**
@@ -199,14 +198,17 @@ class Headers implements HeadersInterface
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
         
-        $request = clone $this;
-        if (isset($request->headers[strtolower($name)])) {
-            array_push($request->headers[strtolower($name)]['v'], $value);
-        } else {
-            $request->headers[strtolower($name)] = ['k' => $name, 'v' => (array)$value];
+        $copy = clone $this;
+        
+        $key = strtolower($name);
+        
+        if (!isset($copy->headers[$key])) {
+            $copy->headers[$key] = ['name' => $name, 'values' => []];
         }
         
-        return $request;
+        $copy->headers[$key]['values'] = array_merge($copy->headers[$key]['values'], (array)$value);
+        
+        return $copy;
     }
 
     /**
@@ -219,12 +221,15 @@ class Headers implements HeadersInterface
     {
         $this->assertHeaderName($name);
         
-        if (!isset($this->headers[strtolower($name)])) {
+        $key = strtolower($name);
+        
+        if (!isset($this->headers[$key])) {
             return $this;
         }
-        $request = clone $this;
-        unset($request->headers[strtolower($name)]);
         
-        return $request;
+        $copy = clone $this;
+        unset($copy->headers[$key]);
+        
+        return $copy;
     }
 }

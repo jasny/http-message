@@ -21,17 +21,18 @@ trait Headers
     /**
      * Determine the headers based on the server parameters
      * 
-     * @return array headers array with structure $key => array $value 
+     * @return array headers array with structure $key => [$value]
      */
     protected function determineHeaders()
     {
         $params = $this->getServerParams();
         $headers = [];
+        
         foreach ($params as $param => $value) {
             if (\Jasny\str_starts_with($param, 'HTTP_')) {
-                $key = substr($param, 5);
+                $key = $this->headerCase(substr($param, 5));
             } elseif (in_array($param, ['CONTENT_TYPE', 'CONTENT_LENGTH'])) {
-                $key = $param;
+                $key = $this->headerCase($param);
             } else {
                 continue;
             }
