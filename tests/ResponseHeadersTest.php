@@ -82,6 +82,12 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($header->hasHeader('non-exists'));
     }
 
+    public function testGetHeaderNotExists()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $this->assertEquals([], $header->getHeader('non-exists'));
+    }
+
     public function testWithHeaderOverwrite()
     {
         $header = $this->headers
@@ -115,6 +121,17 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         $this->assertNotSame($this->headers, $header);
         
         $this->assertEquals(['Qux' => ['white']], $header->getHeaders());
+    }
+
+    public function testWithoutHeader()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $headerDeleted = $header->withoutHeader('Foo-Zoo');
+        
+        $this->assertInstanceof(ResponseHeaders::class, $header);
+        $this->assertNotSame($header, $headerDeleted);
+        
+        $this->assertEquals([], $header->getHeaders());
     }
 
     public function testWithoutHeaderNotExists()
@@ -162,6 +179,13 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
         $header->withHeader('Qux', 'white');
         $this->assertEquals(['red & blue'], $header->getHeader('Foo-Zoo'));
+    }
+    
+    public function testStaleGetHeaders()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $header->withHeader('Qux', 'white');
+        $this->assertEquals(['Foo-Zoo' => ['red & blue']], $header->getHeaders('Foo-Zoo'));
     }
     
     public function testStaleGetHeaderEmpty()
