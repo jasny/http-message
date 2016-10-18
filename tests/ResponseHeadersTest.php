@@ -25,11 +25,7 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
 
     public function testConstruct()
     {
-        session_start();
-        header('Foo: bar', true);
-        $this->assertEquals(['Foo: bar'], headers_list());
         
-        /*
          $headers = new ResponseHeaders([
          'Foo' => 'bar', 
          'Colors' => ['red', 'blue', 'green']
@@ -38,7 +34,7 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
          $this->assertEquals([
          'Foo' => ['bar'], 
          'Colors' => ['red', 'blue', 'green']
-         ], $headers->getHeaders());*/
+         ], $headers->getHeaders());
     }
 
     public function testDefaultEmptyHeaders()
@@ -78,6 +74,12 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
     {
         $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
         $this->assertTrue($header->hasHeader('Foo-Zoo'));
+    }
+
+    public function testHasHeaderNotExists()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $this->assertFalse($header->hasHeader('non-exists'));
     }
 
     public function testWithHeaderOverwrite()
@@ -139,6 +141,34 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
     public function testGetHeaderLineNotExists()
     {
         $this->assertEquals('', $this->headers->getHeaderLine('NotExists'));
+    }
+
+    public function testStaleHasHeader()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $header->withHeader('Qux', 'white');
+        $this->assertTrue($header->hasHeader('Foo-Zoo'));
+    }
+
+    public function testStaleGetHeaderLine()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue')->withAddedHeader('Foo-Zoo', 'silver & gold');
+        $header->withHeader('Qux', 'white');
+        $this->assertEquals('red & blue, silver & gold', $header->getHeaderLine('Foo-Zoo'));
+    }
+
+    public function testStaleGetHeader()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $header->withHeader('Qux', 'white');
+        $this->assertEquals(['red & blue'], $header->getHeader('Foo-Zoo'));
+    }
+    
+    public function testStaleGetHeaderEmpty()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $header->withHeader('Qux', 'white');
+        $this->assertEquals([], $header->getHeader('Foo'));
     }
 
     /**

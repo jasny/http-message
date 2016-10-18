@@ -11,7 +11,7 @@ class ResponseHeaders extends Headers
     /**
      * HTTP headers
      *
-     * @var array
+     * @var bool
      */
     protected $isStale;
 
@@ -46,8 +46,7 @@ class ResponseHeaders extends Headers
     }
 
     /**
-     * 
-     * @param unknown $headers
+     * Change current object to stale, move all headers to the variable
      */
     protected function setClassStale()
     {
@@ -56,7 +55,7 @@ class ResponseHeaders extends Headers
         $list = headers_list();
         foreach ($list as $header) {
             list($key, $value) = explode(': ', $header);
-            $this->headers[strtolower($key)] = ['k' => $key, 'v' => explode(', ', $value)];
+            $this->headers[strtolower($key)] = ['name' => $key, 'values' => explode(', ', $value)];
         }
     }
 
@@ -118,7 +117,7 @@ class ResponseHeaders extends Headers
         
         $headers = headers_list();
         foreach ($headers as $header) {
-            list($key, $value) = explode(': ', $header);
+            list($key) = explode(': ', $header);
             if (strtolower($key) == strtolower($name)) {
                 return true;
             }
@@ -268,9 +267,10 @@ class ResponseHeaders extends Headers
         $this->assertHeaderName($name);
         $this->assertStale();
         
-        if (!isset($this->headers[strtolower($name)])) {
+        if (!$this->hasHeader($name)) {
             return $this;
         }
+        
         $request = clone $this;
         $this->setClassStale();
         header_remove($name);
