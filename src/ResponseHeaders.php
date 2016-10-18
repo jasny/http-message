@@ -2,12 +2,10 @@
 
 namespace Jasny\HttpMessage;
 
-use Jasny\HttpMessage\Headers\HeadersInterface;
-
 /**
  * ServerRequest header methods
  */
-class ResponseHeaders extends Headers implements HeadersInterface
+class ResponseHeaders extends Headers
 {
     
     /**
@@ -17,6 +15,23 @@ class ResponseHeaders extends Headers implements HeadersInterface
      */
     protected $isStale;
 
+    /**
+     * Create header array from resived array in the Header дшые
+     *
+     * @param array $incomingArray
+     * @response Header class object
+     */
+    public function __construct($incomingArray = [])
+    {
+        $this->headers = [];
+    
+        foreach ($incomingArray as $name => $values) {
+            $this->assertHeaderName($name);
+            $this->assertHeaderValue($values);
+            header($name . ': ' . implode(', ', (array)$values));
+        }
+    }
+    
     /**
      * For the current object simple chek  if current object 
      * can be used for set or modify or remove headers
@@ -30,7 +45,6 @@ class ResponseHeaders extends Headers implements HeadersInterface
         }
     }
 
-    
     /**
      * 
      * @param unknown $headers
@@ -42,7 +56,7 @@ class ResponseHeaders extends Headers implements HeadersInterface
         $list = headers_list();
         foreach ($list as $header) {
             list($key, $value) = explode(': ', $header);
-            $headers[strtolower($key)] = ['k' => $key, 'v' => explode(', ', $value)];
+            $this->headers[strtolower($key)] = ['k' => $key, 'v' => explode(', ', $value)];
         }
     }
 
@@ -70,11 +84,11 @@ class ResponseHeaders extends Headers implements HeadersInterface
      */
     public function getHeaders()
     {
-        $headers = [];
-        
         if ($this->isStale) {
             return parent::getHeaders();
         }
+        
+        $headers = [];
         
         $list = headers_list();
         foreach ($list as $header) {
@@ -99,7 +113,7 @@ class ResponseHeaders extends Headers implements HeadersInterface
         $this->assertHeaderName($name);
         
         if ($this->isStale) {
-            return parent::getHeaders($name);
+            return parent::hasHeader($name);
         }
         
         $headers = headers_list();
@@ -132,11 +146,11 @@ class ResponseHeaders extends Headers implements HeadersInterface
     {
         $this->assertHeaderName($name);
         
-        if ($this->isStale){
-            return parent::getHeader($name);
+        if ($this->isStale) {
+            return parent::getHeaderLine($name);
         }
         
-        $headers = \headers_list();
+        $headers = headers_list();
         foreach ($headers as $header) {
             list($key, $value) = explode(': ', $header);
             if (strtolower($key) == strtolower($name)) {
@@ -163,11 +177,11 @@ class ResponseHeaders extends Headers implements HeadersInterface
         $this->assertHeaderName($name);
         
         if ($this->isStale) {
-           return parent::getHeader($name);
+            return parent::getHeader($name);
         }
         
         $headers = headers_list();
-        return $headers;
+        
         foreach ($headers as $header) {
             list($key, $value) = explode(': ', $header);
             if (strtolower($key) == strtolower($name)) {
@@ -201,7 +215,7 @@ class ResponseHeaders extends Headers implements HeadersInterface
         $request = clone $this;
         $this->setClassStale();
         
-        header($name . ': ' . implode(', ', (array)$value));
+        header($name . ': ' . implode(', ', (array)$value), true);
         
         return $request;
     }
@@ -228,15 +242,18 @@ class ResponseHeaders extends Headers implements HeadersInterface
         $request = clone $this;
         $this->setClassStale();
         
-        if (isset($request->headers[strtolower($name)])) {
-            array_push($request->headers[strtolower($name)]['v'], $value);
-            header_remove($name);
-            header($name . ': ' . $request->getHeaderLine($name));
-        } else {
-            $request->headers[strtolower($name)] = ['k' => $name, 'v' => (array)$value];
-            header($name . ': ' . $request->getHeaderLine($name));
+        $oldValue = '';
+        $headers = headers_list();
+        foreach ($headers as $header) {
+            list($key, $v) = explode(': ', $header);
+            if (strtolower($key) == strtolower($name)) {
+                header_remove($key);
+                $name = $key;
+                $oldValue = $v.', ';
+            }
         }
         
+        header($name.': '.$oldValue.implode(', ', (array)$value));
         return $request;
     }
 
@@ -256,7 +273,6 @@ class ResponseHeaders extends Headers implements HeadersInterface
         }
         $request = clone $this;
         $this->setClassStale();
-        unset($request->headers[strtolower($name)]);
         header_remove($name);
         
         return $request;
