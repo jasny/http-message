@@ -10,6 +10,7 @@ use Jasny\HttpMessage\Response;
  */
 class Response implements ResponseInterface
 {
+    use Response\GlobalEnvironment;
     use Response\ProtocolVersion;
     use Response\StatusCode;
     use Response\Headers;

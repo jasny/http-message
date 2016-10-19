@@ -131,7 +131,7 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceof(ResponseHeaders::class, $header);
         $this->assertNotSame($header, $headerDeleted);
         
-        $this->assertEquals([], $header->getHeaders());
+        $this->assertEquals([], $headerDeleted->getHeaders());
     }
 
     public function testWithoutHeaderNotExists()

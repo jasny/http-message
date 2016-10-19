@@ -5,10 +5,12 @@ namespace Jasny\HttpMessage;
 use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\Tests\AssertLastError;
 use Jasny\HttpMessage\Response;
+use Jasny\HttpMessage\ResponseHeaders;
 use Jasny\HttpMessage\Headers;
 
 /**
  * @covers Jasny\HttpMessage\Response
+ * @covers Jasny\HttpMessage\Response\GlobalEnvironment
  * @covers Jasny\HttpMessage\Response\ProtocolVersion
  * @covers Jasny\HttpMessage\Message\ProtocolVersion
  * @covers Jasny\HttpMessage\Response\StatusCode
@@ -39,6 +41,22 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->baseResponse = new Response();
         $this->headers = $this->createMock(Headers::class);
         $refl->setValue($this->baseResponse, $this->headers);
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testWithGlobalEnvironment(){
+        $response = $this->baseResponse->withGlobalEnvironment();
+        
+        $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
+        
+        $this->assertTrue($this->baseResponse->isStale());
+        $this->assertEquals('php://output', $response->getBody());
+        
+        $this->assertEquals('array', $response->getBody());
+        $this->assertInstanceof(ResponseHeaders::class, $response->headers);
     }
 
     public function testProtocolVersionDefaultValue()
