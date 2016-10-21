@@ -59,6 +59,7 @@ class Stream implements StreamInterface
     {
         if (!$this->isClosed()) {
             fclose($this->handle);
+            $this->handle = null;
         }
     }
 
@@ -127,7 +128,7 @@ class Stream implements StreamInterface
      */
     public function eof()
     {
-        return $this->isClosed() || feof($this->handle);
+        return $this->isClosed() || $this->tell() == $this->getSize();
     }
 
     /**
