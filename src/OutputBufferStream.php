@@ -18,8 +18,9 @@ class OutputBufferStream extends Stream implements StreamInterface
 
     /**
      * Class constructor
-     *
+     * 
      * @param resource $handle
+     * @codeCoverageIgnore
      */
     public function __construct()
     {
@@ -37,9 +38,13 @@ class OutputBufferStream extends Stream implements StreamInterface
      * current php://output stream.
      * 
      * @codeCoverageIgnore
+     * @return object current object
      */
     public function useGlobally()
     {
+        if ($this->isGlobal()) return $this;
+        
+        $this->rewind();
         $content = $this->getContents();
         
         $handle = fopen('php://output', 'a+');
@@ -54,6 +59,7 @@ class OutputBufferStream extends Stream implements StreamInterface
         
         $this->handle = $handle;
         $this->write($content);
+        return $this;
     }
 
     /**
@@ -62,20 +68,27 @@ class OutputBufferStream extends Stream implements StreamInterface
      * Also its a close php://output hanlde.
      * 
      * @codeCoverageIgnore
+     * * @return object current object
      */
     public function useLocally()
     {
+        if (!$this->isGlobal()) return $this;
+        
         $content = $this->getContents();
+        
+        ob_clean();
+        parent::close();
         
         $handle = fopen('php://temp', 'a+');
         if ($handle === false) {
             throw new \RuntimeException("Failed to open 'php://temp' stream");
         }
-        ob_clean();
-        parent::close();
         
         $this->handle = $handle;
+        $this->rewind();
         $this->write($content);
+        
+        return $content;
     }
 
     /**
@@ -85,7 +98,18 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function isGlobal()
     {
-        return ($this->getMetadata('stream_type') === 'Output' && $this->getMetadata('wrapper_type') === 'PHP');
+        return ($this->getMetadata('uri') === 'php://output');
+    }
+
+    /**
+     * Check if current global stream(php://output) are buffering.
+     * If its not 
+     *
+     * @return boolean
+     */
+    protected function checkBufferingOff()
+    {
+        return empty(ob_get_status());
     }
 
     /**
@@ -95,14 +119,12 @@ class OutputBufferStream extends Stream implements StreamInterface
     public function close()
     {
         if ($this->isGlobal()) {
-            if (ob_get_contents() === false)
+            if ($this->checkBufferingOff())
                 throw new \RuntimeException("Can not clean output buffer stream.");
             ob_flush();
         }
         
-        if (!$this->isClosed()) {
-            fclose($this->handle);
-        }
+        parent::close();
     }
 
     /**
@@ -113,7 +135,9 @@ class OutputBufferStream extends Stream implements StreamInterface
     public function getSize()
     {
         if ($this->isGlobal()) {
-            return fstat($this->hanlde)['size'];
+            if ($this->checkBufferingOff())
+                throw new \RuntimeException("Failed read from output buffer.");
+            return ob_get_length();
         }
         return parent::getSize();
     }
@@ -127,8 +151,11 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function tell()
     {
-        if ($this->isGlobal())
-            return fstat($this->hanlde)['size'];
+        if ($this->isGlobal()){
+            if ($this->checkBufferingOff())
+                throw new \RuntimeException("Failed read from output buffer.");
+            return ob_get_length();
+        }
         
         return parent::tell();
     }
@@ -141,8 +168,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function eof()
     {
-        if ($this->isGlobal())
+        if ($this->isGlobal()) {
             return true;
+        }
         
         return parent::eof();
     }
@@ -192,7 +220,10 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function rewind()
     {
-        throw new \RuntimeException("Stream isn't seekable");
+        if ($this->isGlobal())
+            throw new \RuntimeException("Stream isn't seekable");
+        
+        return parent::rewind();
     }
 
     /**
@@ -202,8 +233,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function isWritable()
     {
-        if ($this->isGlobal())
+        if ($this->isGlobal()) {
             return true;
+        }
         
         return parent::isWritable();
     }
@@ -249,7 +281,7 @@ class OutputBufferStream extends Stream implements StreamInterface
     public function getContents()
     {
         if ($this->isGlobal()) {
-            if (ob_get_level === 0)
+            if ($this->checkBufferingOff())
                 throw new \RuntimeException("Failed read from output buffer.");
             return ob_get_contents();
         }
