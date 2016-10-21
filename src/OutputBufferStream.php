@@ -9,87 +9,122 @@ use Psr\Http\Message\StreamInterface;
  * This interface provides a wrapper around the most common operations, including
  * serialization of the entire stream to a string.
  */
-class OutputBufferStream implements StreamInterface
+class OutputBufferStream extends Stream implements StreamInterface
 {
     /**
      * @var resource 
      */
     protected $handle;
-    
+
     /**
-     * Class constructor. Create php://temp stream for default 
-     * not Gloval Environment. Return exeption if can not open php://temp 
-     * in write and read mode.
+     * Class constructor
+     * 
+     * @param resource $handle
+     * @codeCoverageIgnore
      */
     public function __construct()
     {
-        $handle = fopen('php://output', 'w');
-        if ($handle === false) {
+        $handle = fopen('php://temp', 'a+');
+        if (!is_resource($handle) || get_resource_type($handle) !== 'stream') {
             throw new \InvalidArgumentException('Argument must be a PHP stream resource');
         }
         
         $this->handle = $handle;
     }
-    
+
     /**
-     * Reads all data from the stream into a string, from the beginning to end.
-     *
-     * Warning: This could attempt to load a large amount of data into memory.
-     *
-     * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
-     * @return string
+     * After change Response body work with global enviroment this function are copy
+     * all content from previous Stream body (like php://temp) and copy it into
+     * current php://output stream.
+     * 
+     * @codeCoverageIgnore
+     * @return object current object
      */
-    public function __toString()
+    public function useGlobally()
     {
-       return '';
+        if ($this->isGlobal()) return $this;
+        
+        $this->rewind();
+        $content = $this->getContents();
+        
+        $handle = fopen('php://output', 'a+');
+        if ($handle === false) {
+            throw new \RuntimeException("Failed to open 'php://output' stream");
+        }
+        if (ob_get_level() === 0) {
+            throw new \RuntimeException("Failed change output buffer stream.");
+        }
+        ob_clean();
+        parent::close();
+        
+        $this->handle = $handle;
+        $this->write($content);
+        return $this;
+    }
+
+    /**
+     * After change Response body without Global Environment this function 
+     * copy all data from php://output if this possible to the php://temp.
+     * Also its a close php://output hanlde.
+     * 
+     * @codeCoverageIgnore
+     * * @return object current object
+     */
+    public function useLocally()
+    {
+        if (!$this->isGlobal()) return $this;
+        
+        $content = $this->getContents();
+        
+        ob_clean();
+        parent::close();
+        
+        $handle = fopen('php://temp', 'a+');
+        if ($handle === false) {
+            throw new \RuntimeException("Failed to open 'php://temp' stream");
+        }
+        
+        $this->handle = $handle;
+        $this->rewind();
+        $this->write($content);
+        
+        return $content;
+    }
+
+    /**
+     * Check if current stream are php://output. 
+     * 
+     * @return boolean
+     */
+    public function isGlobal()
+    {
+        return ($this->getMetadata('uri') === 'php://output');
+    }
+
+    /**
+     * Check if current global stream(php://output) are buffering.
+     * If its not 
+     *
+     * @return boolean
+     */
+    protected function checkBufferingOff()
+    {
+        return empty(ob_get_status());
     }
 
     /**
      * Closes the stream and any underlying resources.
+     * On default php output strem also try flash content
      */
     public function close()
     {
-        if (!$this->isClosed()) {
-            fclose($this->handle);
+        if ($this->isGlobal()) {
+            if ($this->checkBufferingOff())
+                throw new \RuntimeException("Can not clean output buffer stream.");
+            ob_flush();
         }
-    }
-
-    /**
-     * Check if the stream is closed
-     * 
-     * @return boolean
-     */
-    protected function isClosed()
-    {
-        return !isset($this->handle) || get_resource_type($this->handle) !== 'stream';
-    }
-    
-    /**
-     * Check if current stream are not closed in this class
-     * 
-     * @return boolean
-     * @throws \InvalidArgumentException on error.
-     */
-    protected function checkClosed()
-    {
-        if ($this->isClosed()) {
-            throw new \InvalidArgumentException('Current object sourse are closed');
-        }
-    }
-    
-    /**
-     * Separates any underlying resources from the stream.
-     *
-     * After the stream has been detached, the stream is in an unusable state.
-     *
-     * @return resource|null Underlying PHP stream, if any
-     */
-    public function detach()
-    {
-        $handle = $this->handle;
-        $this->handle = null;
         
-        return $handle;
+        parent::close();
     }
 
     /**
@@ -99,28 +134,45 @@ class OutputBufferStream implements StreamInterface
      */
     public function getSize()
     {
-        throw new \RuntimeException("Failed to get size of the stream");
+        if ($this->isGlobal()) {
+            if ($this->checkBufferingOff())
+                throw new \RuntimeException("Failed read from output buffer.");
+            return ob_get_length();
+        }
+        return parent::getSize();
     }
 
     /**
      * Returns the current position of the file read/write handle
+     * If in stream are opened php://output - then return last pos
      *
      * @return int Position of the file handle
      * @throws \RuntimeException on error.
      */
     public function tell()
     {
-        throw new \RuntimeException("Failed to get the position of the stream");
+        if ($this->isGlobal()){
+            if ($this->checkBufferingOff())
+                throw new \RuntimeException("Failed read from output buffer.");
+            return ob_get_length();
+        }
+        
+        return parent::tell();
     }
 
     /**
      * Returns true if the stream is at the end of the stream.
+     * In php://output all time return true
      *
      * @return bool
      */
     public function eof()
     {
-        throw new \RuntimeException("Failed to move position on the end of the stream");
+        if ($this->isGlobal()) {
+            return true;
+        }
+        
+        return parent::eof();
     }
 
     /**
@@ -130,7 +182,10 @@ class OutputBufferStream implements StreamInterface
      */
     public function isSeekable()
     {
-        return false;
+        if ($this->isGlobal())
+            return false;
+        
+        return parent::isSeekable();
     }
 
     /**
@@ -147,7 +202,10 @@ class OutputBufferStream implements StreamInterface
      */
     public function seek($offset, $whence = SEEK_SET)
     {
-        throw new \RuntimeException("Stream isn't seekable");
+        if ($this->isGlobal())
+            throw new \RuntimeException("Stream isn't seekable");
+        
+        return parent::seek($offset, $whence);
     }
 
     /**
@@ -162,7 +220,10 @@ class OutputBufferStream implements StreamInterface
      */
     public function rewind()
     {
-        throw new \RuntimeException("Stream isn't seekable");
+        if ($this->isGlobal())
+            throw new \RuntimeException("Stream isn't seekable");
+        
+        return parent::rewind();
     }
 
     /**
@@ -172,27 +233,11 @@ class OutputBufferStream implements StreamInterface
      */
     public function isWritable()
     {
-        return true;
-    }
-
-    /**
-     * Write data to the stream.
-     *
-     * @param string $string The string that is to be written.
-     * @return int Returns the number of bytes written to the stream.
-     * @throws \InvalidArgumentException on closed resourse.
-     * @throws \RuntimeException on failure.
-     */
-    public function write($string)
-    {
-        $this->checkClosed();
-        $ret = fwrite($this->handle, $string);
-        
-        if ($ret === false) {
-            throw new \RuntimeException("Failed to write to stream");
+        if ($this->isGlobal()) {
+            return true;
         }
         
-        return $ret;
+        return parent::isWritable();
     }
 
     /**
@@ -202,7 +247,10 @@ class OutputBufferStream implements StreamInterface
      */
     public function isReadable()
     {
-        return false;
+        if ($this->isGlobal())
+            return false;
+        
+        return parent::isReadable();
     }
 
     /**
@@ -217,7 +265,10 @@ class OutputBufferStream implements StreamInterface
      */
     public function read($length)
     {
-        throw new \RuntimeException("Stream isn't readable");
+        if ($this->isGlobal())
+            throw new \RuntimeException("Stream isn't readable");
+        
+        return parent::read($length);
     }
 
     /**
@@ -229,29 +280,11 @@ class OutputBufferStream implements StreamInterface
      */
     public function getContents()
     {
-        return '';
-    }
-
-    /**
-     * Get stream metadata as an associative array or retrieve a specific key.
-     *
-     * The keys returned are identical to the keys returned from PHP's
-     * stream_get_meta_data() function.
-     *
-     * @see http://php.net/manual/en/function.stream-get-meta-data.php
-     * @param string $key Specific metadata to retrieve.
-     * @return array|mixed|null Returns an associative array if no key is
-     *     provided. Returns a specific key value if a key is provided and the
-     *     value is found, or null if the key is not found.
-     */
-    public function getMetadata($key = null)
-    {
-        $meta = !$this->isClosed() ? stream_get_meta_data($this->handle) : null;
-        
-        if (isset($key)) {
-            $meta = isset($meta[$key]) ? $meta[$key] : null;
+        if ($this->isGlobal()) {
+            if ($this->checkBufferingOff())
+                throw new \RuntimeException("Failed read from output buffer.");
+            return ob_get_contents();
         }
-        
-        return $meta;
+        return parent::getContents();
     }
 }

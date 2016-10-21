@@ -3,6 +3,7 @@
 namespace Jasny\HttpMessage\Response;
 
 use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\OutputBufferStream;
 use Jasny\HttpMessage\Message;
 
 
@@ -20,6 +21,6 @@ trait Body
      */
     protected function createDefaultBody()
     {
-        return Stream::open('php://temp', 'w+');
+        return OutputBufferStream::open('php://temp', 'w+');
     }
 }

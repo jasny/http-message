@@ -13,23 +13,16 @@ class ResponseHeaders extends Headers
      *
      * @var bool
      */
-    protected $isStale;
+    protected $isStale = false;
 
     /**
      * Create header array from resived array in the Header дшые
      *
      * @param array $incomingArray
-     * @response Header class object
      */
-    public function __construct($incomingArray = [])
+    public function __construct()
     {
         $this->headers = [];
-    
-        foreach ($incomingArray as $name => $values) {
-            $this->assertHeaderName($name);
-            $this->assertHeaderValue($values);
-            header($name . ': ' . implode(', ', (array)$values));
-        }
     }
     
     /**
@@ -38,9 +31,9 @@ class ResponseHeaders extends Headers
      *
      * @throws \InvalidArgumentException
      */
-    protected function assertStale()
+    protected function assertNotStale()
     {
-        if ($this->isStale !== null) {
+        if ($this->isStale === true) {
             throw new \InvalidArgumentException("Can not change stale object");
         }
     }
@@ -48,7 +41,7 @@ class ResponseHeaders extends Headers
     /**
      * Change current object to stale, move all headers to the variable
      */
-    protected function setClassStale()
+    protected function turnStale()
     {
         $this->isStale = true;
         
@@ -60,6 +53,31 @@ class ResponseHeaders extends Headers
     }
 
     /**
+     * Public function to get object state 
+     */
+    public function isStale()
+    {
+        return $this->isStale;
+    }
+    
+    /**
+     * Return header value from sending headers
+     * @param string Header key
+     * @return string|bool String if header are founded or false on error
+     */
+    protected function getHeaderValue($name)
+    {
+        $headers = headers_list();
+        foreach ($headers as $header) {
+            list($key, $value) = explode(': ', $header, 2);
+            if (strtolower($key) == strtolower($name)) {
+                return $value;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Retrieves all message header values.
      *
      * The keys represent the header name as it will be sent over the wire, and
@@ -67,7 +85,7 @@ class ResponseHeaders extends Headers
      *
      * // Represent the headers as a string
      * foreach ($message->getHeaders() as $name => $values) {
-     * echo $name . ': ' . implode(', ', $values);
+     * echo $name.': '.implode(', ', $values);
      * }
      *
      * // Emit headers iteratively:
@@ -115,14 +133,8 @@ class ResponseHeaders extends Headers
             return parent::hasHeader($name);
         }
         
-        $headers = headers_list();
-        foreach ($headers as $header) {
-            list($key) = explode(': ', $header);
-            if (strtolower($key) == strtolower($name)) {
-                return true;
-            }
-        }
-        return false;
+        $value = $this->getHeaderValue($name);
+        return ($value === false) ? false : true;
     }
 
     /**
@@ -149,14 +161,8 @@ class ResponseHeaders extends Headers
             return parent::getHeaderLine($name);
         }
         
-        $headers = headers_list();
-        foreach ($headers as $header) {
-            list($key, $value) = explode(': ', $header);
-            if (strtolower($key) == strtolower($name)) {
-                return $value;
-            }
-        }
-        return '';
+        $value = $this->getHeaderValue($name);
+        return (string)$value;
     }
 
     /**
@@ -179,15 +185,9 @@ class ResponseHeaders extends Headers
             return parent::getHeader($name);
         }
         
-        $headers = headers_list();
-        
-        foreach ($headers as $header) {
-            list($key, $value) = explode(': ', $header);
-            if (strtolower($key) == strtolower($name)) {
-                return explode(', ', $value);
-            }
-        }
-        return [];
+        $value = $this->getHeaderValue($name);
+        $array = array_filter(explode(', ', (string)$value));
+        return $array;
     }
 
     /**
@@ -209,10 +209,10 @@ class ResponseHeaders extends Headers
     {
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
-        $this->assertStale();
+        $this->assertNotStale();
         
         $request = clone $this;
-        $this->setClassStale();
+        $this->turnStale();
         
         header($name . ': ' . implode(', ', (array)$value), true);
         
@@ -236,10 +236,10 @@ class ResponseHeaders extends Headers
     {
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
-        $this->assertStale();
+        $this->assertNotStale();
         
         $request = clone $this;
-        $this->setClassStale();
+        $this->turnStale();
         
         $oldValue = '';
         $headers = headers_list();
@@ -265,14 +265,14 @@ class ResponseHeaders extends Headers
     public function withoutHeader($name)
     {
         $this->assertHeaderName($name);
-        $this->assertStale();
+        $this->assertNotStale();
         
         if (!$this->hasHeader($name)) {
             return $this;
         }
         
         $request = clone $this;
-        $this->setClassStale();
+        $this->turnStale();
         header_remove($name);
         
         return $request;

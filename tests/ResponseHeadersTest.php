@@ -7,7 +7,6 @@ use PHPUnit_Framework_TestCase;
 
 /**
  * @covers Jasny\HttpMessage\ResponseHeaders
- * @runTestsInSeparateProcesses
  */
 class ResponseHeadersTest extends PHPUnit_Framework_TestCase
 {
@@ -20,21 +19,8 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
+        header_remove();
         $this->headers = new ResponseHeaders();
-    }
-
-    public function testConstruct()
-    {
-        
-         $headers = new ResponseHeaders([
-         'Foo' => 'bar', 
-         'Colors' => ['red', 'blue', 'green']
-         ]);
-         
-         $this->assertEquals([
-         'Foo' => ['bar'], 
-         'Colors' => ['red', 'blue', 'green']
-         ], $headers->getHeaders());
     }
 
     public function testDefaultEmptyHeaders()
@@ -49,12 +35,11 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         
         $this->assertInstanceof(ResponseHeaders::class, $header);
         $this->assertNotSame($this->headers, $header);
-        return $header;
     }
 
     public function testGetHeaders()
     {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue'); 
         $this->assertEquals(['Foo-Zoo' => ['red & blue']], $header->getHeaders());
     }
 
@@ -128,7 +113,7 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
         $headerDeleted = $header->withoutHeader('Foo-Zoo');
         
-        $this->assertInstanceof(ResponseHeaders::class, $header);
+        $this->assertInstanceof(ResponseHeaders::class, $headerDeleted);
         $this->assertNotSame($header, $headerDeleted);
         
         $this->assertEquals([], $headerDeleted->getHeaders());
@@ -158,6 +143,13 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
     public function testGetHeaderLineNotExists()
     {
         $this->assertEquals('', $this->headers->getHeaderLine('NotExists'));
+    }
+
+    public function testStale()
+    {
+        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $header->withHeader('Qux', 'white');
+        $this->assertTrue($header->isStale());
     }
 
     public function testStaleHasHeader()
