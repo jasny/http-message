@@ -21,6 +21,6 @@ trait Body
      */
     protected function createDefaultBody()
     {
-        return OutputBufferStream::open('php://temp', 'w+');
+        return new OutputBufferStream();
     }
 }
