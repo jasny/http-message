@@ -18,8 +18,6 @@ class OutputBufferStream extends Stream implements StreamInterface
 
     /**
      * Class constructor
-     * 
-     * @param resource $handle
      * @codeCoverageIgnore
      */
     public function __construct()
@@ -42,7 +40,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function useGlobally()
     {
-        if ($this->isGlobal()) return $this;
+        if ($this->isGlobal()) {
+            return $this;
+        }
         
         $this->rewind();
         $content = $this->getContents();
@@ -72,7 +72,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function useLocally()
     {
-        if (!$this->isGlobal()) return $this;
+        if (!$this->isGlobal()) {
+            return $this;
+        }
         
         $content = $this->getContents();
         
@@ -119,8 +121,9 @@ class OutputBufferStream extends Stream implements StreamInterface
     public function close()
     {
         if ($this->isGlobal()) {
-            if ($this->checkBufferingOff())
+            if ($this->checkBufferingOff()) {
                 throw new \RuntimeException("Can not clean output buffer stream.");
+            }
             ob_flush();
         }
         
@@ -135,8 +138,9 @@ class OutputBufferStream extends Stream implements StreamInterface
     public function getSize()
     {
         if ($this->isGlobal()) {
-            if ($this->checkBufferingOff())
+            if ($this->checkBufferingOff()) {
                 throw new \RuntimeException("Failed read from output buffer.");
+            }
             return ob_get_length();
         }
         return parent::getSize();
@@ -152,8 +156,9 @@ class OutputBufferStream extends Stream implements StreamInterface
     public function tell()
     {
         if ($this->isGlobal()){
-            if ($this->checkBufferingOff())
+            if ($this->checkBufferingOff()) {
                 throw new \RuntimeException("Failed read from output buffer.");
+            }
             return ob_get_length();
         }
         
@@ -182,8 +187,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function isSeekable()
     {
-        if ($this->isGlobal())
+        if ($this->isGlobal()) {
             return false;
+        }
         
         return parent::isSeekable();
     }
@@ -202,8 +208,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function seek($offset, $whence = SEEK_SET)
     {
-        if ($this->isGlobal())
+        if ($this->isGlobal()) {
             throw new \RuntimeException("Stream isn't seekable");
+        }
         
         return parent::seek($offset, $whence);
     }
@@ -220,8 +227,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function rewind()
     {
-        if ($this->isGlobal())
+        if ($this->isGlobal()) {
             throw new \RuntimeException("Stream isn't seekable");
+        }
         
         return parent::rewind();
     }
@@ -247,8 +255,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function isReadable()
     {
-        if ($this->isGlobal())
+        if ($this->isGlobal()) {
             return false;
+        }
         
         return parent::isReadable();
     }
@@ -265,8 +274,9 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function read($length)
     {
-        if ($this->isGlobal())
+        if ($this->isGlobal()) {
             throw new \RuntimeException("Stream isn't readable");
+        }
         
         return parent::read($length);
     }
@@ -281,8 +291,9 @@ class OutputBufferStream extends Stream implements StreamInterface
     public function getContents()
     {
         if ($this->isGlobal()) {
-            if ($this->checkBufferingOff())
+            if ($this->checkBufferingOff()) {
                 throw new \RuntimeException("Failed read from output buffer.");
+            }
             return ob_get_contents();
         }
         return parent::getContents();
