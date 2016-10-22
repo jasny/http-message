@@ -3,6 +3,8 @@
 namespace Jasny\HttpMessage\Response;
 
 use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\Headers;
+use Jasny\HttpMessage\ResponseHeaders;
 
 /**
  * ServerRequest methods for using the global enviroment
@@ -25,8 +27,24 @@ trait GlobalEnvironment
     public function withGlobalEnvironment()
     {
         $response = $this->turnStale();
-        $response->setBody(Stream::open('php://output', 'w'));
-        $response->headers = new ResponseHeraders($this->getHeaders());
+        $response->getBody()->useGlobally();
+        $response->headers = new ResponseHeaders($this->headers);
+        
+        return $response;
+    }
+    
+
+    /**
+     * Return object that is disconnected from superglobals
+     * Note: this method is not part of the PSR-7 specs.
+     * 
+     * @return self
+     */
+    public function withoutGlobalEnvironment()
+    {
+        $response = $this->turnStale();
+        $response->getBody()->useLocally();
+        $response->headers = new Headers($this->headers);
         
         return $response;
     }
