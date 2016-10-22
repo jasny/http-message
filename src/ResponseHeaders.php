@@ -16,9 +16,7 @@ class ResponseHeaders extends Headers
     protected $isStale = false;
 
     /**
-     * Create header array from resived array in the Header дшые
-     *
-     * @param array $incomingArray
+     * Create header array from resived array in the Header 
      */
     public function __construct()
     {
