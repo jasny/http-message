@@ -3,7 +3,7 @@
 namespace Jasny\HttpMessage\Response;
 
 use Jasny\HttpMessage\Stream;
-use Jasny\HttpMessage\Headers;
+use Jasny\HttpMessage\Headers as HeaderClass;
 use Jasny\HttpMessage\ResponseHeaders;
 
 /**
@@ -18,6 +18,21 @@ trait GlobalEnvironment
     protected $isStale;
     
     /**
+     * The object is stale if it no longer reflects the global enviroment
+     * @var boolean|null
+     */
+    protected $headers;
+    
+    /**
+     * Function from Body trait
+     */
+    abstract public function getBody();
+    /**
+     * Function from Headers trait
+     */
+    abstract public function getHeaders();
+    
+    /**
      * Use php://output stream and default php functions work with headers.
      * Note: this method is not part of the PSR-7 specs.
      * 
@@ -28,7 +43,7 @@ trait GlobalEnvironment
     {
         $response = $this->turnStale();
         $response->getBody()->useGlobally();
-        $response->headers = new ResponseHeaders($this->headers);
+        $response->headers = new ResponseHeaders();
         
         return $response;
     }
@@ -44,7 +59,7 @@ trait GlobalEnvironment
     {
         $response = $this->turnStale();
         $response->getBody()->useLocally();
-        $response->headers = new Headers($this->headers);
+        $response->headers = new HeaderClass($this->headers);
         
         return $response;
     }
@@ -68,7 +83,7 @@ trait GlobalEnvironment
      * The object is stale if it no longer reflects the global enviroment.
      * Returns null if the object isn't using the globla state.
      * 
-     * @var boolean|null
+     * @return boolean If current object are stale 
      */
     public function isStale()
     {
