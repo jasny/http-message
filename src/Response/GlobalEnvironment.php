@@ -19,16 +19,18 @@ trait GlobalEnvironment
     
     /**
      * The object is stale if it no longer reflects the global enviroment
-     * @var boolean|null
+     * @var object|array|null
      */
     protected $headers;
     
     /**
      * Function from Body trait
+     * @return object
      */
     abstract public function getBody();
     /**
      * Function from Headers trait
+     * @return array
      */
     abstract public function getHeaders();
     
