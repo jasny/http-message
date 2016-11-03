@@ -5,10 +5,12 @@ namespace Jasny\HttpMessage;
 use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\Tests\AssertLastError;
 use Jasny\HttpMessage\Response;
+use Jasny\HttpMessage\ResponseHeaders;
 use Jasny\HttpMessage\Headers;
 
 /**
  * @covers Jasny\HttpMessage\Response
+ * @covers Jasny\HttpMessage\Response\GlobalEnvironment
  * @covers Jasny\HttpMessage\Response\ProtocolVersion
  * @covers Jasny\HttpMessage\Message\ProtocolVersion
  * @covers Jasny\HttpMessage\Response\StatusCode
@@ -27,23 +29,52 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     protected $baseResponse;
     
     /**
+     * @var ReflectionProperty
+     */
+    protected $refl;
+    /**
      * @var Headers|\PHPUnit_Framework_MockObject_MockObject;
      */
     protected $headers;
 
     public function setUp()
     {
-        $refl = new \ReflectionProperty(Response::class, 'headers');
-        $refl->setAccessible(true);
+        $this->refl = new \ReflectionProperty(Response::class, 'headers');
+        $this->refl->setAccessible(true);
         
         $this->baseResponse = new Response();
         $this->headers = $this->createMock(Headers::class);
-        $refl->setValue($this->baseResponse, $this->headers);
+        $this->refl->setValue($this->baseResponse, $this->headers);
     }
 
-    public function testProtocolVersionDefaultValue()
+    public function testWithGlobalEnvironment(){
+        
+        $response = $this->baseResponse->withGlobalEnvironment();
+        
+        $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
+        
+        $this->assertTrue($this->baseResponse->isStale());
+        
+        $this->refl = new \ReflectionProperty($response, 'headers');
+        $this->refl->setAccessible(true);
+        $this->assertInstanceof(ResponseHeaders::class, $this->refl->getValue($response));
+        $this->assertInstanceof(OutputBufferStream::class, $response->getBody());
+        $this->assertEquals('php://output', $response->getBody()->getMetadata('uri'));
+    }
+
+    public function testWithoutGlobalEnvironment()
     {
-        $this->assertEquals('1.1', $this->baseResponse->getProtocolVersion());
+        $response = $this->baseResponse->withGlobalEnvironment()->withoutGlobalEnvironment();
+        $this->refl->setAccessible(true);
+        
+        $this->assertInstanceof(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
+        $this->refl = new \ReflectionProperty($response, 'headers');
+        $this->refl->setAccessible(true);
+        $this->assertInstanceof(Headers::class, $this->refl->getValue($response));
+        $this->assertInstanceof(OutputBufferStream::class, $response->getBody());
+        $this->assertEquals('php://temp', $response->getBody()->getMetadata('uri'));
     }
 
     public function testChangeProtocolVersion()
