@@ -310,7 +310,7 @@ $response = (new Response())->withGlobalEnvironment();
 $router->route($request, $response);
 
 // Disconnect the global environment, copy the data and headers
-$response = $response->withoutGlobalEnviroment();
+$response = $response->withoutGlobalEnvironment();
 
 // Remove all headers and output
 header_remove(); 
