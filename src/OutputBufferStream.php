@@ -24,7 +24,7 @@ class OutputBufferStream extends Stream implements StreamInterface
         $handle = $this->createTempStream();
         
         if (!is_resource($handle) || get_resource_type($handle) !== 'stream') {
-            throw new \RuntimeException('Failed to open php://temp stream');
+            throw new \RuntimeException("Failed to open 'php://temp' stream");
         }
         
         $this->handle = $handle;
@@ -38,7 +38,7 @@ class OutputBufferStream extends Stream implements StreamInterface
     protected function assertOutputBuffering()
     {
         if (!$this->obGetStatus()) {
-            throw new RuntimeException("Output buffering is disabled");
+            throw new \RuntimeException("Output buffering is not enabled");
         }
     }
 
@@ -47,29 +47,33 @@ class OutputBufferStream extends Stream implements StreamInterface
      * all content from previous Stream body (like php://temp) and copy it into
      * current php://output stream.
      * 
-     * @return object current object
+     * @return $this
+     * @throws \RuntimeException
      */
     public function useGlobally()
     {
+        if (!isset($this->handle)) {
+            throw new \RuntimeException("The stream is closed");
+        }
+        
         if ($this->isGlobal()) {
             return $this;
         }
         
         $this->assertOutputBuffering();
         
-        $this->rewind();
-        $content = $this->getContents();
-        
-        $handle = $this->createOutputStream();
-        if ($handle === false) {
+        $output = $this->createOutputStream();
+        if ($output === false) {
             throw new \RuntimeException("Failed to open 'php://output' stream");
         }
         
         $this->obClean();
-        parent::close();
+        $this->rewind();
+        stream_copy_to_stream($this->handle, $output);
         
-        $this->handle = $handle;
-        $this->write($content);
+        parent::close();
+        $this->handle = $output;
+        
         return $this;
     }
 
@@ -78,29 +82,32 @@ class OutputBufferStream extends Stream implements StreamInterface
      * copy all data from php://output if this possible to the php://temp.
      * Also its a close php://output hanlde.
      * 
-     * @return object current object
+     * @return $this
+     * @throws \RuntimeException
      */
     public function useLocally()
     {
+        if (!isset($this->handle)) {
+            throw new \RuntimeException("The stream is closed");
+        }
+        
         if (!$this->isGlobal()) {
             return $this;
         }
         
-        $content = $this->getContents();
+        $temp = $this->createTempStream();
+        if ($temp === false) {
+            throw new \RuntimeException("Failed to open 'php://temp' stream");
+        }
+        
+        fwrite($temp, (string)$this);
         
         $this->obClean();
         parent::close();
         
-        $handle = fopen('php://temp', 'a+');
-        if ($handle === false) {
-            throw new \RuntimeException("Failed to open 'php://temp' stream");
-        }
+        $this->handle = $temp;
         
-        $this->handle = $handle;
-        $this->rewind();
-        $this->write($content);
-        
-        return $content;
+        return $this;
     }
 
     /**
@@ -119,14 +126,12 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     public function close()
     {
-        if (!$this->isGlobal()) {
-            parent::close();
-            return;
+        if ($this->isGlobal()) {
+            $this->assertOutputBuffering();
+            $this->obFlush();
         }
         
-        $this->assertOutputBuffering();
-        
-        $this->obFlush();
+        parent::close();
     }
 
     /**
@@ -275,7 +280,7 @@ class OutputBufferStream extends Stream implements StreamInterface
             return parent::read($length);
         }
         
-        throw new \RuntimeException("Stream isn't readable");
+        throw new \RuntimeException("Unable to partially read the output buffer, instead cast the stream to a string");
     }
 
     /**
@@ -289,6 +294,23 @@ class OutputBufferStream extends Stream implements StreamInterface
     {
         if (!$this->isGlobal()) {
             return parent::getContents();
+        }
+        
+        throw new \RuntimeException("Unable to partially read the output buffer, instead cast the stream to a string");
+    }
+    
+    /**
+     * Reads all data from the stream into a string, from the beginning to end.
+     *
+     * Warning: This could attempt to load a large amount of data into memory.
+     *
+     * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
+     * @return string
+     */
+    public function __toString()
+    {
+        if (!$this->isGlobal()) {
+            return parent::__toString();
         }
         
         $this->assertOutputBuffering();
@@ -309,7 +331,6 @@ class OutputBufferStream extends Stream implements StreamInterface
     
     /**
      * Create php://output stream
-     * @codeCoverageIgnore
      * 
      * @return resource
      */

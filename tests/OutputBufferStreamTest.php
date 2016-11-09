@@ -39,12 +39,11 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
     
     /**
      * @expectedException RuntimeException
-     * @expectedExceptionMessage Failed to open php://temp stream
+     * @expectedExceptionMessage Failed to open 'php://temp' stream
      */
     public function testConstructionFailure()
     {
         $stream = $this->getMockBuilder(OutputBufferStream::class)->setMethods(['createTempStream'])->getMock();
-        $this->assertEquals('php://temp', $stream->getMetadata('uri'));
     }
 
     
@@ -74,18 +73,21 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
     
     
     /**
+     * @param string uri
      * @return OutputBufferStream|MockObject
      */
-    protected function getLocalStream()
+    protected function getStream($uri)
     {
-        $this->handle = fopen('php://temp', 'a+');
+        $this->handle = $uri ? fopen($uri, 'a+') : null;
         
         $stream = $this->getMockBuilder(OutputBufferStream::class)->disableOriginalConstructor()
-            ->setMethods(['createTempStream', 'createOutputStream', 'isGlobal'])->getMock();
-        
-        $stream->expects($this->never())->method('createTempStream');
-        $stream->expects($this->never())->method('createOutputStream');
-        $stream->expects($this->any())->method('isGlobal')->willReturn(false);
+            ->setMethods(['obGetStatus', 'obGetContents', 'obClean', 'obFlush', 'obGetLength'])
+            ->getMock();
+
+        $stream->expects($this->any())->method('obGetStatus')->willReturn([
+            "name" => "default output handler",
+            "type" => 0
+        ]);
         
         $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
         $refl->setAccessible(true);
@@ -96,25 +98,25 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalIsSeekable()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         $this->assertTrue($stream->isSeekable());
     }
 
     public function testLocalIsReadable()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         $this->assertTrue($stream->isReadable());
     }
 
     public function testLocalIsWritable()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         $this->assertTrue($stream->isWritable());
     }
 
     public function testLocalWrite()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $count = $stream->write('Foo-Baz');
         
@@ -124,7 +126,7 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalClose()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $stream->close();
         $this->assertSame('Unknown', get_resource_type($this->handle));
@@ -132,7 +134,7 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalDetach()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $detached = $stream->detach();
         
@@ -140,12 +142,14 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         $this->assertEquals("stream", get_resource_type($detached));
         $this->assertSame($this->handle, $detached);
         
+        $this->assertNull($stream->getMetadata());
+        
         $this->assertNull($stream->detach());
     }
 
     public function testLocalGetSize()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $this->assertEquals(0, $stream->getSize());
         
@@ -155,7 +159,7 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalTell()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $this->assertEquals(0, $stream->tell());
 
@@ -168,7 +172,7 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalEOF()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $this->assertTrue($stream->eof());
         
@@ -178,7 +182,7 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalRead()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $stream->write('Foo-Baz');
         $this->assertEquals('', $stream->read(100));
@@ -190,7 +194,7 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalGetContents()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $stream->write('Foo-Baz');
         
@@ -200,7 +204,7 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalToString()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $stream->write('Foo-Baz');
         $this->assertEquals('Foo-Baz', (string)$stream);
@@ -208,7 +212,7 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 
     public function testLocalRewind()
     {
-        $stream = $this->getLocalStream();
+        $stream = $this->getStream('php://temp');
         
         $stream->write('Foo-Baz');
         $stream->rewind();
@@ -216,229 +220,310 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, $stream->tell());
         $this->assertEquals('Foo-Baz', $stream->read(100));
     }
-
-    /**
-     * Start test ->useGlobally();
-     */
-    /*public function testGlobalOpen()
+    
+    
+    public function testGlobalIsSeekable()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
+        $stream = $this->getStream('php://output');
+        $this->assertFalse($stream->isSeekable());
+    }
+
+    public function testGlobalIsReadable()
+    {
+        $stream = $this->getStream('php://output');
+        $this->assertFalse($stream->isReadable());
+    }
+
+    public function testGlobalIsWritable()
+    {
+        $stream = $this->getStream('php://output');
+        $this->assertTrue($stream->isWritable());
+    }
+
+    public function testGlobalWrite()
+    {
+        $stream = $this->getStream('php://output');
+        
+        $this->expectOutputString('Foo-Zoo');
+        
+        $stream->write('Foo-Zoo');
     }
 
     public function testGlobalClose()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $this->assertNull($stream->close());
+        $stream = $this->getStream('php://output');
+        $stream->expects($this->once())->method('obFlush');
+        
+        $stream->close();
+        $this->assertSame('Unknown', get_resource_type($this->handle));
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Stream isn't writable
+     */
+    public function testGlobalWriteClosed()
+    {
+        $stream = $this->getStream('php://output');
+        
+        $stream->close();
+        
+        $stream->write("Foo bar");
     }
 
     public function testGlobalDetach()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
+        $stream = $this->getStream('php://output');
+        $stream->expects($this->never())->method('obFlush');
         
         $detached = $stream->detach();
+        
+        $this->assertInternalType('resource', $detached);
         $this->assertEquals("stream", get_resource_type($detached));
+        $this->assertSame($this->handle, $detached);
+        
         $this->assertNull($stream->getMetadata());
-    }
-
-    public function testGlobalCopiedText()
-    {
-        $stream = new OutputBufferStream();
-        $stream->write('Foo-Zoo');
-        $stream->rewind();
-        $this->assertEquals("Foo-Zoo", $stream->getContents());
-        $this->expectOutputString('Foo-Zoo');
-        $stream->useGlobally();
-        $this->assertEquals("Foo-Zoo", $stream->getContents());
-    }
-
-    public function testGlobalToString()
-    {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $this->assertEquals("", (string)$stream);
+        
+        $this->assertNull($stream->detach());
     }
 
     public function testGlobalGetSize()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        
-        $this->expectOutputString('foo');
-        $stream->write('foo');
+        $stream = $this->getStream('php://output');
+        $stream->expects($this->exactly(2))->method('obGetLength')->willReturnOnConsecutiveCalls(3, 9);
         
         $this->assertEquals(3, $stream->getSize());
+        $this->assertEquals(9, $stream->getSize());
     }
 
     public function testGlobalTell()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        
-        $this->expectOutputString('foo');
-        $stream->write('foo');
+        $stream = $this->getStream('php://output');
+        $stream->expects($this->exactly(2))->method('obGetLength')->willReturnOnConsecutiveCalls(3, 9);
         
         $this->assertEquals(3, $stream->tell());
+        $this->assertEquals(9, $stream->tell());
     }
 
     public function testGlobalEof()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
+        $stream = $this->getStream('php://output');
         $this->assertTrue($stream->eof());
-    }
-
-    public function testGlobalIsSeekable()
-    {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $this->assertFalse($stream->isSeekable());
     }
 
     /**
      * @expectedException \RuntimeException
      * @expectedExceptionMessage Stream isn't seekable
-     * /
+     */
     public function testGlobalSeek()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
+        $stream = $this->getStream('php://output');
         $stream->seek(5);
     }
 
     /**
      * @expectedException \RuntimeException
      * @expectedExceptionMessage Stream isn't seekable
-     * /
+     */
     public function testGlobalRewind()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
+        $stream = $this->getStream('php://output');
         $stream->rewind();
     }
-
-    public function testGlobalIsWritable()
-    {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $this->assertTrue($stream->isWritable());
-    }
-
-    public function testGlobalWrite()
-    {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $this->expectOutputString('foo');
-        $stream->write('foo');
-    }
-
-    public function testGlobalIsReadable()
-    {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $this->assertFalse($stream->isReadable());
-    }
-
+    
     /**
      * @expectedException \RuntimeException
-     * @expectedExceptionMessage Stream isn't readable
-     * /
+     * @expectedExceptionMessage Unable to partially read the output buffer, instead cast the stream to a string
+     */
     public function testGlobalRead()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
+        $stream = $this->getStream('php://output');
         $stream->read(1000);
     }
 
     /**
      * @expectedException \RuntimeException
-     * @expectedExceptionMessage Stream isn't writable
-     * /
-    public function testGlobalWriteClosed()
-    {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        
-        $stream->close();
-        
-        $stream->write("Foo bar");
-    }
-
+     * @expectedExceptionMessage Unable to partially read the output buffer, instead cast the stream to a string
+     */
     public function testGlobalGetContents()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $this->expectOutputString('Foo bar');
-        $stream->write("Foo bar");
-        $this->assertEquals('Foo bar', $stream->getContents());
+        $stream = $this->getStream('php://output');
+        $stream->getContents();
     }
 
-    public function testGlobalGetMetadata()
+    public function testGlobalToString()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $expect = ["wrapper_type" => "PHP", "stream_type" => "Output", "mode" => "wb", "unread_bytes" => 0, "seekable" => false, "uri" => "php://output", "timed_out" => false, "blocked" => true, "eof" => false];
+        $stream = $this->getStream('php://output');
+        $stream->expects($this->once())->method('obGetContents')->willReturn('Red Green Blue');
         
-        $this->assertEquals($expect, $stream->getMetadata());
+        $this->assertEquals("Red Green Blue", (string)$stream);
     }
-
-    public function testGlobalGetMetadataByKey()
+    
+    
+    public function testUseGlobally()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        
-        $this->assertEquals("PHP", $stream->getMetadata("wrapper_type"));
-        $this->assertEquals("Output", $stream->getMetadata("stream_type"));
-        $this->assertNull($stream->getMetadata("qux"));
-    }
+        $stream = $this->getStream('php://temp');
+        $stream->expects($this->once())->method('obClean');
 
-    public function testGlobalGetMetadataClosed()
+        fwrite($this->handle, "Foo Bar Zoo");
+        
+        $ret = $stream->useGlobally();
+        $this->assertSame($stream, $ret);
+        
+        $this->assertSame('Unknown', get_resource_type($this->handle), "Temp stream should be closed");
+        
+        $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
+        $refl->setAccessible(true);
+        $handle = $refl->getValue($stream);
+        
+        $this->assertInternalType('resource', $handle);
+        $this->assertEquals("stream", get_resource_type($handle));
+        $this->assertEquals('php://output', stream_get_meta_data($handle)['uri']);
+        
+        $this->expectOutputString('Foo Bar Zoo');
+    }
+    
+    public function testUseGloballyWhenGlobal()
     {
-        $stream = new OutputBufferStream();
-        $stream->useGlobally();
-        $stream->close();
+        $stream = $this->getStream('php://output');
+        $ret = $stream->useGlobally();
         
-        $this->assertNull($stream->getMetadata("wrapper_type"));
-        $this->assertNull($stream->getMetadata("uri"));
+        $this->assertSame($stream, $ret);
+        
+        $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
+        $refl->setAccessible(true);
+        $handle = $refl->getValue($stream);
+        
+        $this->assertSame($this->handle, $handle);
     }
-
+    
     /**
-     * Test object after set it in Locally mode after Globally 
-     * /
-    public function testLocallyMetadata()
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Failed to open 'php://output' stream
+     */
+    public function testUseGloballyFailure()
     {
-        $stream = new OutputBufferStream();
-        $stream->write('Foo-Zoo');
-        $stream->useGlobally();
-        $this->assertEquals('Foo-Zoo', $stream->getContents());
-        $stream->useLocally();
-        $this->assertEquals('php://temp', $stream->getMetadata('uri'));
-    }
-
-    public function testLocallyCopied()
-    {
-        $stream = new OutputBufferStream();
-        $stream->write('Foo-Zoo');
-        $stream->useGlobally();
-        $this->assertEquals('Foo-Zoo', $stream->getContents());
-        $stream->useLocally();
-        $stream->rewind();
-        $this->assertEquals('Foo-Zoo', $stream->getContents());
-    }
-
-    public function testLocallyCopiedFromGlobal()
-    {
-        //$this->markTestIncomplete('Look why fseek($handle, 0) do not rewind php://temp, fseek($hendle, 3) works fine!');
+        $stream = $this->getMockBuilder(OutputBufferStream::class)
+            ->setMethods(['createOutputStream', 'obGetStatus', 'obGetContents', 'obClean', 'obFlush', 'obGetLength'])
+            ->getMock();
         
-        $stream = new OutputBufferStream();
+        $stream->expects($this->any())->method('obGetStatus')->willReturn([
+            "name" => "default output handler",
+            "type" => 0
+        ]);
+        
+        $stream->expects($this->once())->method('createOutputStream')->willReturn(false);
+        
         $stream->useGlobally();
-        $stream->write('Foo-Zoo');
-        $this->assertEquals('php://output', $stream->getMetadata('uri'));
+    }
+    
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage The stream is closed
+     */
+    public function testUseGloballyWhenClosed()
+    {
+        $stream = $this->getStream(null);
+        $stream->useGlobally();
+    }
+
+    public function testUseLocally()
+    {
+        $stream = $this->getStream('php://output');
+        
+        $stream->expects($this->once())->method('obGetContents')->id('obGetContents')->willReturn('Foo Bar Zoo');
+        $stream->expects($this->once())->method('obClean')->after('obGetContents');
+        
+        $ret = $stream->useLocally();
+        $this->assertSame($stream, $ret);
+        
+        $this->assertSame('Unknown', get_resource_type($this->handle), "Output stream should be closed");
+        
+        $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
+        $refl->setAccessible(true);
+        $handle = $refl->getValue($stream);
+        
+        $this->assertInternalType('resource', $handle);
+        $this->assertEquals("stream", get_resource_type($handle));
+        $this->assertEquals('php://temp', stream_get_meta_data($handle)['uri']);
+        
+        fseek($handle, 0);
+        $this->assertEquals('Foo Bar Zoo', fread($handle, 1000));
+    }
+    
+    public function testUseLocallyWhenLocal()
+    {
+        $stream = $this->getStream('php://temp');
+        $ret = $stream->useLocally();
+        
+        $this->assertSame($stream, $ret);
+        
+        $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
+        $refl->setAccessible(true);
+        $handle = $refl->getValue($stream);
+        
+        $this->assertSame($this->handle, $handle);
+    }
+    
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Failed to open 'php://temp' stream
+     */
+    public function testUseLocallyFailure()
+    {
+        $stream = $this->getMockBuilder(OutputBufferStream::class)->disableOriginalConstructor()
+            ->setMethods(['createTempStream', 'obGetStatus', 'obGetContents', 'obClean', 'obFlush', 'obGetLength'])
+            ->getMock();
+        
+        $stream->expects($this->once())->method('createTempStream')->willReturn(false);
+
+        $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
+        $refl->setAccessible(true);
+        $refl->setValue($stream, fopen('php://output', 'a+'));
+        
         $stream->useLocally();
-        $this->assertEquals('php://temp', $stream->getMetadata('uri'));
-        $stream->rewind();
-        $this->assertEquals('Foo-Zoo', $stream->getContents());
-    }*/
+    }
+    
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage The stream is closed
+     */
+    public function testUseLocallyWhenClosed()
+    {
+        $stream = $this->getStream(null);
+        $stream->useLocally();
+    }
+    
+
+    public function assertOutputBufferingProvider()
+    {
+        return [
+            ['close'],
+            ['getSize'],
+            ['tell'],
+            ['__toString'],
+            ['useGlobally', false]
+        ];
+    }
+    
+    /**
+     * @dataProvider assertOutputBufferingProvider
+     * 
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Output buffering is not enabled
+     * 
+     * @param string $method
+     * @param boolean $isGlobal
+     */
+    public function testAssertOutputBuffering($method, $isGlobal = true)
+    {
+        $stream = $this->getMockBuilder(OutputBufferStream::class)
+            ->setMethods(['obGetStatus', 'obGetContents', 'obClean', 'obFlush', 'obGetLength', 'isGlobal'])
+            ->getMock();
+
+        $stream->expects($this->any())->method('isGlobal')->willReturn($isGlobal);
+        $stream->expects($this->once())->method('obGetStatus')->willReturn(null);
+        
+        $stream->$method();
+    }
 }
