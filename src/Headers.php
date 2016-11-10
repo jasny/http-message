@@ -9,7 +9,6 @@ use Jasny\HttpMessage\HeadersInterface;
  */
 class Headers implements HeadersInterface
 {
-    
     /**
      * HTTP headers
      *
@@ -21,7 +20,6 @@ class Headers implements HeadersInterface
      * Create header array from resived array in the Header дшые 
      * 
      * @param array $incomingArray 
-     * @response Header class object
      */
     public function __construct($incomingArray = [])
     {

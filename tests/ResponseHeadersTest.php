@@ -4,6 +4,7 @@ namespace Jasny\HttpMessage;
 
 use Jasny\HttpMessage\Tests\AssertLastError;
 use PHPUnit_Framework_TestCase;
+use PHPUnit_Framework_MockObject_MockObject as MockObject;
 
 /**
  * @covers Jasny\HttpMessage\ResponseHeaders
@@ -13,178 +14,138 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
     use AssertLastError;
     
     /**
-     * @var ResponseHeaders
+     * @var ResponseHeaders|MockObject
      */
     protected $headers;
 
     public function setUp()
     {
-        header_remove();
-        $this->headers = new ResponseHeaders();
+        $this->headers = $this->getMockBuilder(ResponseHeaders::class)
+            ->disableOriginalConstructor()
+            ->setMethods(['headersList', 'header', 'headerRemove', 'headersSent'])
+            ->getMock();
     }
 
-    public function testDefaultEmptyHeaders()
+    public function testConstructor()
     {
-        $headers = $this->headers->getHeaders();
-        $this->assertSame([], $headers);
-    }
-
-    public function testWithHeader()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        $this->headers->expects($this->exactly(4))->method('header')->withConsecutive(
+            ["Foo: bar", false],
+            ["Color: red", false],
+            ["Color: blue", false],
+            ["Zoo: monkey", false]
+        );
         
-        $this->assertInstanceof(ResponseHeaders::class, $header);
-        $this->assertNotSame($this->headers, $header);
+        $this->headers->__construct([
+            'Foo' => 'bar',
+            'Color' => ['red', 'blue'],
+            'Zoo' => ['monkey']
+        ]);
     }
 
+    protected function expectHeadersList()
+    {
+        $this->headers->expects($this->once())->method('headersList')
+            ->willReturn(['Foo-Zoo: red & blue', 'Bar: xyz', 'foo-zoo : green']);
+    }
+    
     public function testGetHeaders()
     {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue'); 
-        $this->assertEquals(['Foo-Zoo' => ['red & blue']], $header->getHeaders());
+        $this->expectHeadersList();
+        
+        $this->assertEquals([
+            'Foo-Zoo' => ['red & blue', 'green'],
+            'Bar' => ['xyz']
+        ], $this->headers->getHeaders());
     }
 
-    public function testGetHeader()
+    public function testHasHeader()
     {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $this->assertEquals(['red & blue'], $header->getHeader('Foo-Zoo'));
+        $this->expectHeadersList();
+        $this->assertTrue($this->headers->hasHeader('Foo-Zoo'));
     }
 
-    public function testGetHeaderCaseInsensetive()
+    public function testHasHeaderCaseInsensetive()
     {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $this->assertEquals(['red & blue'], $header->getHeader('FOO-ZOO'));
-    }
-
-    public function testHasHeaderCaseSensetive()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $this->assertTrue($header->hasHeader('Foo-Zoo'));
+        $this->expectHeadersList();
+        $this->assertTrue($this->headers->hasHeader('FOO-ZOO'));
     }
 
     public function testHasHeaderNotExists()
     {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $this->assertFalse($header->hasHeader('non-exists'));
+        $this->expectHeadersList();
+        $this->assertFalse($this->headers->hasHeader('Non-Exists'));
     }
 
+    public function testGetHeader()
+    {
+        $this->expectHeadersList();
+        $this->assertEquals(['red & blue', 'green'], $this->headers->getHeader('Foo-Zoo'));
+    }
+
+    public function testGetHeaderCaseInsensetive()
+    {
+        $this->expectHeadersList();
+        $this->assertEquals(['red & blue', 'green'], $this->headers->getHeader('FOO-ZOO'));
+    }
+    
     public function testGetHeaderNotExists()
     {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $this->assertEquals([], $header->getHeader('non-exists'));
+        $this->expectHeadersList();
+        $this->assertEquals([], $this->headers->getHeader('not-exists'));
     }
 
-    public function testWithHeaderOverwrite()
+    public function testGetHeaderLine()
     {
-        $header = $this->headers
-            ->withHeader('Foo-Zoo', 'red & blue')
-            ->withHeader('foo-zoo', 'silver & gold');
-        $this->assertEquals(['foo-zoo' => ['silver & gold']], $header->getHeaders());
-    }
-
-    public function testWithAddedHeader()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue')->withAddedHeader('foo-zoo', 'silver & gold');
-        
-        $this->assertInstanceof(ResponseHeaders::class, $header);
-        $this->assertNotSame($this->headers, $header);
-        
-        $this->assertEquals(['Foo-Zoo' => ['red & blue', 'silver & gold']], $header->getHeaders());
-    }
-
-    public function testWithHeaderAddAnother()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue')
-                                ->withHeader('QUX', 'white');
-        $this->assertEquals(['Foo-Zoo' => ['red & blue'], 'QUX' => ['white']], $header->getHeaders());
-    }
-
-    public function testWithAddedHeaderNew()
-    {
-        $header = $this->headers->withAddedHeader('Qux', 'white');
-        
-        $this->assertInstanceof(ResponseHeaders::class, $header);
-        $this->assertNotSame($this->headers, $header);
-        
-        $this->assertEquals(['Qux' => ['white']], $header->getHeaders());
-    }
-
-    public function testWithoutHeader()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $headerDeleted = $header->withoutHeader('Foo-Zoo');
-        
-        $this->assertInstanceof(ResponseHeaders::class, $headerDeleted);
-        $this->assertNotSame($header, $headerDeleted);
-        
-        $this->assertEquals([], $headerDeleted->getHeaders());
-    }
-
-    public function testWithoutHeaderNotExists()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $headerDeleted = $header->withoutHeader('not-exists');
-        $this->assertSame($header, $headerDeleted);
-    }
-
-    public function testGetHeaderLineOneValue()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $this->assertEquals('red & blue', $header->getHeaderLine('FoO-zoo'));
-    }
-
-    public function testGetHeaderLineMultipleValue()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue')
-                                    ->withAddedHeader('foo-zoo', 'silver & gold');
-        
-        $this->assertEquals('red & blue, silver & gold', $header->getHeaderLine('FoO-zoo'));
+        $this->expectHeadersList();
+        $this->assertEquals('red & blue, green', $this->headers->getHeaderLine('Foo-Zoo'));
     }
 
     public function testGetHeaderLineNotExists()
     {
-        $this->assertEquals('', $this->headers->getHeaderLine('NotExists'));
+        $this->expectHeadersList();
+        $this->assertEquals('', $this->headers->getHeaderLine('not-exists'));
     }
 
-    public function testStale()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $header->withHeader('Qux', 'white');
-        $this->assertTrue($header->isStale());
-    }
-
-    public function testStaleHasHeader()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $header->withHeader('Qux', 'white');
-        $this->assertTrue($header->hasHeader('Foo-Zoo'));
-    }
-
-    public function testStaleGetHeaderLine()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue')->withAddedHeader('Foo-Zoo', 'silver & gold');
-        $header->withHeader('Qux', 'white');
-        $this->assertEquals('red & blue, silver & gold', $header->getHeaderLine('Foo-Zoo'));
-    }
-
-    public function testStaleGetHeader()
-    {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $header->withHeader('Qux', 'white');
-        $this->assertEquals(['red & blue'], $header->getHeader('Foo-Zoo'));
-    }
     
-    public function testStaleGetHeaders()
+    public function testWithHeader()
     {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $header->withHeader('Qux', 'white');
-        $this->assertEquals(['Foo-Zoo' => ['red & blue']], $header->getHeaders('Foo-Zoo'));
+        $this->headers->expects($this->any())->method('headersList')->willReturn([]);
+        $this->headers->expects($this->once())->method('header')->with('Foo-Zoo: red & blue', true);
+        
+        $headers = $this->headers->withHeader('Foo-Zoo', 'red & blue');
+        
+        $this->assertInstanceof(ResponseHeaders::class, $headers);
+        $this->assertNotSame($this->headers, $headers);
+        
+        $this->assertTrue($this->headers->isStale());
     }
-    
-    public function testStaleGetHeaderEmpty()
+
+    public function testWithHeaderMultiple()
     {
-        $header = $this->headers->withHeader('Foo-Zoo', 'red & blue');
-        $header->withHeader('Qux', 'white');
-        $this->assertEquals([], $header->getHeader('Foo'));
+        $this->headers->expects($this->any())->method('headersList')->willReturn([]);
+        $this->headers->expects($this->exactly(2))->method('header')
+            ->withConsecutive(['Foo-Zoo: red & blue', true], ['Foo-Zoo: green', true]);
+        
+        $headers = $this->headers->withHeader('Foo-Zoo', ['red & blue', 'green']);
+        
+        $this->assertInstanceof(ResponseHeaders::class, $headers);
+        $this->assertNotSame($this->headers, $headers);
+        
+        $this->assertTrue($this->headers->isStale());
+    }
+
+    /**
+     * @depends testWithHeader
+     */
+    public function testWithHeaderOverwrite()
+    {
+        $this->headers->expects($this->any())->method('headersList')->willReturn([]);
+        $this->headers->expects($this->exactly(2))->method('header')
+            ->withConsecutive(['Foo-Zoo: red & blue', true], ['foo-zoo: silver & gold', true]);
+        
+        $this->headers
+            ->withHeader('Foo-Zoo', 'red & blue')
+            ->withHeader('foo-zoo', 'silver & gold');
     }
 
     /**
@@ -215,6 +176,45 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Headers already sent in foo.php on line 42
+     */
+    public function testWithHeaderAlreaySent()
+    {
+        $this->headers->expects($this->any())->method('headersSent')->willReturn([true, 'foo.php', 42]);
+        $this->headers->expects($this->never())->method('header');
+        
+        $this->headers->withHeader('Foo-Zoo', 'red & blue');
+    }
+
+    
+    public function testWithAddedHeader()
+    {
+        $this->headers->expects($this->any())->method('headersList')->willReturn([]);
+        $this->headers->expects($this->exactly(2))->method('header')
+            ->withConsecutive(['Foo-Zoo: red & blue', false], ['foo-zoo: silver & gold', false]);
+        
+        $this->headers
+            ->withAddedHeader('Foo-Zoo', 'red & blue')
+            ->withAddedHeader('foo-zoo', 'silver & gold');
+    }
+
+    public function testWithAddedHeaderMultiple()
+    {
+        $this->headers->expects($this->any())->method('headersList')->willReturn([]);
+        $this->headers->expects($this->exactly(3))->method('header')
+            ->withConsecutive(
+                ['Foo-Zoo: red & blue', false],
+                ['foo-zoo: green', false],
+                ['foo-zoo: silver & gold', false]
+            );
+        
+        $this->headers
+            ->withAddedHeader('Foo-Zoo', 'red & blue')
+            ->withAddedHeader('foo-zoo', ['green', 'silver & gold']);
+    }
+
+    /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Header name must be a string
      */
@@ -232,31 +232,96 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         $this->headers->withAddedHeader('foo bar', 'zoo');
     }
 
+    public function testWithoutHeader()
+    {
+        $this->headers->expects($this->any())->method('headersList')->willReturn(['Foo-Zoo: red & blue']);
+        $this->headers->expects($this->once())->method('headerRemove')->with('Foo-Zoo');
+        
+        $headers = $this->headers->withoutHeader('Foo-Zoo');
+        
+        $this->assertInstanceof(ResponseHeaders::class, $headers);
+        $this->assertNotSame($this->headers, $headers);
+        
+        $this->assertTrue($this->headers->isStale());
+    }
+
+    public function testWithoutHeaderNotExists()
+    {
+        $this->headers->expects($this->once())->method('headersList')->willReturn([]);
+        $this->headers->expects($this->never())->method('headerRemove');
+        
+        $headers = $this->headers->withoutHeader('not-exists');
+        
+        $this->assertSame($this->headers, $headers);
+    }
+
     /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Header name must be a string
      */
     public function testWithoutHeaderArrayAsName()
     {
-        $header = $this->headers->withoutHeader(['foo', 'bar']);
+        $this->headers->withoutHeader(['foo', 'bar']);
     }
 
+    
+    public function testStaleWithHeader()
+    {
+        $this->headers->expects($this->once())->method('headersList')->willReturn(['Foo-Zoo: red & blue']);
+        $this->headers->expects($this->once())->method('header');
+        
+        $headers = $this->headers->withHeader('Color', 'white');
+        
+        $this->assertTrue($this->headers->isStale());
+        $this->assertFalse($headers->isStale());
+        
+        $this->assertEquals(['Foo-Zoo' => ['red & blue']], $this->headers->getHeaders());
+        $this->assertEquals(['red & blue'], $this->headers->getHeader('Foo-Zoo'));
+        $this->assertEquals('red & blue', $this->headers->getHeaderLine('Foo-Zoo'));
+        $this->assertTrue($this->headers->hasHeader('Foo-Zoo'));
+        
+        $this->assertEquals([], $this->headers->getHeader('Color'));
+        $this->assertFalse($this->headers->hasHeader('Color'));
+    }
+    
+    public function testStaleWithoutHeader()
+    {
+        $this->headers->expects($this->exactly(2))->method('headersList')
+            ->willReturn(['Foo-Zoo: red & blue', 'foo-zoo : green', 'Bar: xyz']);
+        $this->headers->expects($this->once())->method('headerRemove');
+        
+        $headers = $this->headers->withoutHeader('Foo-Zoo');
+        
+        $this->assertTrue($this->headers->isStale());
+        $this->assertFalse($headers->isStale());
+        
+        $this->assertEquals(['Foo-Zoo' => ['red & blue', 'green'], 'Bar' => ['xyz']], $this->headers->getHeaders());
+        $this->assertEquals(['red & blue', 'green'], $this->headers->getHeader('Foo-Zoo'));
+        $this->assertEquals('red & blue, green', $this->headers->getHeaderLine('Foo-Zoo'));
+        $this->assertTrue($this->headers->hasHeader('Foo-Zoo'));
+    }
+    
+    
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException \RuntimeException
      * @expectedExceptionMessage Can not change stale object
      */
     public function testErrorOnSetHeaderInStaleObject()
     {
+        $this->headers->expects($this->once())->method('headersList')->willReturn([]);
+        
         $this->headers->withHeader('foo', 'bar');
         $this->expectException($this->headers->withHeader('baz', 'raz'));
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException \RuntimeException
      * @expectedExceptionMessage Can not change stale object
      */
     public function testErrorOnAppendHeaderInStaleObject()
     {
+        $this->headers->expects($this->once())->method('headersList')->willReturn([]);
+        
         $this->headers->withHeader('foo', 'bar');
         $this->expectException($this->headers->withAddedHeader('baz', 'raz'));
     }

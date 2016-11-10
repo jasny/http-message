@@ -3,50 +3,88 @@
 namespace Jasny\HttpMessage;
 
 /**
- * ServerRequest header methods
+ * Headers that are linked to the global environment
  */
 class ResponseHeaders extends Headers
 {
-    
     /**
-     * HTTP headers
-     *
-     * @var bool
+     * Flag to indicate a stale object
+     * @var boolean
      */
     protected $isStale = false;
 
     /**
-     * Create header array from resived array in the Header 
+     * Create header array from resived array in the Header
+     * 
+     * @param array $incomingArray 
      */
-    public function __construct()
+    public function __construct($incomingArray = [])
     {
-        $this->headers = [];
+        foreach ($incomingArray as $name => $values) {
+            foreach ((array)$values as $value) {
+                $this->header("$name: $value", false);
+            }
+        }
+    }
+    
+    
+    /**
+     * Split a header string in name and value
+     * 
+     * @param string $header
+     * @return array [name, value, key]
+     */
+    protected function splitHeader($header)
+    {
+        list($name, $value) = explode(':', $header, 2);
+        
+        return [trim($name), trim($value), strtolower(trim($name))];
+    }
+    
+    
+    /**
+     * Check that headers are not already sent
+     * 
+     * @throws \RuntimeException
+     */
+    protected function assertHeadersNotSent()
+    {
+        list($sent, $file, $line) = $this->headersSent();
+        
+        if ($sent) {
+            throw new \RuntimeException("Headers already sent in $file on line $line");
+        }
     }
     
     /**
-     * For the current object simple chek  if current object 
-     * can be used for set or modify or remove headers
+     * Check that this instance is in sync with the global environment
      *
-     * @throws \InvalidArgumentException
+     * @throws \RuntimeException
      */
     protected function assertNotStale()
     {
         if ($this->isStale === true) {
-            throw new \InvalidArgumentException("Can not change stale object");
+            throw new \RuntimeException("Can not change stale object");
         }
     }
 
     /**
-     * Change current object to stale, move all headers to the variable
+     * Mark that this instance is no longer in sync with the global environment
      */
     protected function turnStale()
     {
         $this->isStale = true;
         
-        $list = headers_list();
+        $list = $this->headersList();
+        
         foreach ($list as $header) {
-            list($key, $value) = explode(': ', $header);
-            $this->headers[strtolower($key)] = ['name' => $key, 'values' => explode(', ', $value)];
+            list($name, $value, $key) = $this->splitHeader($header);
+            
+            if (!isset($this->headers[$key])) {
+                $this->headers[$key] = ['name' => $name, 'values' => []];
+            }
+            
+            $this->headers[$key]['values'][] = $value;
         }
     }
 
@@ -58,22 +96,6 @@ class ResponseHeaders extends Headers
         return $this->isStale;
     }
     
-    /**
-     * Return header value from sending headers
-     * @param string Header key
-     * @return string|bool String if header are founded or false on error
-     */
-    protected function getHeaderValue($name)
-    {
-        $headers = headers_list();
-        foreach ($headers as $header) {
-            list($key, $value) = explode(': ', $header, 2);
-            if (strtolower($key) == strtolower($name)) {
-                return $value;
-            }
-        }
-        return false;
-    }
 
     /**
      * Retrieves all message header values.
@@ -99,16 +121,29 @@ class ResponseHeaders extends Headers
      */
     public function getHeaders()
     {
-        if ($this->isStale) {
+        if ($this->isStale()) {
             return parent::getHeaders();
+        }
+        
+        $names = [];
+        $values = [];
+        $list = $this->headersList();
+        
+        foreach ($list as $header) {
+            list($name, $value, $key) = $this->splitHeader($header);
+            
+            if (!isset($names[$key])) {
+                $names[$key] = $name;
+                $values[$key] = [];
+            }
+            
+            $values[$key][] = $value; 
         }
         
         $headers = [];
         
-        $list = headers_list();
-        foreach ($list as $header) {
-            list($key, $value) = explode(': ', $header);
-            $headers[$key] = explode(', ', $value);
+        foreach ($names as $key => $name) {
+            $headers[$name] = $values[$key];
         }
         
         return $headers;
@@ -125,42 +160,25 @@ class ResponseHeaders extends Headers
      */
     public function hasHeader($name)
     {
-        $this->assertHeaderName($name);
-        
-        if ($this->isStale) {
+        if ($this->isStale()) {
             return parent::hasHeader($name);
         }
         
-        $value = $this->getHeaderValue($name);
-        return ($value === false) ? false : true;
-    }
-
-    /**
-     * Retrieves a comma-separated string of the values for a single header.
-     *
-     * This method returns all of the header values of the given
-     * case-insensitive header name as a string concatenated together using
-     * a comma.
-     *
-     * NOTE: Not all header values may be appropriately represented using
-     * comma concatenation. For such headers, use getHeader() instead
-     * and supply your own delimiter when concatenating.
-     *
-     * @param string $name Case-insensitive header field name.
-     * @return string A string of values as provided for the given header
-     *    concatenated together using a comma. If the header does not appear in
-     *    the message, this method returns an empty string.
-     */
-    public function getHeaderLine($name)
-    {
         $this->assertHeaderName($name);
         
-        if ($this->isStale) {
-            return parent::getHeaderLine($name);
+        $find = strtolower($name);
+        $found = false;
+        
+        foreach ($this->headersList() as $header) {
+            list(, , $key) = $this->splitHeader($header);
+            
+            if ($key === $find) {
+                $found = true;
+                break;
+            }
         }
         
-        $value = $this->getHeaderValue($name);
-        return (string)$value;
+        return $found;
     }
 
     /**
@@ -177,15 +195,52 @@ class ResponseHeaders extends Headers
      */
     public function getHeader($name)
     {
-        $this->assertHeaderName($name);
-        
-        if ($this->isStale) {
+        if ($this->isStale()) {
             return parent::getHeader($name);
         }
         
-        $value = $this->getHeaderValue($name);
-        $array = array_filter(explode(', ', (string)$value));
-        return $array;
+        $this->assertHeaderName($name);
+        
+        $find = strtolower($name);
+        $values = [];
+        
+        foreach ($this->headersList() as $header) {
+            list(, $value, $key) = $this->splitHeader($header);
+            
+            if ($key === $find) {
+                $values[] = $value;
+            }
+        }
+        
+        return $values;
+    }
+    
+    
+    /**
+     * Abstraction for `withHeader` and `withAddedHeader`
+     * 
+     * @param string $name Case-insensitive header field name.
+     * @param string|string[] $value Header value(s).
+     * @param boolean $add
+     * @return static
+     * @throws \InvalidArgumentException for invalid header names or values.
+     * @throws \RuntimeException if headers are already sent
+     */
+    protected function withHeaderLogic($name, $value, $add)
+    {
+        $this->assertHeaderName($name);
+        $this->assertHeaderValue($value);
+        $this->assertNotStale();
+        $this->assertHeadersNotSent();
+        
+        $request = clone $this;
+        $this->turnStale();
+        
+        foreach ((array)$value as $val) {
+            $this->header("{$name}: {$val}", !$add);
+        }
+        
+        return $request;
     }
 
     /**
@@ -205,16 +260,7 @@ class ResponseHeaders extends Headers
      */
     public function withHeader($name, $value)
     {
-        $this->assertHeaderName($name);
-        $this->assertHeaderValue($value);
-        $this->assertNotStale();
-        
-        $request = clone $this;
-        $this->turnStale();
-        
-        header($name . ': ' . implode(', ', (array)$value), true);
-        
-        return $request;
+        return $this->withHeaderLogic($name, $value, false);
     }
 
     /**
@@ -232,26 +278,7 @@ class ResponseHeaders extends Headers
      */
     public function withAddedHeader($name, $value)
     {
-        $this->assertHeaderName($name);
-        $this->assertHeaderValue($value);
-        $this->assertNotStale();
-        
-        $request = clone $this;
-        $this->turnStale();
-        
-        $oldValue = '';
-        $headers = headers_list();
-        foreach ($headers as $header) {
-            list($key, $v) = explode(': ', $header);
-            if (strtolower($key) == strtolower($name)) {
-                header_remove($key);
-                $name = $key;
-                $oldValue = $v.', ';
-            }
-        }
-        
-        header($name.': '.$oldValue.implode(', ', (array)$value));
-        return $request;
+        return $this->withHeaderLogic($name, $value, true);
     }
 
     /**
@@ -263,16 +290,71 @@ class ResponseHeaders extends Headers
     public function withoutHeader($name)
     {
         $this->assertHeaderName($name);
-        $this->assertNotStale();
         
         if (!$this->hasHeader($name)) {
             return $this;
         }
         
+        $this->assertNotStale();
+        $this->assertHeadersNotSent();
+        
         $request = clone $this;
         $this->turnStale();
-        header_remove($name);
+        $this->headerRemove($name);
         
         return $request;
+    }
+    
+    
+    /**
+     * Wrapper for `headers_list` function
+     * @link http://php.net/manual/en/function.headers-list.php
+     * @codeCoverageIgnore
+     * 
+     * @return array
+     */
+    protected function headersList()
+    {
+        return headers_list();
+    }
+
+    /**
+     * Wrapper for `header` function
+     * @link http://php.net/manual/en/function.header.php
+     * @codeCoverageIgnore
+     * 
+     * @param string  $string
+     * @param boolean $replace
+     * @param int     $http_response_code
+     */
+    protected function header($string, $replace = true, $http_response_code = null)
+    {
+        header($string, $replace, $http_response_code);
+    }
+    
+    /**
+     * Wrapper for `header` function
+     * @link http://php.net/manual/en/function.header-remove.php
+     * @codeCoverageIgnore
+     * 
+     * @param string $name
+     */
+    protected function headerRemove($name = null)
+    {
+        header_remove($name);
+    }
+    
+    /**
+     * Wrapper for `headers_sent` function
+     * @link http://php.net/manual/en/function.headers-sent.php
+     * @codeCoverageIgnore
+     * 
+     * @return array [boolean, string, int]
+     */
+    protected function headersSent()
+    {
+        $ret = headers_sent($file, $line);
+        
+        return [$ret, $file, $line];
     }
 }
