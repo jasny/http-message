@@ -31,6 +31,13 @@ trait ParsedBody
     
     
     /**
+     * Get the server paramaters (typically $_SERVER)
+     * 
+     * @return array
+     */
+    abstract function getServerParams();
+    
+    /**
      * Get a header as string
      * 
      * @param string $name
@@ -82,7 +89,6 @@ trait ParsedBody
         return false;
     }
 
-
     /**
      * Set as parsed body, but only if Content-Type is of form upload
      * 
@@ -92,7 +98,10 @@ trait ParsedBody
     {
         $contentType = $this->getHeaderLine('Content-Type');
         
-        if (in_array($contentType, ['application/x-www-form-urlencoded', 'multipart/form-data'])) {
+        if (
+            in_array($contentType, ['application/x-www-form-urlencoded', 'multipart/form-data']) ||
+            empty($contentType) && !array_key_exists('SERVER_PROTOCOL', $this->getServerParams())
+        ) {
             $this->parsedBody =& $data;
             $this->parseCondition = ['content_type' => $contentType];
         }
@@ -205,7 +214,25 @@ trait ParsedBody
         
         return $this->parsedBody;
     }
-
+    
+    
+    /**
+     * Update the values of the parsed body
+     * In case the parsed body is linked to $_POST, setting it would break the link
+     * 
+     * @param array $data
+     */
+    protected function setParsedBodyValues(array $data)
+    {
+        foreach (array_keys($this->parsedBody) as $key) {
+            unset($this->parsedBody[$key]);
+        }
+            
+        foreach ($data as $key => $value) {
+            $this->parsedBody[$key] = $value;
+        }
+    }
+    
     /**
      * Return an instance with the specified body parameters.
      *
@@ -216,8 +243,13 @@ trait ParsedBody
     {
         $request = $this->turnStale();
         
-        $request->parsedBody = $data;
         $request->parseCondition = false;
+        
+        if (is_array($data) && is_array($this->parsedBody)) {
+            $request->setParsedBodyValues($data);
+        } else {
+            $request->parsedBody = $data;
+        }
         
         return $request;
     }

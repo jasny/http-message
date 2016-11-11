@@ -6,7 +6,6 @@ namespace Jasny\HttpMessage\Response;
  */
 trait StatusCode
 {
-
     /**
      * HTTP Response status code
      *

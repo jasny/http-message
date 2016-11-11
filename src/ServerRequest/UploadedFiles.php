@@ -11,6 +11,13 @@ use Jasny\HttpMessage\UploadedFile;
 trait UploadedFiles
 {
     /**
+     * Possible link to $_FILES
+     * 
+     * @var array
+     */
+    protected $files;
+    
+    /**
      * An array tree of UploadedFileInterface instances.
      * This is typically derived from $_FILES
      * 
@@ -75,15 +82,93 @@ trait UploadedFiles
     
     /**
      * Set uploaded files
-     * 
      * @global array $_FILES
      * 
      * @param array $files
      */
-    protected function setUploadedFiles(array $files)
+    protected function setUploadedFiles(array &$files)
     {
-        $assertIsUploadedFile = ($files === $_FILES);
-        $this->uploadedFiles = $this->groupUploadedFiles($files, null, $assertIsUploadedFile);
+        $isUploadedFiles = ($files === $_FILES);
+        
+        $this->uploadedFiles = $this->groupUploadedFiles($files, null, $isUploadedFiles);
+        
+        if ($isUploadedFiles) {
+            $this->files =& $files;
+        }
+    }
+    
+    /**
+     * Ungroup uploaded files and set $_FILES
+     * 
+     * @param array $uploadedFiles
+     */
+    protected function ungroupUploadedFiles(array $uploadedFiles)
+    {
+        foreach (array_keys($this->files) as $key) {
+            unset($this->files[$key]);
+        }
+
+        foreach ($uploadedFiles as $key => $item) {
+            if (is_array($item)) {
+                $group = array_fill_keys(['name', 'type', 'size', 'tmp_name', 'error'], []);
+                $this->ungroupUploadedFilesDeep($item, $group['name'], $group['type'], $group['size'],
+                    $group['tmp_name'], $group['error']);
+                
+                $this->files[$key] = $group;
+            } elseif ($item instanceof UploadedFileInterface) {
+                try {
+                    $stream = $item->getStream();
+                } catch (\RuntimeException $e) {
+                    $stream = null;
+                }
+                
+                $this->files[$key] = [
+                    'name' => $item->getClientFilename(),
+                    'type' => $item->getClientMediaType(),
+                    'size' => $item->getSize(),
+                    'tmp_name' => $stream ? $stream->getMetadata('url') : null,
+                    'error' => $item->getError()
+                ];
+            }
+        }
+    }
+    
+    /**
+     * Ungroup uploaded files and set a child of $_FILES
+     * 
+     * @param array $uploadedFiles
+     * @param array $name
+     * @param array $type
+     * @param array $size
+     * @param array $tmpName
+     * @param array $error
+     */
+    protected function ungroupUploadedFilesDeep(array $uploadedFiles, &$name, &$type, &$size, &$tmpName, &$error)
+    {
+        foreach ($uploadedFiles as $key => $item) {
+            if (is_array($item)) {
+                $name[$key] = [];
+                $type[$key] = [];
+                $size[$key] = [];
+                $tmpName[$key] = [];
+                $error[$key] = [];
+                
+                $this->ungroupUploadedFilesDeep($item, $name[$key], $type[$key], $size[$key], $tmpName[$key],
+                    $error[$key]);
+            } elseif ($item instanceof UploadedFileInterface) {
+                try {
+                    $stream = $item->getStream();
+                } catch (\RuntimeException $e) {
+                    $stream = null;
+                }
+                
+                $name[$key] = $item->getClientFilename();
+                $type[$key] = $item->getClientMediaType();
+                $size[$key] = $item->getSize();
+                $tmpName[$key] = $stream ? $stream->getMetadata('url') : null;
+                $error[$key] = $item->getError();
+            }
+        }
     }
     
     
@@ -133,6 +218,10 @@ trait UploadedFiles
         
         $request = $this->turnStale();
         $request->uploadedFiles = $uploadedFiles;
+        
+        if (isset($this->files)) {
+            $this->ungroupUploadedFiles($uploadedFiles);
+        }
         
         return $request;
     }

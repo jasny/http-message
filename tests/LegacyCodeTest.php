@@ -2,209 +2,152 @@
 
 namespace Jasny\HttpMessage;
 
+use Jasny\HttpMessage\ServerRequest;
+use Jasny\HttpMessage\UploadedFile;
 use PHPUnit_Framework_TestCase;
+use org\bovigo\vfs\vfsStream;
 
 /**
  * @runTestsInSeparateProcesses
  */
 class LegacyCodeTest extends PHPUnit_Framework_TestCase
 {
-    
     /**
-     * @var object ServerRequest 
+     * @var \org\bovigo\vfs\vfsStreamDirectory
      */
-    var $request;
+    protected $root;
     
-    /**
-     * @var object Response 
-     */
-    var $response;
-    
-    /**
-     * @dataProvider 
-     */
     public function setUp()
     {
-        
-    }
-    
-    /**
-     * Global massive with returned 
-     */
-    public function getProvider()
-    {
-        /**
-         * Array of params
-         * @param string PATH_INFO
-         * @param array Request Headers
-         * @param array array of query params
-         * @param array Request cookies
-         * @param array Response Headers
-         * @param array Response text
-         */
-        return [
-            ['/foo', ['Foo' => 'bar'], ['page' => 1], [], ['Foo' => ['Baz']], 'Baz'],
-            ['/boo', ['Foo' => 'boo'], [], ['boo', 'good', 'test'], ['Foo' => ['booPage']], 'Boo page']
+        $structure = [
+            'ab' => 'hello',
+            'cd' => 'how are',
+            'ef' => '<b>you</b>',
         ];
+        
+        $this->root = vfsStream::setup('tmp', null, $structure);
     }
     
     /**
-     * Emulating route class from 
+     * Initialize the request
      * 
-     * @param object $request
-     * @param object $response
+     * @param ServerRequest $request
+     * @return ServerRequest
      */
-    public function getRoute($request, $response) 
+    protected function initRequest(ServerRequest $request)
     {
-        $params = $request->getQueryParams();
-        
-        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-            if ($_SERVER['PATH_INFO'] == '/foo') {
-                if ($_GET['page'] == '1') {
-                    header('Foo: Baz');
-                    echo 'Baz';
-                }
-            }
-        
-            if ($_SERVER['PATH_INFO'] == '/boo') {
-                header('Foo: booPage');
-                echo 'Boo page';
-            }
-        }
-        
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            if($_SERVER['PATH_INFO'] == '/post') {
-                if (!empty($_POST)) {
-                    if ($_POST['name'] == 'Jasny') {
-                        header('Status: ok');
-                        echo 'Hello Jasny';
-                    }
-                }
-            }
-            if($_SERVER['PATH_INFO'] == '/login') {
-                if (!empty($_POST)) {
-                    if ($_POST['name'] == 'Jasny' && $_POST['password'] == 'Http') {
-                        header('Page: Login');
-                        header('Login: Ok');
-                        echo 'You are logged in!';
-                    }
-                }
-            }
-        }
+        return $request
+            ->withServerParams([
+                'SERVER_PROTOCOL' => 'HTTP/1.1',
+                'REQUEST_METHOD' => 'POST',
+                'PATH_INFO' => '/foo'
+            ])
+            ->withQueryParams(['full' => 1, 'mark' => 'pop'])
+            ->withCookieParams(['foo' => 'bar'])
+            ->withParsedBody(['name' => 'John', 'email' => 'john@example.com'])
+            ->withUploadedFiles([
+                'file' => new UploadedFile([
+                    'name' => 'foo.txt',
+                    'type' => 'text/plain',
+                    'size' => 5,
+                    'tmp_name' => vfsStream::path('/tmp/ab'),
+                    'error' => UPLOAD_ERR_OK
+                ]),
+                'extra' => [
+                    new UploadedFile([
+                        'name' => 'bar.txt',
+                        'type' => 'text/plain',
+                        'size' => 7,
+                        'tmp_name' => vfsStream::path('/tmp/cd'),
+                        'error' => UPLOAD_ERR_OK
+                    ]),
+                    new UploadedFile([
+                        'name' => 'zoo.html',
+                        'type' => 'text/html',
+                        'size' => 9,
+                        'tmp_name' => vfsStream::path('/tmp/ef'),
+                        'error' => UPLOAD_ERR_OK
+                    ]),
+                    new UploadedFile([
+                        'error' => UPLOAD_ERR_INI_SIZE
+                    ])
+                ]
+            ]);
     }
     
     /**
-     * @dataProvider getProvider
+     * Assert that the global environment has been configured
      */
-    public function testGet($uri, $requestHeaders, $query, $cookies, $responseHeaders, $output)
+    protected function assertGlobalEnvironment()
+    {
+        $this->assertEquals([
+            'SERVER_PROTOCOL' => 'HTTP/1.1',
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/foo'
+        ], $_SERVER);
+        
+        $this->assertEquals(['full' => 1, 'mark' => 'pop'], $_GET);
+        $this->assertEquals(['foo' => 'bar'], $_COOKIE);
+        $this->assertEquals(['name' => 'John', 'email' => 'john@example.com'], $_POST);
+        
+        $this->assertEquals([
+            'file' => ['name' => 'foo.txt', 'type' => 'text/plain', 'size' => 5,
+                'tmp_name' => vfsStream::path('/tmp/ab'), 'error' => UPLOAD_ERR_OK],
+            'extra' => [
+                'name' => ['bar.txt', 'zoo.html', null],
+                'type' => ['text/plain', 'text/html', null],
+                'size' => [7, 9, null],
+                'tmp_name' => [vfsStream::path('/tmp/cd'), vfsStream::path('/tmp/ef'), null],
+                'error' => [UPLOAD_ERR_OK, UPLOAD_ERR_OK, UPLOAD_ERR_INI_SIZE]
+            ]
+        ], $_FILES);
+    }
+    
+    /**
+     * Assert that the environment has been cleaned
+     */
+    protected function assertCleanedEnvironment()
+    {
+        $this->assertEquals([], headers_list());
+        $this->expectOutputString('');
+    }
+    
+    /**
+     * @test
+     */
+    public function test()
     {
         ob_start();
         
-        $request = (new ServerRequest())->withGlobalEnvironment()
-            ->withServerParams(['REQUEST_METHOD' => 'GET', 'PATH_INFO' => $uri]);
-        if (!empty($requestHeaders)) {
-            foreach ($requestHeaders as $name => $value) {
-                $request = $request->withHeader($name, $value);
-            }
-        }
-        if (!empty($query)) {
-            $request = $request->withQueryParams($query);
-        }
-        if (!empty($cookies)) {
-            $request = $request->withCookieParams($query);
-        }
+        // Create response with (actual) global enviroment. Modifying it, modifies the superglobals.
+        $this->initRequest((new ServerRequest())->withGlobalEnvironment(true));
         
-        $response = (new Response())->withGlobalEnvironment();
-        
-        $this->getRoute($request, $response);
-        
-        $response = $response->withoutGlobalEnvironment();
-        
-        header_remove();
-        ob_end_clean();
-        
-        $this->assertInstanceof(ServerRequest::class, $request);
-        $this->assertInstanceof(Response::class, $response);
-        
-        $this->assertEquals('GET', $request->getMethod());
-        
-        foreach ($responseHeaders as $name => $value) {
-            $this->assertEquals($value, $response->getHeader($name));
-            $this->assertEquals(implode(', ', $value), $response->getHeaderLine($name));
-            
-        }
-        $this->assertEquals(strlen($output), $response->getBody()->tell());
-        $response->getBody()->rewind();
-        $this->assertEquals($output, $response->getBody()->getContents());
-        $this->assertEquals(strlen($output), $response->getBody()->getSize());
-    }
-    
+        // Create response with (actual) global enviroment.
+        $response = (new Response())->withGlobalEnvironment(true);
 
-    /**
-     * Global massive with returned
-     */
-    public function postProvider()
-    {
-        /**
-         * Array of params
-         * @param string PATH_INFO
-         * @param array Post array
-         * @param array Request Headers
-         * @param array array of query params
-         * @param array Request cookies
-         * @param array Response Headers
-         * @param array Response text
-         */
-        return [
-            ['/post', ['name' => 'Jasny'],  [], [], [], ['Status' => ['ok']], 'Hello Jasny'],
-            ['/login', ['name' => 'Jasny', 'password' => 'Http'], [], [], ['boo', 'good', 'test'], ['Login' => ['Ok'], 'Page' => ['Login']], 'You are logged in!']
-        ];
-    }
-    
-    /**
-     * @dataProvider postProvider
-     */
-    public function testPost($uri, $post, $requestHeaders, $query, $cookies, $responseHeaders, $output)
-    {
-        ob_start();
+        // Check environment
+        $this->assertGlobalEnvironment();
         
-        $_POST = $post;
-        $request = (new ServerRequest())->withGlobalEnvironment()
-            ->withServerParams(['REQUEST_METHOD' => 'POST', 'PATH_INFO' => $uri]);
-        if (!empty($requestHeaders)) {
-            foreach ($requestHeaders as $name => $value) {
-                $request = $request->withHeader($name, $value);
-            }
-        }
-        if (!empty($query)) {
-            $request = $request->withQueryParams($query);
-        }
-        if (!empty($cookies)) {
-            $request = $request->withCookieParams($query);
-        }
+        // The code uses `header` and `echo` to output.
+        http_response_code(201);
+        header('Location: http://example.com/foo/1');
+        header('Content-Type: text/plain');
+        echo "Hello world";
         
-        $response = (new Response())->withGlobalEnvironment();
-        
-        $this->getRoute($request, $response);
-        
-        $response = $response->withoutGlobalEnvironment();
-        
-        header_remove();
+        // Disconnect the global environment, copy the data and headers
+        $finalResponse = $response->withoutGlobalEnvironment();
+
+        // Remove all headers and output
+        header_remove(); 
         ob_end_clean();
         
-        $this->assertInstanceof(ServerRequest::class, $request);
-        $this->assertInstanceof(Response::class, $response);
+        // Check the final response
+        $this->assertEquals(201, $finalResponse->getStatusCode());
+        $this->assertEquals('http://example.com/foo/1', $finalResponse->getHeaderLine('Location'));
+        $this->assertEquals('text/plain', $finalResponse->getHeaderLine('Content-Type'));
+        $this->assertEquals("Hello world", (string)$finalResponse->getBody());
         
-        $this->assertEquals('POST', $request->getMethod());
-        
-        foreach ($responseHeaders as $name => $value) {
-            $this->assertEquals($value, $response->getHeader($name));
-            $this->assertEquals(implode(', ', $value), $response->getHeaderLine($name));
-            
-        }
-        $this->assertEquals(strlen($output), $response->getBody()->tell());
-        $response->getBody()->rewind();
-        $this->assertEquals($output, $response->getBody()->getContents());
-        $this->assertEquals(strlen($output), $response->getBody()->getSize());
+        // Check that the headers and output buffer is cleaned
+        $this->assertCleanedEnvironment();
     }
 }
