@@ -2,8 +2,10 @@
 
 namespace Jasny\HttpMessage\Response;
 
-use Jasny\HttpMessage\Headers as HeaderClass;
+use Jasny\HttpMessage\Headers;
 use Jasny\HttpMessage\ResponseHeaders;
+use Jasny\HttpMessage\ResponseStatus;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * ServerRequest methods for using the global enviroment
@@ -17,21 +19,35 @@ trait GlobalEnvironment
     protected $isStale;
     
     /**
-     * The object is stale if it no longer reflects the global enviroment
-     * @var object|array|null
+     * HTTP headers
+     * @var HeadersInterface
      */
     protected $headers;
     
     /**
-     * Function from Body trait
-     * @return object
+     * HTTP Response status
+     * @var ResponseStatus
+     */
+    protected $responseStatus;
+    
+    
+    /**
+     * Get the body
+     * @return StreamInterface
      */
     abstract public function getBody();
+    
     /**
-     * Function from Headers trait
-     * @return array
+     * Get the headers
+     * @return HeadersInterface
      */
     abstract public function getHeaders();
+    
+    /**
+     * Function for the protocol version
+     * @return string
+     */
+    abstract public function getProtocolVersion();
     
     
     /**
@@ -44,8 +60,11 @@ trait GlobalEnvironment
     public function withGlobalEnvironment()
     {
         $response = $this->turnStale();
+        
         $response->getBody()->useGlobally();
         $response->headers = new ResponseHeaders();
+        $response->responseStatus = (new ResponseStatus($this->getProtocolVersion()));
+        $response->responseStatus->useGlobally();
         
         return $response;
     }
@@ -59,8 +78,10 @@ trait GlobalEnvironment
     public function withoutGlobalEnvironment()
     {
         $response = $this->turnStale();
+        
         $response->getBody()->useLocally();
-        $response->headers = new HeaderClass($this->headers);
+        $response->headers = new Headers($this->headers);
+        $response->responseStatus->useLocally();
         
         return $response;
     }

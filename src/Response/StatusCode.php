@@ -13,6 +13,12 @@ trait StatusCode
      * @var ResponseStatus 
      */
     protected $status;
+    
+    /**
+     * Function for the protocol version
+     * @return string
+     */
+    abstract public function getProtocolVersion();
 
     
     /**
@@ -21,7 +27,7 @@ trait StatusCode
     protected function getStatus()
     {
         if (!isset($this->status)) {
-            $this->status = new ResponseStatus();
+            $this->status = new ResponseStatus($this->getProtocolVersion());
         }
         
         return $this->status;

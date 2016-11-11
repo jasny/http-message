@@ -14,15 +14,28 @@ class ResponseStatus
      * 
      * @var int
      */
-    protected $code = 200;
+    protected $code;
 
     /**
      * HTTP Response status phrase
      *
      * @var string
      */
-    protected $phrase = 'OK';
+    protected $phrase;
 
+    /**
+     * State of the object: 'local', 'global' or 'stale'
+     * @var string
+     */
+    protected $state = 'local';
+    
+    /**
+     * HTTP protocol version
+     * @var string
+     */
+    protected $protocolVersion;
+    
+    
     /**
      * Default phrases for the status codes
      * based on the RCF7231
@@ -77,11 +90,18 @@ class ResponseStatus
     /**
      * Class constructor
      * 
+     * @param string $protocolVersion
      * @param int    $code
      * @param string $reasonPhrase
      */
-    public function __construct($code = null, $reasonPhrase = null)
+    public function __construct($protocolVersion, $code = null, $reasonPhrase = null)
     {
+        if (!is_string($protocolVersion)) {
+            throw new \InvalidArgumentException("Expected protocol version to be a string");
+        }
+        
+        $this->protocolVersion = $protocolVersion;
+        
         if (isset($code)) {
             $this->assertStatusCode($code);
 
@@ -93,6 +113,95 @@ class ResponseStatus
 
             $this->code = (int)$code;
             $this->phrase = (string)$reasonPhrase;
+        }
+    }
+    
+
+    /**
+     * Copy the http status from the global scope
+     */
+    protected function copyGlobalStatus()
+    {
+        $code = $this->httpResponseCode() ?: null;
+        
+        if ($this->code === $code) {
+            return;
+        }
+        
+        $this->code = $code;
+            
+        if (!isset($code)) {
+            $this->phrase = null;
+        } elseif (array_key_exists($code, $this->defaultStatuses)) {
+            $this->phrase = $this->defaultStatuses[$code];
+        } else {
+            $this->phrase = '';
+        }
+    }
+    
+    /**
+     * Connect the response status to the global environment
+     */
+    public function useGlobally()
+    {
+        if ($this->state !== 'local') {
+            return;
+        }
+
+        if (isset($this->code)) {
+            $this->header("HTTP/{$this->protocolVersion} {$this->code} {$this->phrase}");
+        }
+        
+        $this->state = 'global';
+    }
+    
+    /**
+     * Disconnect the response status to the global environment
+     */
+    public function useLocally()
+    {
+        if ($this->state === 'local') {
+            return;
+        }
+        
+        $this->copyGlobalStatus();
+        
+        $this->state = 'local';
+    }
+    
+    /**
+     * Mark the object as no longer in sync with the Global environment
+     */
+    protected function turnStale()
+    {
+        if ($this->state !== 'global') {
+            return;
+        }
+        
+        $this->copyGlobalStatus();
+        
+        $this->state = 'stale';
+    }
+    
+    /**
+     * Check if object is stale
+     * @return boolean
+     */
+    public function isStale()
+    {
+        return $this->state === 'stale';
+    }
+    
+    
+    /**
+     * Assert that this object isn't stale
+     * 
+     * @throws \RuntimeException
+     */
+    protected function assertNotStale()
+    {
+        if ($this->state === 'stale') {
+            throw new \RuntimeException("Can not change stale object");
         }
     }
     
@@ -125,6 +234,7 @@ class ResponseStatus
         }
     }
 
+    
     /**
      * Gets the response status code.
      *
@@ -135,7 +245,11 @@ class ResponseStatus
      */
     public function getStatusCode()
     {
-        return $this->code;
+        if ($this->state === 'global') {
+            return $this->httpResponseCode();
+        }
+        
+        return $this->code ?: 200;
     }
 
     /**
@@ -145,9 +259,35 @@ class ResponseStatus
      */
     public function getReasonPhrase()
     {
-        return $this->phrase;
+        if ($this->state === 'global') {
+            $code = $this->httpResponseCode();
+            
+            return $this->code === $code && $this->phrase
+                ? $this->phrase
+                : (isset($this->defaultStatuses[$code]) ? $this->defaultStatuses[$code] : '');
+        }
+        
+        return $this->code ? $this->phrase : $this->defaultStatuses[200];
     }
 
+    /**
+     * Set the protocol version
+     * 
+     * @param string $version
+     * @return static
+     */
+    public function withProtocolVersion($version)
+    {
+        if (!is_string($version)) {
+            throw new \InvalidArgumentException("Expected protocol version to be a string");
+        }
+        
+        $status = clone $this;
+        $status->protocolVersion = $version;
+        
+        return $status;
+    }
+    
     /**
      * Return an instance with the specified status code and, optionally, reason phrase.
      *
@@ -172,6 +312,7 @@ class ResponseStatus
      */
     public function withStatus($code, $reasonPhrase = '')
     {
+        $this->assertNotStale();
         $this->assertStatusCode($code);
         
         if (empty($reasonPhrase) && array_key_exists($code, $this->defaultStatuses)) {
@@ -180,11 +321,47 @@ class ResponseStatus
         
         $this->assertReasonPhrase($reasonPhrase);
         
+        if ($this->state === 'global') {
+            $this->header("HTTP/{$this->protocolVersion} $code $reasonPhrase");
+        }
+        
+        if ($this->code === $code && $this->phrase === $reasonPhrase) {
+            return $this;
+        }
+        
         $status = clone $this;
+        
+        $this->turnStale();
         
         $status->code = (int)$code;
         $status->phrase = (string)$reasonPhrase;
-
+        
         return $status;
+    }
+    
+    
+    /**
+     * Wrapper around `header` function
+     * @link http://php.net/manual/en/function.header.php
+     * @codeCoverageIgnore
+     * 
+     * @param string $string
+     */
+    protected function header($string)
+    {
+        header($string);
+    }
+    
+    /**
+     * Wrapper around `http_response_code` function
+     * @link http://php.net/manual/en/function.http-response-code.php
+     * @codeCoverageIgnore
+     * 
+     * @param int|null $code
+     * @return int
+     */
+    protected function httpResponseCode($code = null)
+    {
+        return http_response_code($code);
     }
 }
