@@ -28,7 +28,7 @@ trait GlobalEnvironment
      * HTTP Response status
      * @var ResponseStatus
      */
-    protected $responseStatus;
+    protected $status;
     
     
     /**
@@ -63,8 +63,8 @@ trait GlobalEnvironment
         
         $response->getBody()->useGlobally();
         $response->headers = new ResponseHeaders();
-        $response->responseStatus = (new ResponseStatus($this->getProtocolVersion()));
-        $response->responseStatus->useGlobally();
+        $response->status = (new ResponseStatus($this->getProtocolVersion()));
+        $response->status->useGlobally();
         
         return $response;
     }
@@ -81,7 +81,7 @@ trait GlobalEnvironment
         
         $response->getBody()->useLocally();
         $response->headers = new Headers($this->headers);
-        $response->responseStatus->useLocally();
+        $response->status->useLocally();
         
         return $response;
     }

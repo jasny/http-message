@@ -307,7 +307,8 @@ class ResponseHeaders extends Headers
     
     
     /**
-     * Wrapper for `headers_list` function
+     * Wrapper for `headers_list` function.
+     * Uses `xdebug_get_headers` on the PHP CLI as `headers_list` will always return an empty array.
      * @link http://php.net/manual/en/function.headers-list.php
      * @codeCoverageIgnore
      * 
@@ -315,6 +316,14 @@ class ResponseHeaders extends Headers
      */
     protected function headersList()
     {
+        if (php_sapi_name() === 'cli') {
+            if (!function_exists('xdebug_get_headers')) {
+                throw new \RuntimeException("Getting the HTTP headers on PHP CLI requires XDebug");
+            }
+            
+            return xdebug_get_headers();
+        }
+        
         return headers_list();
     }
 

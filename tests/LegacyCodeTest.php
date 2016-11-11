@@ -134,7 +134,7 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
         header('Location: http://example.com/foo/1');
         header('Content-Type: text/plain');
         echo "Hello world";
-        
+
         // Disconnect the global environment, copy the data and headers
         $finalResponse = $response->withoutGlobalEnvironment();
 
@@ -145,7 +145,7 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
         // Check the final response
         $this->assertEquals(201, $finalResponse->getStatusCode());
         $this->assertEquals('http://example.com/foo/1', $finalResponse->getHeaderLine('Location'));
-        $this->assertEquals('text/plain', $finalResponse->getHeaderLine('Content-Type'));
+        $this->assertStringStartsWith('text/plain', $finalResponse->getHeaderLine('Content-Type'));
         $this->assertEquals("Hello world", (string)$finalResponse->getBody());
         
         // Check that the headers and output buffer is cleaned
