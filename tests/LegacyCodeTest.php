@@ -9,6 +9,7 @@ use org\bovigo\vfs\vfsStream;
 
 /**
  * @runTestsInSeparateProcesses
+ * @coversNothing
  */
 class LegacyCodeTest extends PHPUnit_Framework_TestCase
 {

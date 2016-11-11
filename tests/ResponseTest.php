@@ -2,11 +2,12 @@
 
 namespace Jasny\HttpMessage;
 
-use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\Tests\AssertLastError;
 use Jasny\HttpMessage\Response;
 use Jasny\HttpMessage\ResponseHeaders;
 use Jasny\HttpMessage\Headers;
+use PHPUnit_Framework_TestCase;
+use PHPUnit_Framework_MockObject_MockObject as MockObject;
 
 /**
  * @covers Jasny\HttpMessage\Response
@@ -29,22 +30,28 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     protected $baseResponse;
     
     /**
-     * @var ReflectionProperty
-     */
-    protected $refl;
-    /**
-     * @var Headers|\PHPUnit_Framework_MockObject_MockObject;
+     * @var Headers|MockObject
      */
     protected $headers;
+    
+    /**
+     * @var ResponseStatus|MockObject
+     */
+    protected $status;
 
     public function setUp()
     {
-        $this->refl = new \ReflectionProperty(Response::class, 'headers');
-        $this->refl->setAccessible(true);
-        
         $this->baseResponse = new Response();
         $this->headers = $this->createMock(Headers::class);
-        $this->refl->setValue($this->baseResponse, $this->headers);
+        $this->status = $this->createMock(ResponseStatus::class);
+        
+        $reflHeaders = new \ReflectionProperty(Response::class, 'headers');
+        $reflHeaders->setAccessible(true);
+        $reflHeaders->setValue($this->baseResponse, $this->headers);
+        
+        $reflStatus = new \ReflectionProperty(Response::class, 'status');
+        $reflStatus->setAccessible(true);
+        $reflStatus->setValue($this->baseResponse, $this->status);
     }
 
     public function testWithGlobalEnvironment(){
@@ -56,9 +63,10 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         
         $this->assertTrue($this->baseResponse->isStale());
         
-        $this->refl = new \ReflectionProperty($response, 'headers');
-        $this->refl->setAccessible(true);
-        $this->assertInstanceof(ResponseHeaders::class, $this->refl->getValue($response));
+        $refl = new \ReflectionProperty($response, 'headers');
+        $refl->setAccessible(true);
+        $this->assertInstanceof(ResponseHeaders::class, $refl->getValue($response));
+        
         $this->assertInstanceof(OutputBufferStream::class, $response->getBody());
         $this->assertEquals('php://output', $response->getBody()->getMetadata('uri'));
     }
@@ -66,38 +74,44 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     public function testWithoutGlobalEnvironment()
     {
         $response = $this->baseResponse->withGlobalEnvironment()->withoutGlobalEnvironment();
-        $this->refl->setAccessible(true);
         
         $this->assertInstanceof(Response::class, $response);
         $this->assertNotSame($this->baseResponse, $response);
-        $this->refl = new \ReflectionProperty($response, 'headers');
-        $this->refl->setAccessible(true);
-        $this->assertInstanceof(Headers::class, $this->refl->getValue($response));
+        
+        $refl = new \ReflectionProperty($response, 'headers');
+        $refl->setAccessible(true);
+        $this->assertInstanceof(Headers::class, $refl->getValue($response));
+        
         $this->assertInstanceof(OutputBufferStream::class, $response->getBody());
         $this->assertEquals('php://temp', $response->getBody()->getMetadata('uri'));
     }
-
-    public function testChangeProtocolVersion()
+    
+    
+    public function protocolVersionProvider()
     {
-        $response2 = $this->baseResponse->withProtocolVersion('2');
-        $this->assertEquals('2', $response2->getProtocolVersion());
-        
-        $response11 = $response2->withProtocolVersion('1.1');
-        $this->assertEquals('1.1', $response11->getProtocolVersion());
-        
-        $response10 = $response11->withProtocolVersion('1.0');
-        $this->assertEquals('1.0', $response10->getProtocolVersion());
+        return [
+            ['2', '2'],
+            ['1.1', '1.1'],
+            ['1.0', '1.0'],
+            [2.0, '2'],
+            [1, '1.0']
+        ];
     }
 
-    public function testWithProtocolVersionImmutable()
+    /**
+     * @dataProvider protocolVersionProvider
+     * 
+     * @param mixed  $version
+     * @param string $expect
+     */
+    public function testWithProtocolVersion($version, $expect)
     {
-        $version = $this->baseResponse->getProtocolVersion();
-        $response = $this->baseResponse->withProtocolVersion('1.1');
+        $response = $this->baseResponse->withProtocolVersion($version);
         
         $this->assertInstanceof(Response::class, $response);
         $this->assertNotSame($this->baseResponse, $response);
         
-        $this->assertEquals($version, $this->baseResponse->getProtocolVersion());
+        $this->assertEquals($expect, $response->getProtocolVersion());
     }
 
     /**
@@ -118,68 +132,33 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->baseResponse->withProtocolVersion(['1.0', '1.1']);
     }
 
-    public function testStatusCodeDefaults()
-    {
-        $this->assertSame(200, $this->baseResponse->getStatusCode());
-        $this->assertSame('OK', $this->baseResponse->getReasonPhrase());
-    }
-
-    public function testStatusCodeChangeByRCF()
-    {
-        $response = $this->baseResponse->withStatus(404);
-        $this->assertSame(404, $response->getStatusCode());
-        $this->assertSame('Not Found', $response->getReasonPhrase());
-    }
-
-    public function testStatusCodeChangeWithMessage()
-    {
-        $response = $this->baseResponse->withStatus(404, 'Some unique status');
-        $this->assertSame(404, $response->getStatusCode());
-        $this->assertSame('Some unique status', $response->getReasonPhrase());
-        $this->assertSame('404 Some unique status', $response->getStatusString());
-    }
-
-    public function testNotStandardStatusCode()
-    {
-        $response = $this->baseResponse->withStatus(999);
-        $this->assertSame(999, $response->getStatusCode());
-        $this->assertSame('', $response->getReasonPhrase());
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     */
-    public function testInvalidTypeStatusCode()
-    {
-        $this->baseResponse->withStatus(1020.20);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     */
-    public function testInvalidValueStatusCode()
-    {
-        $this->baseResponse->withStatus(1020);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     */
-    public function testInvalidValueStatusPhrase()
-    {
-        $this->baseResponse->withStatus(200, ['foo', 'bar']);
-    }
-
     
-    public function testDetermineHeaders()
+    public function testGetStatusCode()
     {
-        $response = new Response();
-        $this->assertEquals([], $response->getHeaders());
+        $this->status->expects($this->once())->method('getStatusCode')->willReturn(404);
+        $this->assertSame(404, $this->baseResponse->getStatusCode());
     }
+    
+    public function testGetReasonPhrase()
+    {
+        $this->status->expects($this->once())->method('getReasonPhrase')->willReturn('Not Found');
+        $this->assertSame('Not Found', $this->baseResponse->getReasonPhrase());
+    }
+    
+    public function testWithStatus()
+    {
+        $this->status->expects($this->once())->method('withStatus')->with(500, 'Some Reason');
+        
+        $response = $this->baseResponse->withStatus(500, 'Some Reason');
+        
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
+    }
+    
     
     public function testWithHeader()
     {
-       $this->headers->expects($this->once())
+        $this->headers->expects($this->once())
             ->method('withHeader')
             ->will($this->returnSelf());
         

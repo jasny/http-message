@@ -2,7 +2,6 @@
 
 namespace Jasny\HttpMessage\Response;
 
-use Jasny\HttpMessage\Stream;
 use Jasny\HttpMessage\Headers as HeaderClass;
 use Jasny\HttpMessage\ResponseHeaders;
 
@@ -34,6 +33,7 @@ trait GlobalEnvironment
      */
     abstract public function getHeaders();
     
+    
     /**
      * Use php://output stream and default php functions work with headers.
      * Note: this method is not part of the PSR-7 specs.
@@ -50,7 +50,6 @@ trait GlobalEnvironment
         return $response;
     }
     
-
     /**
      * Return object that is disconnected from superglobals
      * Note: this method is not part of the PSR-7 specs.
@@ -65,6 +64,7 @@ trait GlobalEnvironment
         
         return $response;
     }
+    
     
     /**
      * Disconnect the global enviroment, turning stale

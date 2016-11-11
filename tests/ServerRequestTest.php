@@ -611,9 +611,24 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $refl = new \ReflectionMethod(ServerRequest::class, 'setUploadedFiles');
         $refl->setAccessible(true);
         
-        $files = ['file' => ['name' => 'foo.txt', 'type' => 'text/plain', 'size' => 3, 'tmp_name' => 'data://text/plain,foo', 'error' => UPLOAD_ERR_OK], 'failed' => ['name' => '', 'type' => '', 'size' => '', 'tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE]];
+        $files = [
+            'file' => [
+                'name' => 'foo.txt',
+                'type' => 'text/plain',
+                'size' => 3,
+                'tmp_name' => 'data://text/plain,foo',
+                'error' => UPLOAD_ERR_OK
+            ],
+            'failed' => [
+                'name' => '',
+                'type' => '',
+                'size' => '',
+                'tmp_name' => '',
+                'error' => UPLOAD_ERR_NO_FILE
+            ]
+        ];
         
-        $refl->invoke($this->baseRequest, $files);
+        $refl->invokeArgs($this->baseRequest, [&$files]);
         $uploadedFiles = $this->baseRequest->getUploadedFiles();
         
         $this->assertInternalType('array', $uploadedFiles);
@@ -635,13 +650,29 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $refl = new \ReflectionMethod(ServerRequest::class, 'setUploadedFiles');
         $refl->setAccessible(true);
         
-        $files = ['file' => ['name' => 'foo.txt', 'type' => 'text/plain', 'size' => 3, 'tmp_name' => 'data://text/plain,foo', 'error' => UPLOAD_ERR_OK], 'colors' => ['name' => ['blue' => 'navy.txt', 'red' => 'cherry.html'], 'type' => ['blue' => 'text/plain', 'red' => 'text/html'], 'size' => ['blue' => 4, 'red' => 15], 'tmp_name' => ['blue' => 'data://text/plain,navy', 'red' => 'data://text/html,<h1>cherry</h1>'], 'error' => ['blue' => UPLOAD_ERR_OK, 'red' => UPLOAD_ERR_OK]]];
+        $files = [
+            'file' => [
+                'name' => 'foo.txt',
+                'type' => 'text/plain',
+                'size' => 3,
+                'tmp_name' => 'data://text/plain,foo',
+                'error' => UPLOAD_ERR_OK
+            ],
+            'colors' => [
+                'name' => ['blue' => 'navy.txt', 'red' => 'cherry.html'],
+                'type' => ['blue' => 'text/plain', 'red' => 'text/html'],
+                'size' => ['blue' => 4, 'red' => 15],
+                'tmp_name' => ['blue' => 'data://text/plain,navy', 'red' => 'data://text/html,<h1>cherry</h1>'],
+                'error' => ['blue' => UPLOAD_ERR_OK, 'red' => UPLOAD_ERR_OK]
+            ]
+        ];
         
-        $blue = ['name' => 'navy.txt', 'type' => 'text/plain', 'size' => 4, 'tmp_name' => 'data://text/plain,navy', 'error' => UPLOAD_ERR_OK];
+        $blue = ['name' => 'navy.txt', 'type' => 'text/plain', 'size' => 4, 'tmp_name' => 'data://text/plain,navy',
+            'error' => UPLOAD_ERR_OK];
+        $red = ['name' => 'cherry.html', 'type' => 'text/html', 'size' => 15,
+            'tmp_name' => 'data://text/html,<h1>cherry</h1>', 'error' => UPLOAD_ERR_OK];
         
-        $red = ['name' => 'cherry.html', 'type' => 'text/html', 'size' => 15, 'tmp_name' => 'data://text/html,<h1>cherry</h1>', 'error' => UPLOAD_ERR_OK];
-        
-        $refl->invoke($this->baseRequest, $files);
+        $refl->invokeArgs($this->baseRequest, [&$files]);
         $uploadedFiles = $this->baseRequest->getUploadedFiles();
         
         $this->assertInternalType('array', $uploadedFiles);
