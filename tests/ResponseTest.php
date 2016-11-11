@@ -53,9 +53,9 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $reflStatus->setAccessible(true);
         $reflStatus->setValue($this->baseResponse, $this->status);
     }
-
-    public function testWithGlobalEnvironment(){
-        
+    
+    public function testWithGlobalEnvironment()
+    {
         $response = $this->baseResponse->withGlobalEnvironment();
         
         $this->assertInstanceof(Response::class, $response);
@@ -106,6 +106,8 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     public function testWithProtocolVersion($version, $expect)
     {
+        $this->status->expects($this->once())->method('withProtocolVersion')->with($expect)->willReturnSelf();
+        
         $response = $this->baseResponse->withProtocolVersion($version);
         
         $this->assertInstanceof(Response::class, $response);
@@ -132,6 +134,12 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->baseResponse->withProtocolVersion(['1.0', '1.1']);
     }
 
+
+    public function testGetDefaultStatusCode()
+    {
+        $response = new Response();
+        $this->assertSame(200, $response->getStatusCode());
+    }
     
     public function testGetStatusCode()
     {
@@ -155,6 +163,12 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->assertNotSame($this->baseResponse, $response);
     }
     
+
+    public function testGetDefaultHeaders()
+    {
+        $response = new Response();
+        $this->assertEquals([], $response->getHeaders());
+    }
     
     public function testWithHeader()
     {

@@ -45,7 +45,7 @@ trait ProtocolVersion
         $response = $this->_withProtocolVersion($version);
         
         if (isset($response->status)) {
-            $response->status = $response->status->withProtocolVersion($this->protocolVersion);
+            $response->status = $response->status->withProtocolVersion($response->protocolVersion);
         }
         
         return $response;

@@ -90,11 +90,8 @@ trait UploadedFiles
     {
         $isUploadedFiles = ($files === $_FILES);
         
+        $this->files =& $files;
         $this->uploadedFiles = $this->groupUploadedFiles($files, null, $isUploadedFiles);
-        
-        if ($isUploadedFiles) {
-            $this->files =& $files;
-        }
     }
     
     /**
