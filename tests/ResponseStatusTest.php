@@ -20,8 +20,10 @@ class ResponseStatusTest extends PHPUnit_Framework_TestCase
     {
         $this->baseStatus = $this->getMockBuilder(ResponseStatus::class)
             ->setConstructorArgs(['1.1'])
-            ->setMethods(['header', 'httpResponseCode'])
+            ->setMethods(['header', 'headersSent', 'httpResponseCode'])
             ->getMock();
+        
+        $this->baseStatus->method('headersSent')->willReturn(false);
     }
     
     

@@ -2,11 +2,15 @@
 
 namespace Jasny\HttpMessage;
 
+use Jasny\HttpMessage\Wrap;
+
 /**
  * Headers that are linked to the global environment
  */
 class ResponseHeaders extends Headers
 {
+    use Wrap\Headers;
+    
     /**
      * Flag to indicate a stale object
      * @var boolean
@@ -41,20 +45,6 @@ class ResponseHeaders extends Headers
         return [trim($name), trim($value), strtolower(trim($name))];
     }
     
-    
-    /**
-     * Check that headers are not already sent
-     * 
-     * @throws \RuntimeException
-     */
-    protected function assertHeadersNotSent()
-    {
-        list($sent, $file, $line) = $this->headersSent();
-        
-        if ($sent) {
-            throw new \RuntimeException("Headers already sent in $file on line $line");
-        }
-    }
     
     /**
      * Check that this instance is in sync with the global environment
@@ -303,67 +293,5 @@ class ResponseHeaders extends Headers
         $this->headerRemove($name);
         
         return $request;
-    }
-    
-    
-    /**
-     * Wrapper for `headers_list` function.
-     * Uses `xdebug_get_headers` on the PHP CLI as `headers_list` will always return an empty array.
-     * @link http://php.net/manual/en/function.headers-list.php
-     * @codeCoverageIgnore
-     * 
-     * @return array
-     */
-    protected function headersList()
-    {
-        if (php_sapi_name() === 'cli') {
-            if (!function_exists('xdebug_get_headers')) {
-                throw new \RuntimeException("Getting the HTTP headers on PHP CLI requires XDebug");
-            }
-            
-            return xdebug_get_headers();
-        }
-        
-        return headers_list();
-    }
-
-    /**
-     * Wrapper for `header` function
-     * @link http://php.net/manual/en/function.header.php
-     * @codeCoverageIgnore
-     * 
-     * @param string  $string
-     * @param boolean $replace
-     * @param int     $http_response_code
-     */
-    protected function header($string, $replace = true, $http_response_code = null)
-    {
-        header($string, $replace, $http_response_code);
-    }
-    
-    /**
-     * Wrapper for `header` function
-     * @link http://php.net/manual/en/function.header-remove.php
-     * @codeCoverageIgnore
-     * 
-     * @param string $name
-     */
-    protected function headerRemove($name = null)
-    {
-        header_remove($name);
-    }
-    
-    /**
-     * Wrapper for `headers_sent` function
-     * @link http://php.net/manual/en/function.headers-sent.php
-     * @codeCoverageIgnore
-     * 
-     * @return array [boolean, string, int]
-     */
-    protected function headersSent()
-    {
-        $ret = headers_sent($file, $line);
-        
-        return [$ret, $file, $line];
     }
 }

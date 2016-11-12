@@ -2,13 +2,15 @@
 
 namespace Jasny\HttpMessage;
 
+use Jasny\HttpMessage\Wrap;
+
 /**
- * Description of ResponseStatus
- *
- * @author arnold
+ * PSR-7 methods for http response status
  */
 class ResponseStatus
 {
+    use Wrap\Headers;
+    
     /**
      * HTTP Response status code.
      * 
@@ -148,7 +150,8 @@ class ResponseStatus
             return;
         }
 
-        if (isset($this->code)) {
+        if (isset($this->code) && $this->code !== $this->httpResponseCode()) {
+            $this->assertHeadersNotSent();
             $this->header("HTTP/{$this->protocolVersion} {$this->code} {$this->phrase}");
         }
         
@@ -170,6 +173,16 @@ class ResponseStatus
     }
     
     /**
+     * Check if the object is bound to the global environment
+     * 
+     * @return boolean
+     */
+    public function isGlobal()
+    {
+        return $this->state !== 'local';
+    }
+    
+    /**
      * Mark the object as no longer in sync with the Global environment
      */
     protected function turnStale()
@@ -185,6 +198,7 @@ class ResponseStatus
     
     /**
      * Check if object is stale
+     * 
      * @return boolean
      */
     public function isStale()
@@ -322,6 +336,7 @@ class ResponseStatus
         $this->assertReasonPhrase($reasonPhrase);
         
         if ($this->state === 'global') {
+            $this->assertHeadersNotSent();
             $this->header("HTTP/{$this->protocolVersion} $code $reasonPhrase");
         }
         
@@ -350,18 +365,5 @@ class ResponseStatus
     protected function header($string)
     {
         header($string);
-    }
-    
-    /**
-     * Wrapper around `http_response_code` function
-     * @link http://php.net/manual/en/function.http-response-code.php
-     * @codeCoverageIgnore
-     * 
-     * @param int|null $code
-     * @return int
-     */
-    protected function httpResponseCode($code = null)
-    {
-        return http_response_code($code);
     }
 }
