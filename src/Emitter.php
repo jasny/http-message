@@ -72,6 +72,11 @@ class Emitter implements EmitterInterface
      */
     public function emit(ResponseInterface $response)
     {
+        if ($response instanceof \Jasny\HttpMessage\Response) {
+            $response->emit($this);
+            return;
+        }
+        
         $this->emitStatus($response);
         $this->emitHeaders($response);
         $this->emitBody($response);
