@@ -374,10 +374,7 @@ class ResponseStatus
      */
     public function getHeader()
     {
-        $code = $this->getStatusCode();
-        $phrase = $this->getReasonPhrase();
-        
-        return "HTTP/{$this->protocolVersion} {$code} {$phrase}";
+        return "HTTP/{$this->protocolVersion} {$this->code} {$this->phrase}";
     }
     
     

@@ -95,8 +95,15 @@ class ResponseStatusTest extends PHPUnit_Framework_TestCase
      */
     public function testWithStatusGlobal($status, $phrase, $expectPhrase)
     {
-        $this->baseStatus->expects($this->once())->method('header')->with("HTTP/1.1 {$status} $expectPhrase");
-        $this->baseStatus->expects($this->any())->method('httpResponseCode')->willReturn($status);
+        $globalStatus = 200;
+        
+        $this->baseStatus->expects($this->any())->method('httpResponseCode')->willReturnReference($globalStatus);
+        $this->baseStatus->expects($this->once())->method('header')
+            ->with("HTTP/1.1 {$status} {$expectPhrase}")
+            ->will($this->returnCallback(function() use (&$globalStatus, $status) {
+                $globalStatus = $status;
+            }));
+        
         $this->baseStatus->useGlobally();
         
         $responseStatus = $this->baseStatus->withStatus($status, $phrase);
