@@ -6,6 +6,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Jasny\HttpMessage\EmitterInterface;
 use Jasny\HttpMessage\Wrap;
+use Jasny\HttpMessage\ResponseStatus;
 
 /**
  * Emit the HTTP response
@@ -13,6 +14,20 @@ use Jasny\HttpMessage\Wrap;
 class Emitter implements EmitterInterface
 {
     use Wrap\Headers;
+
+    /**
+     * Get the response header for a status code
+     * 
+     * @param string $protocolVersion
+     * @param int    $statusCode
+     * @param string $reasonPhrase
+     */
+    protected function getStatusHeader($protocolVersion, $statusCode, $reasonPhrase)
+    {
+        $responseStatus = new ResponseStatus($protocolVersion, $statusCode, $reasonPhrase);
+        
+        return $responseStatus->getHeader();
+    }
     
     /**
      * Emit the HTTP status (and protocol version)
@@ -27,8 +42,9 @@ class Emitter implements EmitterInterface
         
         $statusCode = $response->getStatusCode() ?: 200;
         $reasonPhrase = $response->getReasonPhrase();
-        
-        $this->header("HTTP/$protocolVersion $statusCode $reasonPhrase");
+
+        $header = $this->getStatusHeader($protocolVersion, $statusCode, $reasonPhrase);
+        $this->header($header);
     }
     
     /**
@@ -39,7 +55,7 @@ class Emitter implements EmitterInterface
     public function emitHeaders(ResponseInterface $response)
     {
         foreach ($response->getHeaders() as $name => $values) {
-            foreach (array_values($values) as $value) {
+            foreach (array_values((array)$values) as $i => $value) {
                 $this->header("$name: $value", $i === 0);
             }
         }

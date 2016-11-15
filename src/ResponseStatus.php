@@ -303,6 +303,25 @@ class ResponseStatus
     }
     
     /**
+     * Set the specified status code and reason phrase.
+     * 
+     * @param int    $code
+     * @param string $reasonPhrase
+     */
+    protected function setStatus($code, $reasonPhrase)
+    {
+        $this->code = (int)$code;
+        $this->phrase = (string)$reasonPhrase;
+
+        if ($this->state === 'global') {
+            $this->assertHeadersNotSent();
+            
+            $header = $this->getHeader();
+            $this->header($header);
+        }
+    }
+    
+    /**
      * Return an instance with the specified status code and, optionally, reason phrase.
      *
      * If no reason phrase is specified, implementations MAY choose to default
@@ -326,6 +345,10 @@ class ResponseStatus
      */
     public function withStatus($code, $reasonPhrase = '')
     {
+        if ($this->getStatusCode() === $code && (empty($reasonPhrase) || $this->getReasonPhrase() === $reasonPhrase)) {
+            return $this;
+        }
+        
         $this->assertNotStale();
         $this->assertStatusCode($code);
         
@@ -335,23 +358,26 @@ class ResponseStatus
         
         $this->assertReasonPhrase($reasonPhrase);
         
-        if ($this->state === 'global') {
-            $this->assertHeadersNotSent();
-            $this->header("HTTP/{$this->protocolVersion} $code $reasonPhrase");
-        }
-        
-        if ($this->code === $code && $this->phrase === $reasonPhrase) {
-            return $this;
-        }
-        
         $status = clone $this;
         
         $this->turnStale();
         
-        $status->code = (int)$code;
-        $status->phrase = (string)$reasonPhrase;
+        $status->setStatus($code, $reasonPhrase);
         
         return $status;
+    }
+    
+    /**
+     * Get the HTTP header to set the HTTP response
+     * 
+     * @return string
+     */
+    public function getHeader()
+    {
+        $code = $this->getStatusCode();
+        $phrase = $this->getReasonPhrase();
+        
+        return "HTTP/{$this->protocolVersion} {$code} {$phrase}";
     }
     
     
