@@ -39,12 +39,16 @@ trait GlobalEnvironment
      * Use superglobals $_SERVER, $_COOKIE, $_GET, $_POST and $_FILES and the php://input stream.
      * Note: this method is not part of the PSR-7 specs.
      * 
-     * @param boolean $byReference  Set the supoerglobals by reference
+     * @param boolean $bind  Bind server request to global environment
      * @return self
      * @throws RuntimeException if isn't not possible to open the 'php://input' stream
      */
-    public function withGlobalEnvironment($byReference = true)
+    public function withGlobalEnvironment($bind = false)
     {
+        if (isset($this->isStale)) {
+            return $this;
+        }
+        
         $request = clone $this;
         
         $request->serverParams =& $_SERVER;
@@ -58,7 +62,7 @@ trait GlobalEnvironment
         
         $request->reset();
         
-        if ($byReference) {
+        if ($bind) {
             $request->isStale = false;
         } else {
             $request->turnStale();

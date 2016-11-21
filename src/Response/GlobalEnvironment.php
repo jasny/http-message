@@ -60,17 +60,28 @@ trait GlobalEnvironment
      * Use php://output stream and default php functions work with headers.
      * Note: this method is not part of the PSR-7 specs.
      * 
+     * @param boolean $bind   Bind to global environment
      * @return self
      * @throws RuntimeException if isn't not possible to open the 'php://output' stream
      */
-    public function withGlobalEnvironment()
+    public function withGlobalEnvironment($bind = false)
     {
-        $response = $this->turnStale();
+        if (isset($this->isStale)) {
+            return $this;
+        }
+        
+        $response = clone $this;
         
         $response->getBody()->useGlobally();
         $response->headersObject(new ResponseHeaders());
-        $response->statusObject((new ResponseStatus($this->getProtocolVersion())));
-        $response->statusObject()->useGlobally();
+        $response->statusObject((new ResponseStatus($this->getProtocolVersion())))->useGlobally();
+        
+        $response->isStale = false;
+
+        if (!$bind) {
+            // This will copy the headers and body from the global environment
+            $response = $response->withoutGlobalEnvironment();
+        }
         
         return $response;
     }
@@ -83,13 +94,17 @@ trait GlobalEnvironment
      */
     public function withoutGlobalEnvironment()
     {
-        $headers = $this->getHeaders();
+        if ($this->isStale !== false) {
+            return $this;
+        }
         
         $response = $this->turnStale();
         
         $response->getBody()->useLocally();
-        $response->headersObject(new Headers($headers));
+        $response->headersObject(clone $this->headersObject());
         $response->statusObject()->useLocally();
+        
+        $response->isStale = null;
         
         return $response;
     }
@@ -104,8 +119,9 @@ trait GlobalEnvironment
     protected function turnStale()
     {
         $response = clone $this;
+        
         $this->isStale = true;
-        $this->headers = $this->getHeaders();
+        $this->headers = new Headers($this->getHeaders());
         
         return $response;
     }

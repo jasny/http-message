@@ -56,12 +56,13 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     
     public function testWithGlobalEnvironment()
     {
-        $response = $this->baseResponse->withGlobalEnvironment();
+        $response = $this->baseResponse->withGlobalEnvironment(true);
         
         $this->assertInstanceof(Response::class, $response);
         $this->assertNotSame($this->baseResponse, $response);
         
-        $this->assertTrue($this->baseResponse->isStale());
+        $this->assertNull($this->baseResponse->isStale());
+        $this->assertFalse($response->isStale());
         
         $refl = new \ReflectionProperty($response, 'headers');
         $refl->setAccessible(true);
@@ -69,12 +70,28 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         
         $this->assertInstanceof(OutputBufferStream::class, $response->getBody());
         $this->assertEquals('php://output', $response->getBody()->getMetadata('uri'));
+        
+        $this->assertSame($response, $response->withGlobalEnvironment());
     }
 
-    public function testWithoutGlobalEnvironment()
+    public function withoutGlobalEnvironmentProvider()
     {
-        $response = $this->baseResponse->withGlobalEnvironment()->withoutGlobalEnvironment();
+        return [[true], [false]];
+    }
+    
+    /**
+     * @dataProvider withoutGlobalEnvironmentProvider
+     * 
+     * @param boolean $bind
+     */
+    public function testWithoutGlobalEnvironment($bind)
+    {
+        $response = $this->baseResponse->withGlobalEnvironment($bind);
         
+        if ($bind) {
+            $response = $response->withoutGlobalEnvironment();
+        }
+            
         $this->assertInstanceof(Response::class, $response);
         $this->assertNotSame($this->baseResponse, $response);
         
@@ -84,6 +101,8 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         
         $this->assertInstanceof(OutputBufferStream::class, $response->getBody());
         $this->assertEquals('php://temp', $response->getBody()->getMetadata('uri'));
+        
+        $this->assertSame($response, $response->withoutGlobalEnvironment());
     }
     
     
