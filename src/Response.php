@@ -19,6 +19,16 @@ class Response implements ResponseInterface
     use Response\Body;
     
     /**
+     * Create the default emitter
+     * 
+     * @return EmitterInterface
+     */
+    protected function createEmitter()
+    {
+        return new Emitter();
+    }
+    
+    /**
      * Emit the response
      * 
      * @param EmitterInterface $emitter
@@ -26,7 +36,7 @@ class Response implements ResponseInterface
     public function emit(EmitterInterface $emitter = null)
     {
         if (!isset($emitter)) {
-            $emitter = new Emitter();
+            $emitter = $this->createEmitter();
         }
         
         if (isset($this->status) && !$this->status->isGlobal()) {
