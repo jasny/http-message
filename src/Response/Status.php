@@ -7,7 +7,7 @@ use Jasny\HttpMessage\ResponseStatus;
 /**
  * ServerRequest header methods
  */
-trait StatusCode
+trait Status
 {
     /**
      * @var ResponseStatus 
@@ -20,6 +20,22 @@ trait StatusCode
      */
     abstract public function getProtocolVersion();
 
+    
+    /**
+     * Get or set HTTP Response status
+     * 
+     * @param ResponseStatus $status
+     * @return ResponseStatus
+     */
+    final protected function statusObject(ResponseStatus $status = null)
+    {
+        if (func_num_args() >= 1) {
+            $this->status = $status;
+        }
+        
+        return $this->status;
+    }
+    
     
     /**
      * @return ResponseStatus

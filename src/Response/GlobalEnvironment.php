@@ -3,6 +3,7 @@
 namespace Jasny\HttpMessage\Response;
 
 use Jasny\HttpMessage\Headers;
+use Jasny\HttpMessage\HeadersInterface;
 use Jasny\HttpMessage\ResponseHeaders;
 use Jasny\HttpMessage\ResponseStatus;
 use Psr\Http\Message\StreamInterface;
@@ -18,17 +19,22 @@ trait GlobalEnvironment
      */
     protected $isStale;
     
-    /**
-     * HTTP headers
-     * @var HeadersInterface
-     */
-    protected $headers;
     
     /**
-     * HTTP Response status
-     * @var ResponseStatus
+     * Get or set HTTP headers object
+     * 
+     * @param HeadersInterface $headers
+     * @return HeadersInterface
      */
-    protected $status;
+    abstract protected function headersObject(HeadersInterface $headers = null);
+    
+    /**
+     * Get or set HTTP Response status
+     * 
+     * @param ResponseStatus $status
+     * @return ResponseStatus
+     */
+    abstract protected function statusObject(ResponseStatus $status = null);
     
     
     /**
@@ -62,9 +68,9 @@ trait GlobalEnvironment
         $response = $this->turnStale();
         
         $response->getBody()->useGlobally();
-        $response->headers = new ResponseHeaders();
-        $response->status = (new ResponseStatus($this->getProtocolVersion()));
-        $response->status->useGlobally();
+        $response->headersObject(new ResponseHeaders());
+        $response->statusObject((new ResponseStatus($this->getProtocolVersion())));
+        $response->statusObject()->useGlobally();
         
         return $response;
     }
@@ -80,8 +86,8 @@ trait GlobalEnvironment
         $response = $this->turnStale();
         
         $response->getBody()->useLocally();
-        $response->headers = new Headers($this->headers);
-        $response->status->useLocally();
+        $response->headersObject(new Headers($this->headers));
+        $response->statusObject()->useLocally();
         
         return $response;
     }

@@ -15,13 +15,16 @@ trait ProtocolVersion
     }
 
     /**
-     * @var ResponseStatus
+     * Get or set HTTP Response status.
+     * 
+     * @param ResponseStatus $status
+     * @return ResponseStatus
      */
-    protected $status;
+    abstract protected function statusObject(ResponseStatus $status = null);
     
     
     /**
-     * Determine the protocol versions based on the server params
+     * Determine the protocol versions based on the server params.
      * 
      * @return string
      */
@@ -33,8 +36,7 @@ trait ProtocolVersion
     /**
      * Return an instance with the specified HTTP protocol version.
      *
-     * The version string MUST contain only the HTTP version number (e.g.,
-     * "1.1", "1.0").
+     * The version string MUST contain only the HTTP version number (e.g., "1.1", "1.0").
      *
      * @param string
      * @return static
@@ -44,8 +46,9 @@ trait ProtocolVersion
     {
         $response = $this->_withProtocolVersion($version);
         
-        if (isset($response->status)) {
-            $response->status = $response->status->withProtocolVersion($response->protocolVersion);
+        if ($response->statusObject() !== null) {
+            $status = $response->statusObject()->withProtocolVersion($response->protocolVersion);
+            $response->statusObject($status);
         }
         
         return $response;

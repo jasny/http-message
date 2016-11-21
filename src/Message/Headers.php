@@ -19,6 +19,22 @@ trait Headers
     
     
     /**
+     * Get or set HTTP headers object
+     * 
+     * @param HeadersInterface $headers
+     * @return HeadersInterface
+     */
+    final protected function headersObject(HeadersInterface $headers = null)
+    {
+        if (func_num_args() >= 1) {
+            $this->headers = $headers;
+        }
+        
+        return $this->headers;
+    }
+    
+    
+    /**
      * Determine the headers based on other information
      * 
      * @return array headers array with structure $key => [$value, ...]
