@@ -45,7 +45,7 @@ trait GlobalEnvironment
     
     /**
      * Get the headers
-     * @return HeadersInterface
+     * @return string[][]
      */
     abstract public function getHeaders();
     
