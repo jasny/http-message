@@ -7,7 +7,7 @@ use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 
 /**
- * @covers Jasny\HttpMessage\ResposneStatus
+ * @covers Jasny\HttpMessage\ResponseStatus
  */
 class ResponseStatusTest extends PHPUnit_Framework_TestCase
 {

@@ -83,10 +83,12 @@ trait GlobalEnvironment
      */
     public function withoutGlobalEnvironment()
     {
+        $headers = $this->getHeaders();
+        
         $response = $this->turnStale();
         
         $response->getBody()->useLocally();
-        $response->headersObject(new Headers($this->headers));
+        $response->headersObject(new Headers($headers));
         $response->statusObject()->useLocally();
         
         return $response;

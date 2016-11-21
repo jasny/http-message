@@ -14,7 +14,7 @@ use PHPUnit_Framework_MockObject_MockObject as MockObject;
  * @covers Jasny\HttpMessage\Response\GlobalEnvironment
  * @covers Jasny\HttpMessage\Response\ProtocolVersion
  * @covers Jasny\HttpMessage\Message\ProtocolVersion
- * @covers Jasny\HttpMessage\Response\StatusCode
+ * @covers Jasny\HttpMessage\Response\Status
  * @covers Jasny\HttpMessage\Response\Headers
  * @covers Jasny\HttpMessage\Message\Headers
  * @covers Jasny\HttpMessage\Response\Body

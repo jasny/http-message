@@ -11,18 +11,6 @@ use Jasny\HttpMessage\Stream;
  */
 class StreamTest extends PHPUnit_Framework_TestCase
 {
-    protected $warningException;
-    
-    protected function setUp()
-    {
-        $this->warningException = \PHPUnit_Framework_Error_Warning::$enabled;
-    }
-        
-    protected function tearDown()
-    {
-        \PHPUnit_Framework_Error_Warning::$enabled = $this->warningException;
-    }
-    
     /**
      * @expectedException \InvalidArgumentException
      */
@@ -434,7 +422,6 @@ class StreamTest extends PHPUnit_Framework_TestCase
      */
     public function testCreateFailed()
     {
-        \PHPUnit_Framework_Error_Warning::$enabled = false;
-        Stream::open('nonexistant://foo', 'r');
+        @Stream::open('nonexistent://foo', 'r');
     }
 }
