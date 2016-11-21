@@ -127,28 +127,36 @@ class ResponseStatusTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testUseGloballyWhenStale()
+    public function statusProvider()
     {
-        $this->baseStatus->useGlobally();
-        $this->baseStatus->withStatus(200);
-        
-        $this->baseStatus->useGlobally();
-        $this->assertTrue($this->baseStatus->isStale());
-    }
-    
-    public function testUseLocally()
-    {
-        $this->baseStatus->useGlobally();
-        
-        $this->baseStatus->expects($this->once())->method('httpResponseCode')->willReturn(400);
-        $this->baseStatus->useLocally();
-        
-        $this->assertEquals(400, $this->baseStatus->getStatusCode());
-        $this->assertSame('Bad Request', $this->baseStatus->getReasonPhrase());
-        
-        $this->baseStatus->useLocally();
+        return [
+            [200, 'OK'],
+            [400, 'Bad Request'],
+            [600, '']
+        ];
     }
 
+    /**
+     * @dataProvider statusProvider
+     * 
+     * @param int    $status
+     * @param string $phrase
+     */
+    public function testUseLocally($status, $phrase)
+    {
+        $this->baseStatus->useGlobally();
+        
+        $this->baseStatus->expects($this->once())->method('httpResponseCode')->willReturn($status);
+        $this->baseStatus->useLocally();
+        
+        $this->assertEquals($status, $this->baseStatus->getStatusCode());
+        $this->assertSame($phrase, $this->baseStatus->getReasonPhrase());
+        
+        $this->baseStatus->useLocally();
+        
+        $this->assertFalse($this->baseStatus->isGlobal());
+    }
+    
     public function testUseLocallyNoStatus()
     {
         $this->baseStatus->useGlobally();
@@ -161,6 +169,8 @@ class ResponseStatusTest extends PHPUnit_Framework_TestCase
         $this->assertSame('OK', $status->getReasonPhrase());
         
         $status->useLocally();
+        
+        $this->assertFalse($status->isGlobal());
     }
     
     public function testUseGlobally()
@@ -169,6 +179,19 @@ class ResponseStatusTest extends PHPUnit_Framework_TestCase
         
         $status = $this->baseStatus->withStatus(201);
         $status->useGlobally();
+        
+        $this->assertTrue($status->isGlobal());
+    }
+    
+    public function testUseGloballyWhenStale()
+    {
+        $this->baseStatus->useGlobally();
+        $this->baseStatus->withStatus(200);
+        
+        $this->baseStatus->useGlobally();
+        $this->assertTrue($this->baseStatus->isStale());
+        
+        $this->assertTrue($this->baseStatus->isGlobal());
     }
     
     
