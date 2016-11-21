@@ -56,8 +56,7 @@ class EmitterTest extends PHPUnit_Framework_TestCase
         $this->response->expects($this->once())->method('getStatusCode')->willReturn($code);
         $this->response->expects($this->once())->method('getReasonPhrase')->willReturn($phrase);
         
-        $this->emitter->expects($this->once())->method('header')
-            ->with($expect, true);
+        $this->emitter->expects($this->once())->method('header')->with($expect, true);
         
         $this->emitter->emitStatus($this->response);
     }
@@ -79,6 +78,16 @@ class EmitterTest extends PHPUnit_Framework_TestCase
         );
         
         $this->emitter->emitHeaders($this->response);
+    }
+
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Headers already sent in foo.php on line 42
+     */
+    public function testAssertHeadersSent()
+    {
+        $this->emitter->expects($this->once())->method('headersSent')->willReturn([true, 'foo.php', 42]);
+        $this->emitter->emitStatus($this->response);
     }
     
     public function testEmitBody()
