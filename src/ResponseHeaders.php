@@ -61,7 +61,7 @@ class ResponseHeaders extends Headers
     /**
      * Mark that this instance is no longer in sync with the global environment
      */
-    protected function turnStale()
+    public function turnStale()
     {
         $this->isStale = true;
         

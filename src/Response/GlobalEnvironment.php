@@ -2,10 +2,12 @@
 
 namespace Jasny\HttpMessage\Response;
 
+use Jasny\HttpMessage\Response;
 use Jasny\HttpMessage\Headers;
 use Jasny\HttpMessage\HeadersInterface;
 use Jasny\HttpMessage\ResponseHeaders;
 use Jasny\HttpMessage\ResponseStatus;
+use Jasny\HttpMessage\Stream;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -14,10 +16,10 @@ use Psr\Http\Message\StreamInterface;
 trait GlobalEnvironment
 {
     /**
-     * The object is stale if it no longer reflects the global enviroment
-     * @var boolean|null
+     * The object is bound to the global enviroment
+     * @var boolean
      */
-    protected $isStale;
+    protected $isGlobal = false;
     
     
     /**
@@ -61,12 +63,12 @@ trait GlobalEnvironment
      * Note: this method is not part of the PSR-7 specs.
      * 
      * @param boolean $bind   Bind to global environment
-     * @return self
+     * @return Response
      * @throws RuntimeException if isn't not possible to open the 'php://output' stream
      */
     public function withGlobalEnvironment($bind = false)
     {
-        if (isset($this->isStale)) {
+        if ($this->isGlobal) {
             return $this;
         }
         
@@ -76,7 +78,7 @@ trait GlobalEnvironment
         $response->headersObject(new ResponseHeaders());
         $response->statusObject((new ResponseStatus($this->getProtocolVersion())))->useGlobally();
         
-        $response->isStale = false;
+        $response->isGlobal = true;
 
         if (!$bind) {
             // This will copy the headers and body from the global environment
@@ -90,50 +92,48 @@ trait GlobalEnvironment
      * Return object that is disconnected from superglobals
      * Note: this method is not part of the PSR-7 specs.
      * 
-     * @return self
+     * @return Response
      */
     public function withoutGlobalEnvironment()
     {
-        if ($this->isStale !== false) {
+        if (!$this->isGlobal) {
             return $this;
         }
         
-        $response = $this->turnStale();
-        
-        $response->getBody()->useLocally();
-        $response->headersObject(clone $this->headersObject());
-        $response->statusObject()->useLocally();
-        
-        $response->isStale = null;
-        
-        return $response;
-    }
-    
-    
-    /**
-     * Disconnect the global enviroment, turning stale
-     * Headers object should be replaced by a normal array.
-     * 
-     * @return self  Clone of non-stale request
-     */
-    protected function turnStale()
-    {
         $response = clone $this;
         
-        $this->isStale = true;
-        $this->headers = new Headers($this->getHeaders());
+        $response->statusObject()->useLocally();
+
+        $headers = $this->getHeaders();
+        $response->headersObject(new Headers($headers));
+        
+        $body = $this->getBody();
+        if ($body instanceof Stream) {
+            $body->useLocally();
+        }
+        
+        $response->isGlobal = false;
         
         return $response;
     }
-    
+
     /**
      * The object is stale if it no longer reflects the global enviroment.
-     * Returns null if the object isn't using the globla state.
+     * Returns null if the object isn't using the global state.
      * 
      * @return boolean If current object are stale 
      */
     public function isStale()
     {
-        return $this->isStale;
+        if (!$this->isGlobal) {
+            return null;
+        }
+
+        $status = $this->statusObject();
+        $headers = $this->headersObject();
+        $body = $this->getBody();
+        
+        return !isset($status) || $status->isStale() || !isset($headers) || $headers->isStale() ||
+            !isset($body) || $body->getMetadata('uri') !== 'php://output';
     }
 }
