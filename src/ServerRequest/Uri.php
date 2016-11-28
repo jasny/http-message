@@ -55,7 +55,7 @@ trait Uri
             'PHP_AUTH_PWD' => 'password',
             'HTTP_HOST' => 'host',
             'SERVER_PORT' => 'port',
-            'PATH_INFO' => 'path',
+            'REQUEST_URI' => 'path',
             'QUERY_STRING' => 'query'
         ];
         
@@ -64,7 +64,15 @@ trait Uri
                 $parts[$key] = $params[$param];
             }
         }
+
+        if (isset($parts['host'])) {
+            list($parts['host']) = explode(':', $parts['host'], 2); // May include the port
+        }
         
+        if (isset($parts['path'])) {
+            $parts['path'] = parse_url($parts['path'], PHP_URL_PATH); // Includes the query string
+        }
+
         return new UriObject($parts);
     }
     

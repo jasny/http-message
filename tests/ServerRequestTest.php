@@ -481,10 +481,28 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
 
     public function testDetermineUri()
     {
-        $request = $this->baseRequest->withServerParams(['SERVER_PROTOCOL' => 'HTTP/1.1', 'PHP_AUTH_USER' => 'foo', 'PHP_AUTH_PWD' => 'secure', 'HTTP_HOST' => 'www.example.com', 'SERVER_PORT' => 80, 'PATH_INFO' => '/page/bar', 'QUERY_STRING' => 'color=red']);
+        $request = $this->baseRequest->withServerParams([
+            'SERVER_PROTOCOL' => 'HTTP/1.1',
+            'PHP_AUTH_USER' => 'foo',
+            'PHP_AUTH_PWD' => 'secure',
+            'HTTP_HOST' => 'www.example.com:8080',
+            'SERVER_PORT' => 8080,
+            'REQUEST_URI' => '/page/bar?color=red',
+            'QUERY_STRING' => 'color=red'
+        ]);
         
-        $this->assertEquals(new Uri(['scheme' => 'http', 'user' => 'foo', 'password' => 'secure', 'host' => 'www.example.com', 'port' => 80, 'path' => '/page/bar', 'query' => 'color=red']), $request->getUri());
+        $this->assertEquals(new Uri([
+            'scheme' => 'http',
+            'user' => 'foo',
+            'password' => 'secure',
+            'host' => 'www.example.com',
+            'port' => 8080,
+            'path' => '/page/bar',
+            'query' => 'color=red'
+        ]), $request->getUri());
     }
+
+
 
     public function testDetermineUriHttps()
     {
