@@ -128,7 +128,7 @@ class Stream implements StreamInterface
      */
     public function eof()
     {
-        return $this->isClosed() || $this->tell() == $this->getSize();
+        return $this->isClosed() || feof($this->handle);
     }
 
     /**
