@@ -174,10 +174,16 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
     {
         $stream = $this->getStream('php://temp');
         
-        $this->assertTrue($stream->eof());
+        $this->assertFalse($stream->eof());
         
+        $stream->read(1);
+        $this->assertTrue($stream->eof());
+
         $stream->write('Foo-Baz');
         $this->assertTrue($stream->eof());
+        
+        $stream->seek(2);
+        $this->assertFalse($stream->eof());
     }
 
     public function testLocalRead()
