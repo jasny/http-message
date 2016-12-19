@@ -119,11 +119,6 @@ trait ParsedBody
         $contentType = $this->getHeaderLine('Content-Type');
         
         switch ($contentType) {
-            case '':
-                if ($this->getBody()->getSize() > 0) {
-                    throw new \RuntimeException("Unable to parse body: 'Content-Type' header is missing");
-                }
-                break;
             case 'application/x-www-form-urlencoded':
                 $data = $this->parseUrlEncodedBody();
                 break;
@@ -134,8 +129,6 @@ trait ParsedBody
             case 'application/xml':
                 $data = $this->parseXmlBody();
                 break;
-            default:
-                throw new \RuntimeException("Parsing $contentType isn't supported");
         }
         
         return $data;
