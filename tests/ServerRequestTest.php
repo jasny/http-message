@@ -923,7 +923,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \RuntimeException
+     * @expectedException PHPUnit_Framework_Error_Warning
      * @expectedExceptionMessage Unable to parse body: 'Content-Type' header is missing
      */
     public function testParseUnknownBody()
@@ -937,14 +937,11 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $request->getParsedBody();
     }
 
-    /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage Parsing application/x-foo isn't supported
-     */
     public function testParseUnsupportedBody()
     {
         $this->setContentType('application/x-foo');
-        $this->baseRequest->getParsedBody();
+        
+        $this->assertNull($this->baseRequest->getParsedBody());
     }
 
     /**

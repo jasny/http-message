@@ -119,6 +119,11 @@ trait ParsedBody
         $contentType = $this->getHeaderLine('Content-Type');
         
         switch ($contentType) {
+            case '':
+                if ($this->getBody()->getSize() > 0) {
+                    trigger_error("Unable to parse body: 'Content-Type' header is missing", E_USER_WARNING);
+                }
+                break;
             case 'application/x-www-form-urlencoded':
                 $data = $this->parseUrlEncodedBody();
                 break;
@@ -129,6 +134,8 @@ trait ParsedBody
             case 'application/xml':
                 $data = $this->parseXmlBody();
                 break;
+            case 'multipart/form-data':
+                throw new \RuntimeException("Parsing multipart/form-data isn't supported");
         }
         
         return $data;
