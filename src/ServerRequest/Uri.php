@@ -32,23 +32,15 @@ trait Uri
      */
     abstract public function withHeader($name, $value);
     
-    
     /**
-     * Determine the URI base on the server parameters
+     * Map server params for URI
      * 
-     * @return string
+     * @param array $params
+     * @return array
      */
-    protected function determineUri()
+    protected function mapUriPartsFromServerParams(array $params)
     {
         $parts = [];
-        $params = $this->getServerParams();
-        
-        if (
-            isset($params['SERVER_PROTOCOL']) &&
-            \Jasny\str_starts_with(strtoupper($params['SERVER_PROTOCOL']), 'HTTP/')
-        ) {
-            $parts['scheme'] = !empty($params['HTTPS']) && $params['HTTPS'] !== 'off' ? 'https' : 'http';
-        }
         
         $map = [
             'PHP_AUTH_USER' => 'user',
@@ -64,7 +56,28 @@ trait Uri
                 $parts[$key] = $params[$param];
             }
         }
-
+        
+        return $parts;
+    }
+    
+    /**
+     * Determine the URI base on the server parameters
+     * 
+     * @return string
+     */
+    protected function determineUri()
+    {
+        $params = $this->getServerParams();
+        
+        $parts = $this->mapUriPartsFromServerParams($params);
+        
+        if (
+            isset($params['SERVER_PROTOCOL']) &&
+            \Jasny\str_starts_with(strtoupper($params['SERVER_PROTOCOL']), 'HTTP/')
+        ) {
+            $parts['scheme'] = !empty($params['HTTPS']) && $params['HTTPS'] !== 'off' ? 'https' : 'http';
+        }
+        
         if (isset($parts['host'])) {
             list($parts['host']) = explode(':', $parts['host'], 2); // May include the port
         }
