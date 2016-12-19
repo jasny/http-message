@@ -1,5 +1,11 @@
 # Jasny HTTP Message
 
+[![Build Status](https://travis-ci.org/jasny/http-message.svg?branch=master)](https://travis-ci.org/jasny/http-message)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/jasny/http-message/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/jasny/http-message/?branch=master)
+[![Code Coverage](https://scrutinizer-ci.com/g/jasny/http-message/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/jasny/http-message/?branch=master)
+[![Packagist Stable Version](https://img.shields.io/packagist/v/jasny/http-message.svg)](https://packagist.org/packages/jasny/http-message)
+[![Packagist License](https://img.shields.io/packagist/l/jasny/http-message.svg)](https://packagist.org/packages/jasny/http-message)
+
 This library provides an abstraction around PHPs various superglobals as well as controlling the HTTP response. This
 practice helps reduce coupling to the superglobals by consumers, and encourages and promotes the ability to test request
 consumers.
