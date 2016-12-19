@@ -122,7 +122,7 @@ trait ParsedBody
             case '':
                 if ($this->getBody()->getSize() > 0) {
                     trigger_error("Unable to parse body: 'Content-Type' header is missing", E_USER_WARNING);
-                }
+                } // @codeCoverageIgnore
                 break;
             case 'application/x-www-form-urlencoded':
                 $data = $this->parseUrlEncodedBody();
