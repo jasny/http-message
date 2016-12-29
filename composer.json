@@ -24,7 +24,7 @@
         "jasny/php-code-quality": "^2.0",
         "mikey179/vfsStream": "^1.6"
     },
-    "provides": {
+    "provide": {
         " psr/http-message-implementation": "1.0"
     },
     "autoload": {
