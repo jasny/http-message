@@ -35,7 +35,7 @@ trait ParsedBody
      * 
      * @return array
      */
-    abstract function getServerParams();
+    abstract public function getServerParams();
     
     /**
      * Get a header as string
@@ -43,14 +43,14 @@ trait ParsedBody
      * @param string $name
      * @return string
      */
-    abstract function getHeaderLine($name);
+    abstract public function getHeaderLine($name);
     
     /**
      * Get the body
      * 
      * @return StreamInterface
      */
-    abstract function getBody();
+    abstract public function getBody();
 
 
     /**

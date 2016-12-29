@@ -20,3 +20,4 @@ interface DerivedAttribute
      */
     public function __invoke(ServerRequestInterface $request);
 }
+
