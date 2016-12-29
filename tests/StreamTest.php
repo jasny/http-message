@@ -11,6 +11,25 @@ use Jasny\HttpMessage\Stream;
  */
 class StreamTest extends PHPUnit_Framework_TestCase
 {
+    public function testConstruct()
+    {
+        $stream = new Stream();
+        
+        $this->assertEquals('php://temp', $stream->getMetadata('uri'));
+    }
+    
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Failed to open 'php://temp' stream
+     */
+    public function testConstructionFailure()
+    {
+        $this->getMockBuilder(OutputBufferStream::class)
+            ->setMethods(['createTempStream'])
+            ->enableOriginalConstructor()
+            ->getMock();
+    }
+
     /**
      * @expectedException \InvalidArgumentException
      */
@@ -412,7 +431,19 @@ class StreamTest extends PHPUnit_Framework_TestCase
     }
     
     
-    public function testCreate()
+    public function testClone()
+    {
+        $stream = new Stream();
+        $stream->write('Hello');
+
+        $clone = clone $stream;
+        
+        $this->assertEquals('php://temp', $clone->getMetadata('uri'));
+        $this->assertEmpty((string)$clone);
+    }
+    
+    
+    public function testOpen()
     {
         $stream = Stream::open('data://text/plain,foo', 'r');
         
@@ -423,7 +454,7 @@ class StreamTest extends PHPUnit_Framework_TestCase
     /**
      * @expectedException RuntimeException
      */
-    public function testCreateFailed()
+    public function testOpenFailed()
     {
         @Stream::open('nonexistent://foo', 'r');
     }

@@ -37,15 +37,6 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('php://temp', $stream->getMetadata('uri'));
     }
     
-    /**
-     * @expectedException RuntimeException
-     * @expectedExceptionMessage Failed to open 'php://temp' stream
-     */
-    public function testConstructionFailure()
-    {
-        $stream = $this->getMockBuilder(OutputBufferStream::class)->setMethods(['createTempStream'])->getMock();
-    }
-
     
     public function testIsGlobalTrue()
     {
@@ -227,6 +218,17 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Foo-Baz', $stream->read(100));
     }
     
+    public function testLocalClone()
+    {
+        $stream = $this->getStream('php://temp');
+        $stream->write('Hello');
+
+        $clone = clone $stream;
+        
+        $this->assertEquals('php://temp', $clone->getMetadata('uri'));
+        $this->assertEmpty((string)$clone);
+    }
+    
     
     public function testGlobalIsSeekable()
     {
@@ -363,6 +365,17 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         $stream->expects($this->once())->method('obGetContents')->willReturn('Red Green Blue');
         
         $this->assertEquals("Red Green Blue", (string)$stream);
+    }
+    
+    public function testGlobalClone()
+    {
+        $stream = $this->getStream('php://output');
+        $stream->expects($this->never())->method('obGetContents');
+
+        $clone = clone $stream;
+        
+        $this->assertEquals('php://temp', $clone->getMetadata('uri'));
+        $this->assertEmpty((string)$clone);
     }
     
     

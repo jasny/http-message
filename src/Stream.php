@@ -21,9 +21,15 @@ class Stream implements StreamInterface
      * 
      * @param resource $handle
      */
-    public function __construct($handle)
+    public function __construct($handle = null)
     {
-        if (!is_resource($handle) || get_resource_type($handle) !== 'stream') {
+        if (!isset($handle)) {
+            $handle = $this->createTempStream();
+            
+            if (!is_resource($handle) || get_resource_type($handle) !== 'stream') {
+                throw new \RuntimeException("Failed to open 'php://temp' stream");
+            }
+        } elseif (!is_resource($handle) || get_resource_type($handle) !== 'stream') {
             throw new \InvalidArgumentException('Argument must be a PHP stream resource');
         }
         
@@ -293,6 +299,30 @@ class Stream implements StreamInterface
         }
         
         return $meta;
+    }
+    
+    /**
+     * Event when cloning a stream
+     */
+    public function __clone()
+    {
+        if (!$this->isClosed()) {
+            $uri = $this->getMetadata('uri');
+            $mode = $this->getMetadata('mode');
+            
+            $this->handle = fopen($uri, $mode);
+        }
+    }
+    
+    
+    /**
+     * Create php://temp stream
+     * 
+     * @return resource
+     */
+    protected function createTempStream()
+    {
+        return fopen('php://temp', 'a+');
     }
     
     

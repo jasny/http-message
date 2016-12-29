@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/jasny/http-message.svg?branch=master)](https://travis-ci.org/jasny/http-message)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/jasny/http-message/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/jasny/http-message/?branch=master)
 [![Code Coverage](https://scrutinizer-ci.com/g/jasny/http-message/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/jasny/http-message/?branch=master)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/7a1badc4-ec12-4389-b53e-408b528e6328/mini.png)](https://insight.sensiolabs.com/projects/7a1badc4-ec12-4389-b53e-408b528e6328)
 [![Packagist Stable Version](https://img.shields.io/packagist/v/jasny/http-message.svg)](https://packagist.org/packages/jasny/http-message)
 [![Packagist License](https://img.shields.io/packagist/l/jasny/http-message.svg)](https://packagist.org/packages/jasny/http-message)
 
@@ -10,16 +11,21 @@ This library provides an abstraction around PHPs various superglobals as well as
 practice helps reduce coupling to the superglobals by consumers, and encourages and promotes the ability to test request
 consumers.
 
-### Why does this library exist?
-
-This PSR-7 implementation is an abstraction layer over the normal input/output methods and variables like `echo`,
-`header()`, `$_POST`, etc. This maskes is different from other implementations. It directly interacts with the global
-environment when you're not testing. This means the behaviour of your application will not change by using this
-abstraction.
-
 The library only implements those [PSR-7 interfaces](http://www.php-fig.org/psr/psr-7/) focussed on handling a received
 HTTP request. If you want to send HTTP request to other webservices, I recommend using
 [Guzzle](http://docs.guzzlephp.org/).
+
+### Why this library?
+
+Jasny HTTP Message is a no-nonsence implementation, that can be used with any framework or library.
+
+When using PSR-7, outputing directly using `echo` and `header()` isn't permitted. Instead you need to use the `Response`
+object. Using superglobals like `$_GET` and `$_POST` also won't work, instead you need to use the `ServerRequest`
+object.
+
+If you, your team or your project isn't ready for this paradigm shift, this library allows you to ease into using PSR-7.
+It can be used as an abstraction layer over the normal input/output methods and variables like `echo`, `header()`,
+`$_GET`, $_POST`, etc.
 
 
 ## Installation
@@ -55,23 +61,22 @@ with `php://input` as input stream, use the `withGlobalEnvironment()` method.
 $request = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
 ```
 
-The `withGlobalEnvironment()` links the superglobals by reference to the object. You SHOULD NOT modify these variables,
-but if you do the changes will be reflected in the `ServerRequest` object. Vise versa, using `withQueryParams()` will
+#### Binding to global environment
+
+By using `withGlobalEnvironment(true)`, the `ServerRequest` links the superglobals by reference. If you modify these
+variables, the changes will be reflected in the `ServerRequest` object. Vise versa, using `withQueryParams()` will
 change `$_GET`, `withServerParams` changes `$_SERVER`, etc.
 
-If you do not want this behaviour and want the request to copy the values of the superglobals instead, set the first
-argument to `false`.
-
 ```php
-// $_GET is affected
-$requestByRef = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
-$requestByRef = $request->withQueryParams(['foo' => 1]);
-var_dump($_GET); // array(1) { ["foo"]=> int(1) }
-
 // $_GET is not affected
-$requestByVal = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment(false);
+$requestByVal = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
 $requestByVal = $request->withQueryParams(['foo' => 1]);
 var_dump($_GET); // array(0) { }
+
+// $_GET is affected
+$requestByRef = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment(true);
+$requestByRef = $request->withQueryParams(['foo' => 1]);
+var_dump($_GET); // array(1) { ["foo"]=> int(1) }
 ```
 
 ### Response
@@ -93,12 +98,6 @@ with `php://output` as output stream, use the `withGlobalEnvironment()` method.
 ```php
 $request = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
 ```
-
-You SHOULD NOT write to `php://output` directly (by using `echo`). Still, the changes will be reflected in the
-`Response` object when `withGlobalEnvironment()` is used.
-
-You SHOULD NOT use the `header()` and `header_remove()` functions directly. Still, the changes will be reflected in the 
-`Response` object when `withGlobalEnvironment()` is used.
 
 
 ### Uri
@@ -125,20 +124,36 @@ The `Stream` class is a wrapper around [php streams](http://php.net/manual/en/bo
 [PSR-7 `StreamInterface`](http://www.php-fig.org/psr/psr-7/#3-4-psr-http-message-streaminterface).
 
 ```php
-$input = new Jasny\HttpMessage\Stream('php://input', 'r');
-$output = new Jasny\HttpMessage\Stream('php://output', 'w');
+$input = new Jasny\HttpMessage\Stream();
+$input->write(json_encode(['foo' => 'bar', 'color' => 'red']));
 ```
 
-For testing purposes use the `php://memory` stream.
+#### Creating a stream
+
+By default it will create a stream using a `php://temp`. You may pass a stream resource when creating a stream to use
+a different kind of handle.
 
 ```php
-$input = new Jasny\HttpMessage\Stream('php://memory');
-$input->write(json_encode(['foo' => 'bar', 'color' => 'red']));
-
-$output = new Jasny\HttpMessage\Stream('php://memory');
+$handle = fopen('php://memory', 'r+');
+$stream = new Jasny\HttpMessage\Stream($handle);
 ```
 
-After running the test case, cast `$output` to a string to assert the output.
+Alternatively you may use `Stream::open($uri, $mode)` to create a stream with a specific handle.
+
+```
+$stream = Jasny\HttpMessage\Stream::open('php://memory', 'r+');
+```
+
+#### Cloning the stream
+
+When cloning a stream, the handle is recreated. This means that for `php://temp` and `php://memory`, you'll get a stream
+without any content. Clearing the body of a response can typically be done by cloning the stream.
+
+```php
+$newResponse = $response->withBody(clone $response->getBody());
+```
+
+_This behaviour is not specified in PSR-7 and cloning streams may not work with other PSR-7 implementations._
 
 
 ### DerivedAttribute

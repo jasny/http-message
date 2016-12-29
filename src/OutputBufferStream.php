@@ -17,20 +17,6 @@ class OutputBufferStream extends Stream implements StreamInterface
     protected $handle;
 
     /**
-     * Class constructor
-     */
-    public function __construct()
-    {
-        $handle = $this->createTempStream();
-        
-        if (!is_resource($handle) || get_resource_type($handle) !== 'stream') {
-            throw new \RuntimeException("Failed to open 'php://temp' stream");
-        }
-        
-        $this->handle = $handle;
-    }
-
-    /**
      * Assert that output buffering is enabled.
      *
      * @return \RuntimeException
@@ -80,7 +66,7 @@ class OutputBufferStream extends Stream implements StreamInterface
     /**
      * After change Response body without Global Environment this function 
      * copy all data from php://output if this possible to the php://temp.
-     * Also its a close php://output hanlde.
+     * Also its a close php://output handle.
      * 
      * @return $this
      * @throws \RuntimeException
@@ -318,16 +304,19 @@ class OutputBufferStream extends Stream implements StreamInterface
         return $this->obGetContents();
     }
     
-    
     /**
-     * Create php://temp stream
-     * 
-     * @return resource
+     * Clone a stream
      */
-    protected function createTempStream()
+    public function __clone()
     {
-        return fopen('php://temp', 'a+');
+        if (!$this->isGlobal()) {
+            parent::__clone();
+            return;
+        }
+            
+        $this->handle = $this->createTempStream();
     }
+    
     
     /**
      * Create php://output stream
