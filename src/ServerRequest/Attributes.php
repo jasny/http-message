@@ -3,6 +3,7 @@
 namespace Jasny\HttpMessage\ServerRequest;
 
 use Jasny\HttpMessage\DerivedAttribute;
+use Jasny\HttpMessage\DerivedAttributeInterface;
 
 /**
  * ServerRequest attributes methods
@@ -43,7 +44,7 @@ trait Attributes
         $attributes = [];
         
         foreach ($this->attributes as $name => $attr) {
-            $value = $attr instanceof \Closure || $attr instanceof DerivedAttribute ? $attr($this) : $attr;
+            $value = $attr instanceof \Closure || $attr instanceof DerivedAttributeInterface ? $attr($this) : $attr;
             $attributes[$name] = $value;
         }
         
@@ -69,7 +70,7 @@ trait Attributes
         $key = \Jasny\snakecase($name);
         
         $attr = isset($this->attributes[$key]) ? $this->attributes[$key] : null;
-        $value = $attr instanceof \Closure || $attr instanceof DerivedAttribute ? $attr($this) : $attr;
+        $value = $attr instanceof \Closure || $attr instanceof DerivedAttributeInterface ? $attr($this) : $attr;
         
         return isset($value) ? $value : $default;
     }

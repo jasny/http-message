@@ -9,6 +9,7 @@ use Jasny\HttpMessage\Stream;
 use Jasny\HttpMessage\Uri;
 use Jasny\HttpMessage\UploadedFile;
 use Jasny\HttpMessage\DerivedAttribute;
+use Jasny\HttpMessage\DerivedAttributeInterface;
 use Jasny\HttpMessage\Headers as HeaderObject;
 
 /**
@@ -1118,8 +1119,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
 
     public function testWithAttributeAsCallback()
     {
-        $request = null;
-        
         $request = $this->baseRequest->withAttribute('foo', function ($arg) use (&$request) {
             $this->assertSame($request, $arg);
             return ['bar', 'zoo'];
@@ -1131,7 +1130,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
 
     public function testWithAttributeAsObject()
     {
-        $attribute = $this->getMockBuilder(DerivedAttribute::class)->getMock();
+        $attribute = $this->createMock(DerivedAttributeInterface::class);
         $request = $this->baseRequest->withAttribute('foo', $attribute);
         
         $attribute->expects($this->once())

@@ -2,13 +2,13 @@
 
 namespace Jasny\HttpMessage\DerivedAttribute;
 
-use Jasny\HttpMessage\DerivedAttribute;
+use Jasny\HttpMessage\DerivedAttributeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Check if request is an XHR (AJAX) request.
  */
-class IsXhr implements DerivedAttribute
+class IsXhr implements DerivedAttributeInterface
 {
     /**
      * Calculate the derived attribute.
