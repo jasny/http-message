@@ -44,7 +44,7 @@ The library implements the following PSR-7 interfaces
 
 it defines one interface
 
- * [`DerivedAttribute`](#derivedattribute)
+ * [`DerivedAttributeInterface`](#derivedattribute)
 
 ### ServerRequest
 
@@ -174,14 +174,14 @@ $request = (new ServerRequest())->withAttribute('accept_json', function(ServerRe
 });
 ```
 
-You can create more sophisticated derived attributes by creating a class that implements the `DerivedAttribute`
+You can create more sophisticated derived attributes by creating a class that implements the `DerivedAttributeInterface`
 interface. When implementing that interface, implement `__invoke(ServerRequest $request)`. 
 
 ```php
 use Jasny\HttpMessage\ServerRequest;
-use Jasny\HttpMessage\DerivedAttribute;
+use Jasny\HttpMessage\DerivedAttributeInterface;
 
-class DetectBot implements DerivedAttribute
+class DetectBot implements DerivedAttributeInterface
 {
     public static $identifiers = [
         'google' => 'googlebot',

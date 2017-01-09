@@ -2,13 +2,13 @@
 
 namespace Jasny\HttpMessage\DerivedAttribute;
 
-use Jasny\HttpMessage\DerivedAttribute;
+use Jasny\HttpMessage\DerivedAttributeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Determine the client ip, taking proxy settings into consideration
  */
-class ClientIp implements DerivedAttribute
+class ClientIp implements DerivedAttributeInterface
 {
     /**
      * CIDR address of trusted proxy
