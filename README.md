@@ -256,7 +256,7 @@ $request = (new ServerRequest())
     ->withGlobalEnvironment()
     ->withoutHeader('Client-Ip')
     ->withoutHeader('Forwarded')
-    ->withAttribute('client_ip', new ClientIp(['trusted_proxy => '10.0.0.0/24']);
+    ->withAttribute('client_ip', new ClientIp(['trusted_proxy' => '10.0.0.0/24']);
 ```
 
 #### IsXhr
