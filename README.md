@@ -320,12 +320,12 @@ output using `echo` and `headers()`.
 ob_start();
 
 // Create response with (actual) global enviroment. Modifying it, modifies the superglobals.
-$request = (new ServerRequest())->withGlobalEnvironment()
+$request = (new ServerRequest())->withGlobalEnvironment(true)
     ->withServerParams(['REQUEST_METHOD' => 'GET', 'PATH_INFO' => '/foo'])
     ->withQueryParams(['page' => 1]);
 
 // Create response with (actual) global enviroment.
-$response = (new Response())->withGlobalEnvironment();
+$response = (new Response())->withGlobalEnvironment(true);
 
 // Some PSR-7 compatible router handles the request. The code uses `header` and `echo` to output.
 $router->route($request, $response);
