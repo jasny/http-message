@@ -68,7 +68,7 @@ class OutputBufferStream extends Stream
      * @return OutputBufferStream
      * @throws \RuntimeException
      */
-    protected function withLocalScope()
+    public function withLocalScope()
     {
         if (!$this->isGlobal()) {
             return $this;

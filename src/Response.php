@@ -96,7 +96,7 @@ class Response implements ResponseInterface
      * Note: this method is not part of the PSR-7 specs.
      * 
      * @param boolean $bind   Bind to global environment
-     * @return Response
+     * @return static
      * @throws RuntimeException if isn't not possible to open the 'php://output' stream
      */
     public function withGlobalEnvironment($bind = false)
@@ -125,7 +125,7 @@ class Response implements ResponseInterface
      * Return object that is disconnected from superglobals
      * Note: this method is not part of the PSR-7 specs.
      * 
-     * @return Response
+     * @return static
      */
     public function withoutGlobalEnvironment()
     {
@@ -135,7 +135,12 @@ class Response implements ResponseInterface
         
         $response = clone $this;
         
-        $response->turnStale();
+        $response->copy(); // explicitly make stale
+        
+        if ($response->body instanceof OutputBufferStream){
+            $response->body = $response->body->withLocalScope();
+        }
+        
         $response->isStale = null;
         
         return $response;
@@ -157,29 +162,23 @@ class Response implements ResponseInterface
      * Clone the response.
      * Turn stale if the response is bound to the global environment.
      * 
-     * @return Response  A non-stale response
+     * @return static  A non-stale response
      * @throws \BadMethodCallException when the response is stale
      */
     protected function copy()
     {
-        if ($this->isStale === null) {
-            return $this;
-        }
-        
         if ($this->isStale) {
             throw new \BadMethodCallException("Unable to modify a stale response object");
         }
         
         $response = clone $this;
         
-        $this->status = new ResponseStatus($this->status);
-        $this->headers = new Headers($this->getHeaders());
-        
-        if ($this->body instanceof OutputBufferStream) {
-            $this->body = $this->body->withLocalScope();
+        if ($this->isStale === false) {
+            $this->status = new ResponseStatus($this->status);
+            $this->headers = new Headers($this->getHeaders());
+
+            $this->isStale = true;
         }
-        
-        $this->isStale = true;
         
         return $response;
     }
