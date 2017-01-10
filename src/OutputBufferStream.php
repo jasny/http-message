@@ -23,7 +23,7 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     protected function assertOutputBuffering()
     {
-        if (!$this->obGetStatus()) {
+        if ($this->obGetLevel() === 0) {
             throw new \RuntimeException("Output buffering is not enabled");
         }
     }
@@ -299,9 +299,14 @@ class OutputBufferStream extends Stream implements StreamInterface
             return parent::__toString();
         }
         
-        $this->assertOutputBuffering();
+        try {
+            $this->assertOutputBuffering();
+            $contents = $this->obGetContents();
+        } catch (\Exception $e) {
+            $contents = $e->getMessage();
+        }
         
-        return $this->obGetContents();
+        return $contents;
     }
     
     /**
@@ -329,14 +334,14 @@ class OutputBufferStream extends Stream implements StreamInterface
     }
     
     /**
-     * Wrapper around ob_get_status()
+     * Wrapper around ob_get_level()
      * @codeCoverageIgnore
      * 
-     * @return boolean
+     * @return int
      */
-    protected function obGetStatus()
+    protected function obGetLevel()
     {
-        return ob_get_status();
+        return ob_get_level();
     }
     
     /**

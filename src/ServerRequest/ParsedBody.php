@@ -10,8 +10,8 @@ use Psr\Http\Message\StreamInterface;
 trait ParsedBody
 {
     /**
-     * Parsed body (typically $_POST or parsed php://input)
-     * @var array|mixed
+     * Parsed body
+     * @var null|array|object|mixed
      */
     protected $parsedBody;
     
@@ -21,6 +21,12 @@ trait ParsedBody
      */
     protected $parseCondition;
 
+    /**
+     * Linked to $_POST
+     * @var array|null
+     */
+    protected $postData;
+    
     
     /**
      * Disconnect the global enviroment, turning stale
@@ -61,6 +67,10 @@ trait ParsedBody
         if ($this->parseCondition !== false) {
             $this->parsedBody = null;
             $this->parseCondition = null;
+            
+            if (isset($this->postData)) {
+                $this->postData = [];
+            }
         }
     }
     
@@ -96,15 +106,25 @@ trait ParsedBody
      */
     protected function setPostData(array &$data)
     {
+        $this->postData =& $data;
+    }
+    
+    /**
+     * Check if we should use post data rather than parsing the body
+     * 
+     * @return boolean
+     */
+    protected function shouldUsePostData()
+    {
+        if (!isset($this->postData)) {
+            return false;
+        }
+        
         $contentType = $this->getHeaderLine('Content-Type');
         
-        if (
+        return
             in_array($contentType, ['application/x-www-form-urlencoded', 'multipart/form-data']) ||
-            empty($contentType) && !array_key_exists('SERVER_PROTOCOL', $this->getServerParams())
-        ) {
-            $this->parsedBody =& $data;
-            $this->parseCondition = ['content_type' => $contentType];
-        }
+            empty($contentType) && !array_key_exists('SERVER_PROTOCOL', $this->getServerParams());
     }
     
     /**
@@ -204,8 +224,13 @@ trait ParsedBody
      */
     public function getParsedBody()
     {
+        if ($this->shouldUsePostData()) {
+            return $this->postData;
+        }
+
         if ($this->parseBodyIsRequired()) {
             $this->parsedBody = $this->parseBody();
+
             $this->parseCondition = [
                 'content_type' => $this->getHeaderLine('Content-Type'),
                 'size' => $this->getBody()->getSize()
@@ -217,23 +242,6 @@ trait ParsedBody
     
     
     /**
-     * Update the values of the parsed body
-     * In case the parsed body is linked to $_POST, setting it would break the link
-     * 
-     * @param array $data
-     */
-    protected function setParsedBodyValues(array $data)
-    {
-        foreach (array_keys($this->parsedBody) as $key) {
-            unset($this->parsedBody[$key]);
-        }
-            
-        foreach ($data as $key => $value) {
-            $this->parsedBody[$key] = $value;
-        }
-    }
-    
-    /**
      * Return an instance with the specified body parameters.
      *
      * @param null|array|object|mixed $data The deserialized body data.
@@ -242,11 +250,12 @@ trait ParsedBody
     public function withParsedBody($data)
     {
         $request = $this->turnStale();
-        
+
         $request->parseCondition = false;
         
-        if (is_array($data) && is_array($this->parsedBody)) {
-            $request->setParsedBodyValues($data);
+        if ($this->shouldUsePostData()) {
+            $request->postData = $data;
+            $request->parsedBody = null;
         } else {
             $request->parsedBody = $data;
         }

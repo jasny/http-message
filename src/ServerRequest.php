@@ -10,7 +10,6 @@ use Jasny\HttpMessage\ServerRequest;
  */
 class ServerRequest implements ServerRequestInterface
 {
-    use ServerRequest\GlobalEnvironment;
     use ServerRequest\ServerParams;
     use ServerRequest\ProtocolVersion;
     use ServerRequest\Headers;
@@ -23,6 +22,13 @@ class ServerRequest implements ServerRequestInterface
     use ServerRequest\UploadedFiles;
     use ServerRequest\ParsedBody;
     use ServerRequest\Attributes;
+    
+    
+    /**
+     * The object is stale if it no longer reflects the global enviroment
+     * @var boolean|null
+     */
+    protected $isStale;
     
     
     /**
@@ -43,5 +49,136 @@ class ServerRequest implements ServerRequestInterface
         $this->requestTarget = null;
         $this->method = null;
         $this->uri = null;
+    }
+    
+    /**
+     * Remove referencing from properties
+     * 
+     * @param string[] $properties
+     */
+    protected function dereferenceProperty(...$properties)
+    {
+        foreach ((array)$properties as $property) {
+            if (!property_exists($this, $property)) {
+                continue; // @codeCoverageIgnore
+            }
+            
+            $value = $this->$property;
+            unset($this->$property);
+            $this->$property = $value;
+        }
+    }
+    
+    
+    /**
+     * Use superglobals $_SERVER, $_COOKIE, $_GET, $_POST and $_FILES and the php://input stream.
+     * Note: this method is not part of the PSR-7 specs.
+     * 
+     * @param boolean $bind  Bind server request to global environment
+     * @return ServerRequest
+     * @throws RuntimeException if isn't not possible to open the 'php://input' stream
+     */
+    public function withGlobalEnvironment($bind = false)
+    {
+        if (isset($this->isStale)) {
+            return $this;
+        }
+        
+        $request = clone $this;
+        
+        $request->serverParams =& $_SERVER;
+        $request->cookies =& $_COOKIE;
+        $request->queryParams =& $_GET;
+        
+        $request->setPostData($_POST);
+        $request->setUploadedFiles($_FILES);
+        
+        $request->body = Stream::open('php://input', 'r');
+        
+        $request->reset();
+        
+        $request->isStale = false;
+        
+        if (!$bind) {
+            $request->turnStale();
+            $request->isStale = null;
+        }
+        
+        return $request;
+    }
+    
+    /**
+     * Return object that is disconnected from superglobals
+     * 
+     * @return ServerRequest
+     */
+    public function withoutGlobalEnvironment()
+    {
+        if ($this->isStale !== false) {
+            return $this;
+        }
+        
+        $request = clone $this;
+        
+        $request->turnStale();
+        $request->isStale = null;
+        
+        return $request;
+    }
+    
+    
+    /**
+     * Revive a stale server request
+     * 
+     * @return ServerRequest
+     */
+    public function revive()
+    {
+        if ($this->isStale !== true) {
+            return $this;
+        }
+        
+        $request = (new static())->withGlobalEnvironment(true);
+        
+        return $request
+            ->withServerParams($this->getServerParams())
+            ->withCookieParams($this->getCookieParams())
+            ->withQueryParams($this->getQueryParams())
+            ->withParsedBody($this->getParsedBody())
+            ->withBody(clone $this->getBody())
+            ->withUploadedFiles($this->getUploadedFiles());
+    }
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return ServerRequest  A non-stale request
+     * @throws \BadMethodCallException when the request is already stale
+     */
+    protected function turnStale()
+    {
+        if ($this->isStale) {
+            throw new \BadMethodCallException("Unable to modify a stale server request object");
+        }
+        
+        $request = clone $this;
+        
+        if ($this->isStale === false) {
+            $this->dereferenceProperty('serverParams', 'cookies', 'queryParams', 'postData', 'uploadedFiles');
+            $this->isStale = true;
+        }
+        
+        return $request;
+    }
+    
+    /**
+     * The object is stale if it no longer reflects the global environment.
+     * Returns null if the object isn't using the globla state.
+     * 
+     * @var boolean|null
+     */
+    public function isStale()
+    {
+        return $this->isStale;
     }
 }

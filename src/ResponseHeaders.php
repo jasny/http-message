@@ -24,6 +24,8 @@ class ResponseHeaders extends Headers
      */
     public function __construct($incomingArray = [])
     {
+        $this->headerRemove();
+        
         foreach ($incomingArray as $name => $values) {
             foreach ((array)$values as $value) {
                 $this->header("$name: $value", false);
