@@ -48,15 +48,19 @@ class Response implements ResponseInterface
      */
     public function emit(EmitterInterface $emitter = null)
     {
+        if ($this->isStale) {
+            throw new \BadMethodCallException("Unable to emit a stale response object");
+        }
+        
         if (!isset($emitter)) {
             $emitter = $this->createEmitter();
         }
         
-        if (isset($this->status) && !$this->status->isGlobal()) {
+        if (isset($this->status) && !$this->status instanceof GlobalResponseStatus) {
             $emitter->emitStatus($this);
         }
         
-        if (isset($this->headers) && !$this->headers instanceof ResponseHeaders) {
+        if (isset($this->headers) && !$this->headers instanceof GlobalResponseHeaders) {
             $emitter->emitHeaders($this);
         }
         
@@ -132,7 +136,7 @@ class Response implements ResponseInterface
         $response = clone $this;
         
         $response->turnStale();
-        $response->isStatle = null;
+        $response->isStale = null;
         
         return $response;
     }
@@ -150,15 +154,20 @@ class Response implements ResponseInterface
     }
     
     /**
-     * Disconnect the global enviroment, turning stale
+     * Clone the response.
+     * Turn stale if the response is bound to the global environment.
      * 
-     * @return ServerRequest  A non-stale request
-     * @throws \BadMethodCallException when the request is already stale
+     * @return Response  A non-stale response
+     * @throws \BadMethodCallException when the response is stale
      */
-    protected function turnStale()
+    protected function copy()
     {
+        if ($this->isStale === null) {
+            return $this;
+        }
+        
         if ($this->isStale) {
-            throw new \BadMethodCallException("Unable to modify a stale server request object");
+            throw new \BadMethodCallException("Unable to modify a stale response object");
         }
         
         $response = clone $this;
@@ -167,7 +176,7 @@ class Response implements ResponseInterface
         $this->headers = new Headers($this->getHeaders());
         
         if ($this->body instanceof OutputBufferStream) {
-            $this->body = $this->body->withoutGlobalEnvironment();
+            $this->body = $this->body->withLocalScope();
         }
         
         $this->isStale = true;
@@ -176,9 +185,9 @@ class Response implements ResponseInterface
     }
     
     /**
-     * Revive a stale server request
+     * Revive a stale response
      * 
-     * @return ServerRequest
+     * @return $this
      */
     public function revive()
     {
@@ -186,10 +195,13 @@ class Response implements ResponseInterface
             return $this;
         }
         
-        $request = new static();
+        $this->status = (new GlobalResponseStatus($this->status))->withProtocolVersion($this->getProtocolVersion());
+        $this->headers = new GlobalResponseHeaders($this->getHeaders());
         
-        $request->status = (new GlobalResponseStatus($this->status))->withProtocolVersion($this->getProtocolVersion());
-        $request->headers = new GlobalResponseHeaders($this->getHeaders());
-        $request->body = new OutputBufferStream();
+        if ($this->body instanceof OutputBufferStream) {
+            $this->body->useGlobally();
+        }
+        
+        return $this;
     }
 }

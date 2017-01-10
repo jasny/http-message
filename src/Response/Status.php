@@ -16,35 +16,12 @@ trait Status
     
     
     /**
-     * Assert that the status code is valid (100..999)
-     *
-     * @param string $code
-     * @throws \InvalidArgumentException
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
      */
-    protected function assertStatusCode($code)
-    {
-        if (!is_int($code)) {
-            throw new \InvalidArgumentException("Response code must be integer");
-        }
-        
-        if ($code < 100 || $code > 999) {
-            throw new \InvalidArgumentException("Response code must be in range 100...999");
-        }
-    }
+    abstract protected function copy();
 
-    /**
-     * Function to set Status phrase
-     *
-     * @param string $phrase
-     */
-    protected function assertReasonPhrase($phrase)
-    {
-        if (isset($phrase) && !is_string($phrase)) {
-            throw new \InvalidArgumentException("Response message must be a string");
-        }
-    }
-    
-    
     /**
      * Function for the protocol version
      * @return string
@@ -53,28 +30,14 @@ trait Status
 
     
     /**
-     * Get or set HTTP Response status
+     * Initialize the response status
      * 
-     * @param ResponseStatus $status
      * @return ResponseStatus
      */
-    final protected function statusObject(ResponseStatus $status = null)
-    {
-        if (func_num_args() >= 1) {
-            $this->status = $status;
-        }
-        
-        return $this->status;
-    }
-    
-    
-    /**
-     * @return ResponseStatus
-     */
-    protected function getStatus()
+    protected function initStatus()
     {
         if (!isset($this->status)) {
-            $this->status = new ResponseStatus($this->getProtocolVersion());
+            $this->status = new ResponseStatus();
         }
         
         return $this->status;
@@ -90,7 +53,7 @@ trait Status
      */
     public function getStatusCode()
     {
-        return $this->getStatus()->getStatusCode();
+        return $this->initStatus()->getStatusCode();
     }
 
     /**
@@ -100,7 +63,7 @@ trait Status
      */
     public function getReasonPhrase()
     {
-        return $this->getStatus()->getReasonPhrase();
+        return $this->initStatus()->getReasonPhrase();
     }
 
     /**
@@ -131,13 +94,10 @@ trait Status
             return $this;
         }
         
-        $this->assertStatusCode($code);
-        $this->assertReasonPhrase($reasonPhrase);
+        $status = $this->initStatus();
         
-        $this->status = new ResponseStatus($this->status);
-        
-        $response = clone $this;
-        $response->status = $status;
+        $response = $this->copy();
+        $response->status = $status->withStatus($code, $reasonPhrase);
         
         return $response;
     }

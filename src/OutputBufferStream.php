@@ -2,20 +2,18 @@
 
 namespace Jasny\HttpMessage;
 
-use Psr\Http\Message\StreamInterface;
+use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\Wrap\OutputControl;
 
 /**
  * An instance wraps a PHP stream and can be used for a PSR-7 implementation.
  * This interface provides a wrapper around the most common operations, including
  * serialization of the entire stream to a string.
  */
-class OutputBufferStream extends Stream implements StreamInterface
+class OutputBufferStream extends Stream
 {
-    /**
-     * @var resource 
-     */
-    protected $handle;
-
+    use OutputControl;
+    
     /**
      * Assert that output buffering is enabled.
      *
@@ -64,16 +62,23 @@ class OutputBufferStream extends Stream implements StreamInterface
     }
 
     /**
-     * Copy all contents into another stream
+     * Get this stream in a local scope.
+     * If the stream is global, it will create a temp stream and copy the contents.
      * 
-     * @param Stream $stream
-     * @return Stream
+     * @return OutputBufferStream
      * @throws \RuntimeException
      */
-    public function copyInto(Stream $stream)
+    protected function withLocalScope()
     {
-        if (!isset($this->handle)) {
-            throw new \RuntimeException("The stream is closed");
+        if (!$this->isGlobal()) {
+            return $this;
+        }
+        
+        $stream = clone $this;
+        $stream->handle = $this->createTempStream();
+        
+        if (!$stream->handle) {
+            throw new \RuntimeException("Failed to create temp stream to copy output buffer into");
         }
         
         fwrite($stream->handle, (string)$this);
@@ -271,7 +276,7 @@ class OutputBufferStream extends Stream implements StreamInterface
     }
     
     /**
-     * Reads all data from the stream into a string, from the beginning to end.
+     * Reads all data from the output buffer into a string.
      *
      * Warning: This could attempt to load a large amount of data into memory.
      *
@@ -288,7 +293,7 @@ class OutputBufferStream extends Stream implements StreamInterface
             $this->assertOutputBuffering();
             $contents = $this->obGetContents();
         } catch (\Exception $e) {
-            $contents = $e->getMessage();
+            $contents = (string)$e;
         }
         
         return $contents;
@@ -316,56 +321,5 @@ class OutputBufferStream extends Stream implements StreamInterface
     protected function createOutputStream()
     {
         return fopen('php://output', 'a+');
-    }
-    
-    /**
-     * Wrapper around ob_get_level()
-     * @codeCoverageIgnore
-     * 
-     * @return int
-     */
-    protected function obGetLevel()
-    {
-        return ob_get_level();
-    }
-    
-    /**
-     * Wrapper around ob_get_contents()
-     * @codeCoverageIgnore
-     * 
-     * @return string
-     */
-    protected function obGetContents()
-    {
-        return ob_get_contents();
-    }
-    
-    /**
-     * Wrapper around ob_clean()
-     * @codeCoverageIgnore
-     * 
-     * @return string
-     */
-    protected function obClean()
-    {
-        return ob_clean();
-    }
-    
-    /**
-     * Wrapper around ob_flush()
-     * @codeCoverageIgnore
-     */
-    protected function obFlush()
-    {
-        ob_flush();
-    }
-    
-    /**
-     * Wrapper around ob_get_length()
-     * @codeCoverageIgnore
-     */
-    protected function obGetLength()
-    {
-        return ob_get_length();
     }
 }

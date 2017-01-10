@@ -80,8 +80,8 @@ class ResponseStatus
     /**
      * Class constructor
      * 
-     * @param int|self|null $code
-     * @param string        $reasonPhrase
+     * @param int|ResponseStatus|null $code
+     * @param string                  $reasonPhrase
      */
     public function __construct($code = null, $reasonPhrase = '')
     {
@@ -93,6 +93,56 @@ class ResponseStatus
         if (isset($code)) {
             $this->setStatus($code, $reasonPhrase);
         }
+    }
+    
+    
+    /**
+     * Assert that the status code is valid (100..999)
+     *
+     * @param string $code
+     * @throws \InvalidArgumentException
+     */
+    protected function assertStatusCode($code)
+    {
+        if (!is_int($code)) {
+            throw new \InvalidArgumentException("Response code must be integer");
+        }
+        
+        if ($code < 100 || $code > 999) {
+            throw new \InvalidArgumentException("Response code must be in range 100...999");
+        }
+    }
+
+    /**
+     * Function to set Status phrase
+     *
+     * @param string $phrase
+     */
+    protected function assertReasonPhrase($phrase)
+    {
+        if (isset($phrase) && !is_string($phrase)) {
+            throw new \InvalidArgumentException("Response message must be a string");
+        }
+    }
+    
+    
+    /**
+     * Set the specified status code and reason phrase.
+     * 
+     * @param int    $code
+     * @param string $reasonPhrase
+     */
+    protected function setStatus($code, $reasonPhrase)
+    {
+        $this->assertStatusCode($code);
+        $this->assertReasonPhrase($reasonPhrase);
+        
+        if (empty($reasonPhrase) && array_key_exists($code, $this->defaultStatuses)) {
+            $reasonPhrase = $this->defaultStatuses[$code];
+        }
+        
+        $this->code = (int)$code;
+        $this->phrase = (string)$reasonPhrase;
     }
     
     
@@ -119,19 +169,18 @@ class ResponseStatus
         return !empty($this->code) ? $this->phrase : $this->defaultStatuses[200];
     }
 
+    
     /**
-     * Set the specified status code and reason phrase.
+     * Create a new response status object with the specified code and phrase.
      * 
-     * @param int    $code
-     * @param string $reasonPhrase
+     * @param int     $code
+     * @param string  $reasonPhrase
      */
-    public function setStatus($code, $reasonPhrase)
+    public function withStatus($code, $reasonPhrase = '')
     {
-        if (empty($reasonPhrase) && array_key_exists($code, $this->defaultStatuses)) {
-            $reasonPhrase = $this->defaultStatuses[$code];
-        }
+        $status = clone $this;
+        $status->setStatus($code, $reasonPhrase);
         
-        $this->code = (int)$code;
-        $this->phrase = (string)$reasonPhrase;
+        return $status;
     }
 }

@@ -19,8 +19,8 @@ trait Cookies
      * 
      * @return self  A non-stale request
      */
-    abstract protected function turnStale();
-    
+    abstract protected function copy();
+
     
     /**
      * Retrieves cookies sent by the client to the server.
@@ -41,7 +41,7 @@ trait Cookies
      */
     public function withCookieParams(array $cookies)
     {
-        $request = $this->turnStale();
+        $request = $this->copy();
         $request->cookies = $cookies;
         
         return $request;

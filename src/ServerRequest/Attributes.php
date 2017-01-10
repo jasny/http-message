@@ -14,6 +14,15 @@ trait Attributes
      * @var array
      */
     protected $attributes;
+
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function copy();
+
     
     /**
      * Create derived attribute objects
@@ -87,7 +96,7 @@ trait Attributes
      */
     public function withAttribute($name, $value)
     {
-        $request = clone $this;
+        $request = $this->copy();
         
         $key = \Jasny\snakecase($name);
         $request->attributes[$key] = $value;
@@ -107,7 +116,7 @@ trait Attributes
      */
     public function withoutAttribute($name)
     {
-        $request = clone $this;
+        $request = $this->copy();
         
         $key = \Jasny\snakecase($name);
         unset($request->attributes[$key]);

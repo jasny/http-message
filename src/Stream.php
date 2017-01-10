@@ -345,24 +345,4 @@ class Stream implements StreamInterface
         
         return new static($fp);
     }
-    
-    
-    /**
-     * Copy all contents into another stream.
-     * Note: this method is not part of PSR-7
-     * 
-     * @param Stream $stream
-     * @return Stream
-     * @throws \RuntimeException
-     */
-    public function copyInto(Stream $stream)
-    {
-        if (!isset($this->handle)) {
-            throw new \RuntimeException("The stream is closed");
-        }
-        
-        stream_copy_to_stream($this->handle, $stream->handle);
-        
-        return $stream;
-    }
 }

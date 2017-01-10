@@ -12,6 +12,14 @@ trait ProtocolVersion
      */
     protected $protocolVersion;
 
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function copy();
+
     /**
      * Return default setted protocol for request from 
      * $_SERVER['SERVER_PROTOCOL'] or to response 
@@ -20,6 +28,7 @@ trait ProtocolVersion
      */
     abstract protected function determineProtocolVersion();
 
+    
     /**
      * Retrieves the HTTP protocol version as a string.
      *
@@ -69,7 +78,7 @@ trait ProtocolVersion
         
         $this->assertProtocolVersion($version);
         
-        $request = clone $this;
+        $request = $this->copy();
         $request->protocolVersion = $version;
         
         return $request;

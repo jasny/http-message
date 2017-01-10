@@ -15,11 +15,19 @@ trait Method
 
     
     /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function copy();
+
+    /**
      * Get the server parameters
      * 
      * @return array
      */
     abstract public function getServerParams();
+    
     
     /**
      * Determine the request target based on the server params
@@ -78,8 +86,8 @@ trait Method
     {
         $this->assertMethod($method);
         
-        $request = clone $this;
-        $request->method = strtoupper($method);
+        $request = $this->copy();
+        $request->method = $method;
         
         return $request;
     }

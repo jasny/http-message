@@ -139,12 +139,13 @@ class ServerRequest implements ServerRequestInterface
     }
     
     /**
-     * Disconnect the global enviroment, turning stale
+     * Clone the server request.
+     * Turn stale if the request is bound to the global environment.
      * 
      * @return ServerRequest  A non-stale request
-     * @throws \BadMethodCallException when the request is already stale
+     * @throws \BadMethodCallException when the request is stale
      */
-    protected function turnStale()
+    protected function copy()
     {
         if ($this->isStale) {
             throw new \BadMethodCallException("Unable to modify a stale server request object");

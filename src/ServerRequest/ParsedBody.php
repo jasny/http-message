@@ -33,9 +33,8 @@ trait ParsedBody
      * 
      * @return self  A non-stale request
      */
-    abstract protected function turnStale();
-    
-    
+    abstract protected function copy();
+
     /**
      * Get the server paramaters (typically $_SERVER)
      * 
@@ -249,7 +248,7 @@ trait ParsedBody
      */
     public function withParsedBody($data)
     {
-        $request = $this->turnStale();
+        $request = $this->copy();
 
         $request->parseCondition = false;
         

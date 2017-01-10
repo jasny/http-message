@@ -15,12 +15,21 @@ trait Body
      */
     protected $body;
 
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function copy();
+
     /**
      * Create the default body stream
      * 
      * @return Stream
      */
     abstract protected function createDefaultBody();
+    
     
     /**
      * Gets the body of the message.
@@ -54,7 +63,7 @@ trait Body
      */
     public function withBody(StreamInterface $body)
     {
-        $request = clone $this;
+        $request = $this->copy();
         $request->setBody($body);
         
         return $request;

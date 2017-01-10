@@ -17,6 +17,13 @@ trait Uri
     
     
     /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function copy();
+
+    /**
      * Get the server parameters
      * 
      * @return array
@@ -31,6 +38,7 @@ trait Uri
      * @return self
      */
     abstract public function withHeader($name, $value);
+    
     
     /**
      * Map server params for URI
@@ -111,13 +119,13 @@ trait Uri
      * Returns an instance with the provided URI.
      *
      * @see http://tools.ietf.org/html/rfc3986#section-4.3
-     * @param UriInterface $uri New request URI to use.
-     * @param bool $preserveHost Preserve the original state of the Host header.
+     * @param UriInterface $uri          New request URI to use.
+     * @param boolean      $preserveHost Preserve the original state of the Host header.
      * @return static
      */
     public function withUri(UriInterface $uri, $preserveHost = false)
     {
-        $request = clone $this;
+        $request = $this->copy();
         $request->uri = $uri;
         
         if (!$preserveHost) {

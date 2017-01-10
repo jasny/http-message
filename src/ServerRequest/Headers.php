@@ -11,12 +11,14 @@ trait Headers
 {
     use Message\Headers;
 
+    
     /**
      * Get the server parameters
      * 
      * @return array
      */
     abstract public function getServerParams();
+    
 
     /**
      * Determine the headers based on the server parameters
