@@ -4,6 +4,10 @@ namespace Jasny\HttpMessage;
 
 use Psr\Http\Message\ResponseInterface;
 use Jasny\HttpMessage\Response;
+use Jasny\HttpMessage\ResponseStatus;
+use Jasny\HttpMessage\GlobalResponseStatus;
+use Jasny\HttpMessage\Headers;
+use Jasny\HttpMessage\GlobalResponseHeaders;
 use Jasny\HttpMessage\EmitterInterface;
 use Jasny\HttpMessage\Emitter;
 
@@ -12,16 +16,19 @@ use Jasny\HttpMessage\Emitter;
  */
 class Response implements ResponseInterface
 {
-    use Response\ProtocolVersion;
+    use Response\ProtocolVersion {
+        withProtocolVersion as _withProtocolVersion;
+    }
     use Response\Status;
     use Response\Headers;
     use Response\Body;
     
+    
     /**
-     * The object is bound to the global enviroment
-     * @var boolean
+     * The object is stale if it no longer reflects the global enviroment
+     * @var boolean|null
      */
-    protected $isGlobal = false;
+    protected $isStale;
     
     
     /**
@@ -58,6 +65,28 @@ class Response implements ResponseInterface
         }
     }
     
+
+    /**
+     * Return an instance with the specified HTTP protocol version.
+     *
+     * The version string MUST contain only the HTTP version number (e.g., "1.1", "1.0").
+     *
+     * @param string
+     * @return static
+     * @throws \InvalidArgumentException for invalid versions
+     */
+    public function withProtocolVersion($version)
+    {
+        $response = $this->_withProtocolVersion($version);
+        
+        if ($response->status instanceof GlobalResponseStatus) {
+            $response->status = $response->status->withProtocolVersion($response->getProtocolVersion());
+        }
+        
+        return $response;
+    }
+
+    
     /**
      * Use php://output stream and default php functions work with headers.
      * Note: this method is not part of the PSR-7 specs.
@@ -74,11 +103,11 @@ class Response implements ResponseInterface
         
         $response = clone $this;
         
-        $response->getBody()->useGlobally();
-        $response->headersObject(new ResponseHeaders());
-        $response->statusObject((new ResponseStatus($this->getProtocolVersion())))->useGlobally();
+        $response->status = (new GlobalResponseStatus())->withProtocolVersion($this->getProtocolVersion());
+        $response->headers = new GlobalHeaders();
+        $response->setBody(new OutputBufferStream());
         
-        $response->isGlobal = true;
+        $response->isStale = false;
 
         if (!$bind) {
             // This will copy the headers and body from the global environment
@@ -96,70 +125,71 @@ class Response implements ResponseInterface
      */
     public function withoutGlobalEnvironment()
     {
-        if (!$this->isGlobal) {
+        if ($this->isStale === null) {
             return $this;
         }
         
         $response = clone $this;
         
-        $response->statusObject()->useLocally();
-
-        $headers = $this->getHeaders();
-        $response->headersObject(new Headers($headers));
-        
-        $body = $this->getBody();
-        if ($body instanceof Stream) {
-            $body->useLocally();
-        }
-        
-        $response->isGlobal = false;
+        $response->turnStale();
+        $response->isStatle = null;
         
         return $response;
     }
-
+    
+    
     /**
-     * The object is stale if it no longer reflects the global enviroment.
-     * Returns null if the object isn't using the global state.
+     * The object is stale if it no longer reflects the global environment.
+     * Returns null if the object isn't using the globla state.
      * 
-     * @return boolean If current object are stale 
+     * @var boolean|null
      */
     public function isStale()
     {
-        if (!$this->isGlobal) {
-            return null;
-        }
-
-        return !isset($this->status) || $this->status->isStale() ||
-            !isset($this->headers) || $this->headers->isStale() ||
-            !isset($this->body) || $this->body->getMetadata('uri') !== 'php://output';
+        return $this->isStale;
     }
     
     /**
-     * Revive a stale object
+     * Disconnect the global enviroment, turning stale
      * 
-     * @return static
+     * @return ServerRequest  A non-stale request
+     * @throws \BadMethodCallException when the request is already stale
      */
-    public function revive()
+    protected function turnStale()
     {
-        if ($this->isStale() !== true) {
-            return $this;
+        if ($this->isStale) {
+            throw new \BadMethodCallException("Unable to modify a stale server request object");
         }
         
         $response = clone $this;
         
-        if (isset($this->status) && $this->status->isStale()) {
-            $response->status = $this->status->withStatus(200);
+        $this->status = new ResponseStatus($this->status);
+        $this->headers = new Headers($this->getHeaders());
+        
+        if ($this->body instanceof OutputBufferStream) {
+            $this->body = $this->body->withoutGlobalEnvironment();
         }
         
-        if (isset($this->headers) && $this->headers->isStale()) {
-            $response->headers = new ResponseHeaders($this->getHeaders());
-        }
-        
-        if (isset($this->body)) {
-            $response->body = new OutputBufferStream();
-            $response->body->write((string)$this->body);
-        }
+        $this->isStale = true;
         
         return $response;
+    }
+    
+    /**
+     * Revive a stale server request
+     * 
+     * @return ServerRequest
+     */
+    public function revive()
+    {
+        if ($this->isStale !== true) {
+            return $this;
+        }
+        
+        $request = new static();
+        
+        $request->status = (new GlobalResponseStatus($this->status))->withProtocolVersion($this->getProtocolVersion());
+        $request->headers = new GlobalResponseHeaders($this->getHeaders());
+        $request->body = new OutputBufferStream();
     }
 }

@@ -128,25 +128,14 @@ class ServerRequest implements ServerRequestInterface
     
     
     /**
-     * Revive a stale server request
+     * The object is stale if it no longer reflects the global environment.
+     * Returns null if the object isn't using the globla state.
      * 
-     * @return ServerRequest
+     * @var boolean|null
      */
-    public function revive()
+    public function isStale()
     {
-        if ($this->isStale !== true) {
-            return $this;
-        }
-        
-        $request = (new static())->withGlobalEnvironment(true);
-        
-        return $request
-            ->withServerParams($this->getServerParams())
-            ->withCookieParams($this->getCookieParams())
-            ->withQueryParams($this->getQueryParams())
-            ->withParsedBody($this->getParsedBody())
-            ->withBody(clone $this->getBody())
-            ->withUploadedFiles($this->getUploadedFiles());
+        return $this->isStale;
     }
     
     /**
@@ -172,13 +161,24 @@ class ServerRequest implements ServerRequestInterface
     }
     
     /**
-     * The object is stale if it no longer reflects the global environment.
-     * Returns null if the object isn't using the globla state.
+     * Revive a stale server request
      * 
-     * @var boolean|null
+     * @return ServerRequest
      */
-    public function isStale()
+    public function revive()
     {
-        return $this->isStale;
+        if ($this->isStale !== true) {
+            return $this;
+        }
+        
+        $request = (new static())->withGlobalEnvironment(true);
+        
+        return $request
+            ->withServerParams($this->getServerParams())
+            ->withCookieParams($this->getCookieParams())
+            ->withQueryParams($this->getQueryParams())
+            ->withParsedBody($this->getParsedBody())
+            ->withBody(clone $this->getBody())
+            ->withUploadedFiles($this->getUploadedFiles());
     }
 }

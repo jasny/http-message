@@ -64,36 +64,21 @@ class OutputBufferStream extends Stream implements StreamInterface
     }
 
     /**
-     * After change Response body without Global Environment this function 
-     * copy all data from php://output if this possible to the php://temp.
-     * Also its a close php://output handle.
+     * Copy all contents into another stream
      * 
-     * @return $this
+     * @param Stream $stream
+     * @return Stream
      * @throws \RuntimeException
      */
-    public function useLocally()
+    public function copyInto(Stream $stream)
     {
         if (!isset($this->handle)) {
             throw new \RuntimeException("The stream is closed");
         }
         
-        if (!$this->isGlobal()) {
-            return $this;
-        }
+        fwrite($stream->handle, (string)$this);
         
-        $temp = $this->createTempStream();
-        if ($temp === false) {
-            throw new \RuntimeException("Failed to open 'php://temp' stream");
-        }
-        
-        fwrite($temp, (string)$this);
-        
-        $this->obClean();
-        parent::close();
-        
-        $this->handle = $temp;
-        
-        return $this;
+        return $stream;
     }
 
     /**

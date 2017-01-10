@@ -14,6 +14,37 @@ trait Status
      */
     protected $status;
     
+    
+    /**
+     * Assert that the status code is valid (100..999)
+     *
+     * @param string $code
+     * @throws \InvalidArgumentException
+     */
+    protected function assertStatusCode($code)
+    {
+        if (!is_int($code)) {
+            throw new \InvalidArgumentException("Response code must be integer");
+        }
+        
+        if ($code < 100 || $code > 999) {
+            throw new \InvalidArgumentException("Response code must be in range 100...999");
+        }
+    }
+
+    /**
+     * Function to set Status phrase
+     *
+     * @param string $phrase
+     */
+    protected function assertReasonPhrase($phrase)
+    {
+        if (isset($phrase) && !is_string($phrase)) {
+            throw new \InvalidArgumentException("Response message must be a string");
+        }
+    }
+    
+    
     /**
      * Function for the protocol version
      * @return string
@@ -96,7 +127,14 @@ trait Status
      */
     public function withStatus($code, $reasonPhrase = '')
     {
-        $status = $this->getStatus()->withStatus($code, $reasonPhrase);
+        if ($this->getStatusCode() === $code && (empty($reasonPhrase) || $this->getReasonPhrase() === $reasonPhrase)) {
+            return $this;
+        }
+        
+        $this->assertStatusCode($code);
+        $this->assertReasonPhrase($reasonPhrase);
+        
+        $this->status = new ResponseStatus($this->status);
         
         $response = clone $this;
         $response->status = $status;

@@ -19,20 +19,35 @@ trait Headers
     
     
     /**
-     * Get or set HTTP headers object
-     * 
-     * @param HeadersInterface $headers
-     * @return HeadersInterface
+     * Assert that the header value is a string
+     *
+     * @param string $name
+     * @throws \InvalidArgumentException
      */
-    final protected function headersObject(HeadersInterface $headers = null)
+    protected function assertHeaderName($name)
     {
-        if (func_num_args() >= 1) {
-            $this->headers = $headers;
+        if (!is_string($name)) {
+            throw new \InvalidArgumentException("Header name must be a string");
         }
         
-        return $this->headers;
+        if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*(\-[a-zA-Z0-9]+)*$/', $name)) {
+            throw new \InvalidArgumentException("Invalid header name '$name'");
+        }
     }
-    
+
+    /**
+     * Assert that the header value is a string
+     *
+     * @param string|string[] $value
+     * @throws \InvalidArgumentException
+     */
+    protected function assertHeaderValue($value)
+    {
+        if (!is_string($value) && (!is_array($value) || array_product(array_map('is_string', $value)) === 0)) {
+            throw new \InvalidArgumentException("Header value should be a string or an array of strings");
+        }
+    }
+
     
     /**
      * Determine the headers based on other information
@@ -55,6 +70,7 @@ trait Headers
         }
     }
 
+    
     /**
      * Retrieves all message header values.
      *
@@ -207,18 +223,5 @@ trait Headers
         }
         
         return $this;
-    }
-    
-    /**
-     * Turn upper case param into header case.
-     * (SOME_HEADER -> Some-Header)
-     * 
-     * @param string $param
-     * @return string
-     */
-    protected function headerCase($param)
-    {
-        $sentence = preg_replace('/[\W_]+/', ' ', $param);
-        return str_replace(' ', '-', ucwords(strtolower($sentence)));
     }
 }
