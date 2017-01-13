@@ -90,7 +90,10 @@ trait Status
      */
     public function withStatus($code, $reasonPhrase = '')
     {
-        if ($this->getStatusCode() === $code && (empty($reasonPhrase) || $this->getReasonPhrase() === $reasonPhrase)) {
+        if (
+            ((is_int($code) || is_string($code)) && $this->getStatusCode() === (int)$code) &&
+            (empty($reasonPhrase) || $this->getReasonPhrase() === $reasonPhrase)
+        ) {
             return $this;
         }
         

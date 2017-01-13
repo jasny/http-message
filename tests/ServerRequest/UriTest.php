@@ -13,7 +13,7 @@ use Jasny\HttpMessage\HeadersInterface;
 /**
  * @covers Jasny\HttpMessage\ServerRequest\Uri
  */
-class ServerParamsTest extends PHPUnit_Framework_TestCase
+class UriTest extends PHPUnit_Framework_TestCase
 {
     use TestHelper;
     

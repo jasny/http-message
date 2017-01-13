@@ -11,7 +11,7 @@ use Jasny\HttpMessage\ServerRequest;
  * @covers Jasny\HttpMessage\Message\ProtocolVersion
  * @covers Jasny\HttpMessage\ServerRequest\ProtocolVersion
  */
-class ServerParamsTest extends PHPUnit_Framework_TestCase
+class ProtocolVersionTest extends PHPUnit_Framework_TestCase
 {
     use TestHelper;
     

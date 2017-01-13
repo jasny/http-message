@@ -101,14 +101,18 @@ class Response implements ResponseInterface
      */
     public function withGlobalEnvironment($bind = false)
     {
-        if ($this->isGlobal) {
+        if ($this->isStale !== null) {
             return $this;
+        }
+        
+        if ($this->isStale === true) {
+            throw new \BadMethodCallException("Unable to use a stale response object");
         }
         
         $response = clone $this;
         
-        $response->status = (new GlobalResponseStatus())->withProtocolVersion($this->getProtocolVersion());
-        $response->headers = new GlobalHeaders();
+        $response->status = new GlobalResponseStatus();
+        $response->headers = new GlobalResponseHeaders();
         $response->setBody(new OutputBufferStream());
         
         $response->isStale = false;

@@ -2,6 +2,7 @@
 
 namespace Jasny\HttpMessage\Response;
 
+use Psr\Http\Message\StreamInterface;
 use Jasny\HttpMessage\Stream;
 use Jasny\HttpMessage\OutputBufferStream;
 use Jasny\HttpMessage\Message;

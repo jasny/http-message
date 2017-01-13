@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage;
+namespace Jasny\HttpMessage\ServerRequest;
 
 use PHPUnit_Framework_TestCase;
 use Jasny\TestHelper;
@@ -11,7 +11,7 @@ use Jasny\HttpMessage\Stream;
 /**
  * @covers Jasny\HttpMessage\ServerRequest\ParsedBody
  */
-class ServerRequestTest extends PHPUnit_Framework_TestCase
+class ParsedBodyTest extends PHPUnit_Framework_TestCase
 {
     use TestHelper;
     
