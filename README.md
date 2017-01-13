@@ -422,8 +422,11 @@ When doing `$copy = $object->with..()`, the `$copy` is now bound to the global e
 stale.
 
 Stale means that the object was bound to the global environment, but no longer reflects the current state. The state of
-the environment (eg global environments) has been copied to the object (think frozen in time). Modification in the
-global environment do not affect the stale object. **It is not possible to modify a stale object.**
+the global environment has been copied to the object (think of it as frozen in time). Changes in the
+global environment do not affect stale objects. **It is not possible to modify a stale object.**
+
+_Note that the `Stream` is a resource that is not cloned by `with...` methods. This is also true when the `Response` is 
+bound to the output stream. So outputting **does** affect stale response objects._
 
 In some cases, you do want to continue with a stale object. For example when catching an error in middleware. In that
 case you need to call `revive()`. This methods restores the global environment to the state of the stale object.
