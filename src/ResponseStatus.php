@@ -104,7 +104,7 @@ class ResponseStatus
      */
     protected function assertStatusCode($code)
     {
-        if (!is_int($code)) {
+        if (!is_int($code) && !(is_string($code) && ctype_digit($code))) {
             throw new \InvalidArgumentException("Response code must be integer");
         }
         

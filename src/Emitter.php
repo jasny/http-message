@@ -24,9 +24,11 @@ class Emitter implements EmitterInterface
      */
     protected function getStatusHeader($protocolVersion, $statusCode, $reasonPhrase)
     {
-        $responseStatus = new ResponseStatus($protocolVersion, $statusCode, $reasonPhrase);
+        if (empty($reasonPhrase)) {
+            $reasonPhrase = (new ResponseStatus($statusCode))->getReasonPhrase();
+        }
         
-        return $responseStatus->getHeader();
+        return "HTTP/{$protocolVersion} {$statusCode} {$reasonPhrase}";
     }
     
     /**

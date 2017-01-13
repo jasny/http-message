@@ -81,6 +81,7 @@ class GlobalResponseStatus extends ResponseStatus
         $this->header($this->getHeader());
     }
     
+    
     /**
      * Get the HTTP header to set the HTTP response.
      * 
