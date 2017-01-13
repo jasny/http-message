@@ -165,14 +165,11 @@ class GlobalResponseHeaders extends Headers
         $this->assertHeaderValue($value);
         $this->assertHeadersNotSent();
         
-        $request = clone $this;
-        $this->turnStale();
-        
         foreach ((array)$value as $val) {
             $this->header("{$name}: {$val}", !$add);
         }
         
-        return $request;
+        return $this;
     }
 
     /**
@@ -227,13 +224,10 @@ class GlobalResponseHeaders extends Headers
             return $this;
         }
         
-        $this->assertNotStale();
         $this->assertHeadersNotSent();
         
-        $request = clone $this;
-        $this->turnStale();
         $this->headerRemove($name);
         
-        return $request;
+        return $this;
     }
 }
