@@ -2,7 +2,7 @@
 
 <phpunit
     colors="true"
-    bootstrap="tests/bootstrap.php"
+    bootstrap="vendor/autoload.php"
     convertErrorsToExceptions="true"
     convertNoticesToExceptions="true"
     convertWarningsToExceptions="true"
@@ -19,6 +19,8 @@
     </filter>
     <logging>
         <log type="coverage-text" target="php://stdout"/>
-    </logging>    
+    </logging>
+    <php>
+        <ini name="error_reporting" value="32767"/><!-- E_ALL | E_STRING -->
+    </php>
 </phpunit>
-

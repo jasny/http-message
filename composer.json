@@ -21,7 +21,7 @@
         "jasny/php-functions": "^2.2"
     },
     "require-dev": {
-        "jasny/php-code-quality": "^2.0",
+        "jasny/php-code-quality": "^2.1",
         "mikey179/vfsStream": "^1.6"
     },
     "provide": {
@@ -31,5 +31,11 @@
         "psr-4": {
             "Jasny\\HttpMessage\\": "src/"
         }
+    },
+    "autoload-dev": {
+        "files": [
+            "tests/support/mock-functions/is_uploaded_file.php",
+            "tests/support/mock-functions/move_uploaded_file.php"
+        ]
     }
 }

@@ -4,7 +4,7 @@ namespace Jasny\HttpMessage\DerivedAttribute;
 
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject;
-use Jasny\HttpMessage\Tests\AssertLastError;
+use Jasny\TestHelper;
 
 use Jasny\HttpMessage\DerivedAttribute\ClientIp;
 use Jasny\HttpMessage\ServerRequest;
@@ -14,7 +14,7 @@ use Jasny\HttpMessage\ServerRequest;
  */
 class ClientIpTest extends PHPUnit_Framework_TestCase
 {
-    use AssertLastError;
+    use TestHelper;
     
     /**
      * @var ServerRequest|PHPUnit_Framework_MockObject_MockObject
