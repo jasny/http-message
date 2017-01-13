@@ -14,6 +14,14 @@ trait Status
      */
     protected $status;
     
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function copy();
+
     /**
      * Function for the protocol version
      * @return string
@@ -22,28 +30,14 @@ trait Status
 
     
     /**
-     * Get or set HTTP Response status
+     * Initialize the response status
      * 
-     * @param ResponseStatus $status
      * @return ResponseStatus
      */
-    final protected function statusObject(ResponseStatus $status = null)
-    {
-        if (func_num_args() >= 1) {
-            $this->status = $status;
-        }
-        
-        return $this->status;
-    }
-    
-    
-    /**
-     * @return ResponseStatus
-     */
-    protected function getStatus()
+    protected function initStatus()
     {
         if (!isset($this->status)) {
-            $this->status = new ResponseStatus($this->getProtocolVersion());
+            $this->status = new ResponseStatus();
         }
         
         return $this->status;
@@ -59,7 +53,7 @@ trait Status
      */
     public function getStatusCode()
     {
-        return $this->getStatus()->getStatusCode();
+        return $this->initStatus()->getStatusCode();
     }
 
     /**
@@ -69,7 +63,7 @@ trait Status
      */
     public function getReasonPhrase()
     {
-        return $this->getStatus()->getReasonPhrase();
+        return $this->initStatus()->getReasonPhrase();
     }
 
     /**
@@ -96,10 +90,17 @@ trait Status
      */
     public function withStatus($code, $reasonPhrase = '')
     {
-        $status = $this->getStatus()->withStatus($code, $reasonPhrase);
+        if (
+            ((is_int($code) || is_string($code)) && $this->getStatusCode() === (int)$code) &&
+            (empty($reasonPhrase) || $this->getReasonPhrase() === $reasonPhrase)
+        ) {
+            return $this;
+        }
         
-        $response = clone $this;
-        $response->status = $status;
+        $status = $this->initStatus();
+        
+        $response = $this->copy();
+        $response->status = $status->withStatus($code, $reasonPhrase);
         
         return $response;
     }

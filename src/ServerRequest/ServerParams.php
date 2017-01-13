@@ -19,7 +19,7 @@ trait ServerParams
      * 
      * @return self  A non-stale request
      */
-    abstract protected function turnStale();
+    abstract protected function copy();
 
     
     /**
@@ -45,7 +45,7 @@ trait ServerParams
      */
     public function withServerParams(array $params)
     {
-        $request = $this->turnStale();
+        $request = $this->copy();
         $request->serverParams = $params;
         
         $request->reset();

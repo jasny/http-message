@@ -19,6 +19,12 @@ HTTP request. If you want to send HTTP request to other webservices, I recommend
 
 Jasny HTTP Message is a no-nonsence implementation, that can be used with any framework or library.
 
+The focus of the library is to behave as expected, without unwanted and unexpected side effects. A prime example of this
+is how [`parsing the body`](#parsed-body) is implemented.
+
+Using the library in it's basic form is kept as simple as possible. You only to deal with a subset of all available
+classes, unless you need to customize.
+
 When using PSR-7, outputing directly using `echo` and `header()` isn't permitted. Instead you need to use the `Response`
 object. Using superglobals like `$_GET` and `$_POST` also won't work, instead you need to use the `ServerRequest`
 object.
@@ -68,16 +74,40 @@ variables, the changes will be reflected in the `ServerRequest` object. Vise ver
 change `$_GET`, `withServerParams` changes `$_SERVER`, etc.
 
 ```php
+use Jasny\HttpMessage\ServerRequest;
+
 // $_GET is not affected
-$requestByVal = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
+$requestByVal = (new ServerRequest())->withGlobalEnvironment();
 $requestByVal = $request->withQueryParams(['foo' => 1]);
 var_dump($_GET); // array(0) { }
 
 // $_GET is affected
-$requestByRef = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment(true);
+$requestByRef = (new ServerRequest())->withGlobalEnvironment(true);
 $requestByRef = $request->withQueryParams(['foo' => 1]);
 var_dump($_GET); // array(1) { ["foo"]=> int(1) }
 ```
+
+#### Parsed body
+
+The `getParsedBody()` method can do a number of things.
+
+If `withParsedBody($data)` has been called explicitly, the provided data will always be returned regardless of headers
+or other request properties.
+
+If `$_POST` was copied from the global environment and the content type is `multipart/form-data` or
+`application/x-www-form-urlencoded`, than the post data is used.
+
+If the request has body content and the content-type is `application/json`, `application/xml` or `text/xml` than the
+body content is parsed. For XML this will result in a [`SimpleXmlElement`](http://php.net/manual/en/book.simplexml.php).
+
+The body is also parsed for `application/x-www-form-urlencoded` if `$_POST` isn't copied. However `multipart/form-data`
+is never manually parsed, so in that case if `$_POST` isn't copied an exception is thrown.
+
+In case the content type is unknown, `getParsedBody()` will simply return null. If the body does have content, but no
+content type header has been set, a warning is triggered.
+
+If the headers or body content changes, the body will be reparsed upon calling `getParsedBody()`. However this only
+happends if the parsed body hasn't been explictly set using `withParsedBody()`.
 
 ### Response
 
@@ -86,19 +116,56 @@ The `Response` class allows you to create the outgoing HTTP response.
 For the full documentation about the `Response` class, please see
 [PSR-7 `ResponseInterface`](http://www.php-fig.org/psr/psr-7/#3-3-psr-http-message-responseinterface).
 
-By default a `Response` object will stream to `php://memory` and simply hold a list of all set headers.
-
-```
-$request = new Jasny\HttpMessage\ServerRequest();
-```
-
-To create a `Response` object which uses the [`header()`](http://php.net/manual/en/function.header.php) method and
-with `php://output` as output stream, use the `withGlobalEnvironment()` method.
+By default a `Response` object will stream to `php://temp` and simply hold a list of all set headers.
 
 ```php
-$request = (new Jasny\HttpMessage\ServerRequest())->withGlobalEnvironment();
+$response = new Jasny\HttpMessage\Response();
 ```
 
+#### Emit
+
+The response object holds all the output, including headers and body content. To send it to the client (in other words
+output it), use the `emit()` method.
+
+```php
+use Jasny\HttpMessage\ServerRequest;
+use Jasny\HttpMessage\Response;
+
+$request = (new ServerRequest())->withGlobalEnvironment();
+$response = $router->handle($request, new Response());
+
+$response->emit();
+```
+
+The `emit()` method will create an `Emitter` object. If needed you can create your own class that implements
+`EmitterInterface` and pass it as `$response->emit(new CustomEmitter())`.
+
+The emitter can also be used directly without using the `emit()` method of the response. This is also useful if you're
+unsure if the router / middleware / controller will return a `Jasny/HttpMessage/Response` or migth return some other
+PSR-7 `ResponseInterface` implementation.
+
+```php
+use Jasny\HttpMessage\ServerRequest;
+use Jasny\HttpMessage\Response;
+use Jasny\HttpMessage\Emitter;
+
+$request = (new ServerRequest())->withGlobalEnvironment();
+$response = $router->handle($request, new Response());
+
+$emitter = new Emitter();
+$emitter->emit($response);
+```
+
+#### Binding to global environment
+
+To create a `Response` object which uses the [`header()`](http://php.net/manual/en/function.header.php) method and
+with `php://output` as output stream, use the `withGlobalEnvironment(true)` method.
+
+```php
+$request = (new Response())->withGlobalEnvironment(true);
+$request->withHeader('Content-Type', 'text/plain'); // Does `header("Content-Type: text/plain")`
+$request->getBody()->write('hello world');          // Outputs "hello world"
+```
 
 ### Uri
 
@@ -319,27 +386,72 @@ output using `echo` and `headers()`.
 // Start output buffering, so the output isn't send directly
 ob_start();
 
-// Create response with (actual) global enviroment. Modifying it, modifies the superglobals.
-$request = (new ServerRequest())->withGlobalEnvironment(true)
+// Create server request that is bound to the global enviroment.
+$baseRequest = (new ServerRequest())->withGlobalEnvironment(true);
+
+// Modifying the bound request, modifies the superglobals.
+$request = $baseRequest
     ->withServerParams(['REQUEST_METHOD' => 'GET', 'PATH_INFO' => '/foo'])
     ->withQueryParams(['page' => 1]);
 
-// Create response with (actual) global enviroment.
-$response = (new Response())->withGlobalEnvironment(true);
+// Create response that is bound to the global enviroment.
+$baseResponse = (new Response())->withGlobalEnvironment(true);
 
 // Some PSR-7 compatible router handles the request. The code uses `header` and `echo` to output.
-$router->route($request, $response);
+$router->handle($request, $baseResponse);
 
 // Disconnect the global environment, copy the data and headers
 $response = $response->withoutGlobalEnvironment();
 
-// Remove all headers and output
-header_remove(); 
-ob_end_clean();
+// Refiving the base request and response, restores the global environment. Also clean the output buffer.
+$baseRequest = $baseRequest->revive();
+$baseResponse = $baseResponse->revive()->withBody(new OutputBufferStream());
 
 // Assert response
 ...
+
+// Ready for next request :)
 ```
+
+#### Stale and revive
 
 Using this technique allows you to start using PSR-7 without having to rewrite your whole code base. Instead you can
 refactor your code bit by bit.
+
+When doing `$copy = $object->with..()`, the `$copy` is now bound to the global environment, while `$object` has turned
+stale.
+
+Stale means that the object was bound to the global environment, but no longer reflects the current state. The state of
+the environment (eg global environments) has been copied to the object (think frozen in time). Modification in the
+global environment do not affect the stale object. **It is not possible to modify a stale object.**
+
+In some cases, you do want to continue with a stale object. For example when catching an error in middleware. In that
+case you need to call `revive()`. This methods restores the global environment to the state of the stale object.
+
+```php
+function errorHandlerMiddleware(ServerRequestInterface $request, ResponseInterface $response, $next) {
+    try {
+        $newResponse = $next($request, $response);
+    } catch (Throwable $error) {
+        // If the next middleware or controller has done something like set the response status, the response is stale.
+        
+        if ($request instanceof Jasny\HttpMessage\ServerRequest) {
+            $request = $request->revive();
+        }
+        
+        if ($response instanceof Jasny\HttpMessage\Response) {
+            $response = $response->revive();
+        }
+
+        $newResponse = handleError($request, $response, $error);
+    }
+
+    return $newResponse;
+}
+```
+
+### Codeception
+
+If you're using [Codeception](http://codeception.com/), the
+[Jasny Codeception module](https://github.com/jasny/codeception-module) migt be interresting. It uses the
+[Jasny Router](https://github.com/jasny/router) to handle PSR-7 server requests.

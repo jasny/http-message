@@ -2,20 +2,18 @@
 
 namespace Jasny\HttpMessage;
 
-use Psr\Http\Message\StreamInterface;
+use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\Wrap\OutputControl;
 
 /**
  * An instance wraps a PHP stream and can be used for a PSR-7 implementation.
  * This interface provides a wrapper around the most common operations, including
  * serialization of the entire stream to a string.
  */
-class OutputBufferStream extends Stream implements StreamInterface
+class OutputBufferStream extends Stream
 {
-    /**
-     * @var resource 
-     */
-    protected $handle;
-
+    use OutputControl;
+    
     /**
      * Assert that output buffering is enabled.
      *
@@ -23,7 +21,7 @@ class OutputBufferStream extends Stream implements StreamInterface
      */
     protected function assertOutputBuffering()
     {
-        if (!$this->obGetStatus()) {
+        if ($this->obGetLevel() === 0) {
             throw new \RuntimeException("Output buffering is not enabled");
         }
     }
@@ -50,7 +48,7 @@ class OutputBufferStream extends Stream implements StreamInterface
         
         $output = $this->createOutputStream();
         if ($output === false) {
-            throw new \RuntimeException("Failed to open 'php://output' stream");
+            throw new \RuntimeException("Failed to create temp stream");
         }
         
         $this->obClean();
@@ -64,16 +62,15 @@ class OutputBufferStream extends Stream implements StreamInterface
     }
 
     /**
-     * After change Response body without Global Environment this function 
-     * copy all data from php://output if this possible to the php://temp.
-     * Also its a close php://output handle.
+     * Get this stream in a local scope.
+     * If the stream is global, it will create a temp stream and copy the contents.
      * 
-     * @return $this
+     * @return OutputBufferStream
      * @throws \RuntimeException
      */
-    public function useLocally()
+    public function withLocalScope()
     {
-        if (!isset($this->handle)) {
+        if ($this->isClosed()) {
             throw new \RuntimeException("The stream is closed");
         }
         
@@ -81,19 +78,11 @@ class OutputBufferStream extends Stream implements StreamInterface
             return $this;
         }
         
-        $temp = $this->createTempStream();
-        if ($temp === false) {
-            throw new \RuntimeException("Failed to open 'php://temp' stream");
-        }
+        $stream = clone $this;
         
-        fwrite($temp, (string)$this);
+        fwrite($stream->handle, (string)$this);
         
-        $this->obClean();
-        parent::close();
-        
-        $this->handle = $temp;
-        
-        return $this;
+        return $stream;
     }
 
     /**
@@ -286,7 +275,7 @@ class OutputBufferStream extends Stream implements StreamInterface
     }
     
     /**
-     * Reads all data from the stream into a string, from the beginning to end.
+     * Reads all data from the output buffer into a string.
      *
      * Warning: This could attempt to load a large amount of data into memory.
      *
@@ -299,9 +288,14 @@ class OutputBufferStream extends Stream implements StreamInterface
             return parent::__toString();
         }
         
-        $this->assertOutputBuffering();
+        try {
+            $this->assertOutputBuffering();
+            $contents = $this->obGetContents();
+        } catch (\Exception $e) {
+            $contents = $e->getMessage();
+        }
         
-        return $this->obGetContents();
+        return $contents;
     }
     
     /**
@@ -315,6 +309,10 @@ class OutputBufferStream extends Stream implements StreamInterface
         }
             
         $this->handle = $this->createTempStream();
+        
+        if (!$this->handle) {
+            throw new \RuntimeException("Failed to create temp stream");
+        }
     }
     
     
@@ -326,56 +324,5 @@ class OutputBufferStream extends Stream implements StreamInterface
     protected function createOutputStream()
     {
         return fopen('php://output', 'a+');
-    }
-    
-    /**
-     * Wrapper around ob_get_status()
-     * @codeCoverageIgnore
-     * 
-     * @return boolean
-     */
-    protected function obGetStatus()
-    {
-        return ob_get_status();
-    }
-    
-    /**
-     * Wrapper around ob_get_contents()
-     * @codeCoverageIgnore
-     * 
-     * @return string
-     */
-    protected function obGetContents()
-    {
-        return ob_get_contents();
-    }
-    
-    /**
-     * Wrapper around ob_clean()
-     * @codeCoverageIgnore
-     * 
-     * @return string
-     */
-    protected function obClean()
-    {
-        return ob_clean();
-    }
-    
-    /**
-     * Wrapper around ob_flush()
-     * @codeCoverageIgnore
-     */
-    protected function obFlush()
-    {
-        ob_flush();
-    }
-    
-    /**
-     * Wrapper around ob_get_length()
-     * @codeCoverageIgnore
-     */
-    protected function obGetLength()
-    {
-        return ob_get_length();
     }
 }

@@ -18,6 +18,11 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
      */
     protected $root;
     
+    /**
+     * @var array
+     */
+    protected $globals;
+    
     public function setUp()
     {
         $structure = [
@@ -27,6 +32,13 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
         ];
         
         $this->root = vfsStream::setup('tmp', null, $structure);
+        
+        $this->globals = [
+            'get' => $_GET,
+            'post' => $_POST,
+            'cookie' => $_COOKIE,
+            'server' => $_SERVER
+        ];
     }
     
     /**
@@ -41,6 +53,7 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
             ->withServerParams([
                 'SERVER_PROTOCOL' => 'HTTP/1.1',
                 'REQUEST_METHOD' => 'POST',
+                'CONTENT_TYPE' => 'application/x-www-form-urlencoded',
                 'PATH_INFO' => '/foo'
             ])
             ->withQueryParams(['full' => 1, 'mark' => 'pop'])
@@ -84,7 +97,8 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals([
             'SERVER_PROTOCOL' => 'HTTP/1.1',
             'REQUEST_METHOD' => 'POST',
-            'PATH_INFO' => '/foo'
+            'CONTENT_TYPE' => 'application/x-www-form-urlencoded',
+            'PATH_INFO' => '/foo',
         ], $_SERVER);
         
         $this->assertEquals(['full' => 1, 'mark' => 'pop'], $_GET);
@@ -111,6 +125,11 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals([], headers_list());
         $this->expectOutputString('');
+        
+        $this->assertEquals($_GET, $this->globals['get']);
+        $this->assertEquals($_POST, $this->globals['post']);
+        $this->assertEquals($_COOKIE, $this->globals['cookie']);
+        $this->assertEquals($_SERVER, $this->globals['server']);
     }
     
     /**
@@ -120,11 +139,14 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
     {
         ob_start();
         
-        // Create response with (actual) global enviroment. Modifying it, modifies the superglobals.
-        $this->initRequest((new ServerRequest())->withGlobalEnvironment(true));
+        // Create server request with (actual) global enviroment.
+        $request = (new ServerRequest())->withGlobalEnvironment(true);
         
         // Create response with (actual) global enviroment.
         $response = (new Response())->withGlobalEnvironment(true);
+        
+        // Modifying request, modifies the superglobals.
+        $this->initRequest($request);
 
         // Check environment
         $this->assertGlobalEnvironment();
@@ -139,8 +161,15 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
         $finalResponse = $response->withoutGlobalEnvironment();
 
         // Remove all headers and output
-        header_remove(); 
-        ob_end_clean();
+        $revivedRequest = $request->revive();
+        $revivedResponse = $response->revive()->withBody(clone $response->getBody());
+
+        // Revived request and response can be used for next request
+        $this->assertFalse($revivedRequest->isStale());
+        $this->assertFalse($revivedResponse->isStale());
+        
+        // Check that the headers and output buffer is cleaned
+        $this->assertCleanedEnvironment();
         
         // Check the final response
         $this->assertEquals(201, $finalResponse->getStatusCode());
@@ -148,7 +177,5 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
         $this->assertStringStartsWith('text/plain', $finalResponse->getHeaderLine('Content-Type'));
         $this->assertEquals("Hello world", (string)$finalResponse->getBody());
         
-        // Check that the headers and output buffer is cleaned
-        $this->assertCleanedEnvironment();
     }
 }

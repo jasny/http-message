@@ -2,25 +2,26 @@
 
 namespace Jasny\HttpMessage;
 
-use Jasny\HttpMessage\Tests\AssertLastError;
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
+use Jasny\TestHelper;
 
 /**
- * @covers Jasny\HttpMessage\ResponseHeaders
+ * @covers Jasny\HttpMessage\GlobalResponseHeaders
  */
-class ResponseHeadersTest extends PHPUnit_Framework_TestCase
+class GlobalResponseHeadersTest extends PHPUnit_Framework_TestCase
 {
-    use AssertLastError;
+    use TestHelper;
     
     /**
      * @var ResponseHeaders|MockObject
      */
     protected $headers;
 
+    
     public function setUp()
     {
-        $this->headers = $this->getMockBuilder(ResponseHeaders::class)
+        $this->headers = $this->getMockBuilder(GlobalResponseHeaders::class)
             ->disableOriginalConstructor()
             ->setMethods(['headersList', 'header', 'headerRemove', 'headersSent'])
             ->getMock();
@@ -114,10 +115,7 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         
         $headers = $this->headers->withHeader('Foo-Zoo', 'red & blue');
         
-        $this->assertInstanceof(ResponseHeaders::class, $headers);
-        $this->assertNotSame($this->headers, $headers);
-        
-        $this->assertTrue($this->headers->isStale());
+        $this->assertSame($this->headers, $headers);
     }
 
     public function testWithHeaderMultiple()
@@ -128,10 +126,7 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         
         $headers = $this->headers->withHeader('Foo-Zoo', ['red & blue', 'green']);
         
-        $this->assertInstanceof(ResponseHeaders::class, $headers);
-        $this->assertNotSame($this->headers, $headers);
-        
-        $this->assertTrue($this->headers->isStale());
+        $this->assertSame($this->headers, $headers);
     }
 
     /**
@@ -239,10 +234,7 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
         
         $headers = $this->headers->withoutHeader('Foo-Zoo');
         
-        $this->assertInstanceof(ResponseHeaders::class, $headers);
-        $this->assertNotSame($this->headers, $headers);
-        
-        $this->assertTrue($this->headers->isStale());
+        $this->assertSame($this->headers, $headers);
     }
 
     public function testWithoutHeaderNotExists()
@@ -262,67 +254,5 @@ class ResponseHeadersTest extends PHPUnit_Framework_TestCase
     public function testWithoutHeaderArrayAsName()
     {
         $this->headers->withoutHeader(['foo', 'bar']);
-    }
-
-    
-    public function testStaleWithHeader()
-    {
-        $this->headers->expects($this->once())->method('headersList')->willReturn(['Foo-Zoo: red & blue']);
-        $this->headers->expects($this->once())->method('header');
-        
-        $headers = $this->headers->withHeader('Color', 'white');
-        
-        $this->assertTrue($this->headers->isStale());
-        $this->assertFalse($headers->isStale());
-        
-        $this->assertEquals(['Foo-Zoo' => ['red & blue']], $this->headers->getHeaders());
-        $this->assertEquals(['red & blue'], $this->headers->getHeader('Foo-Zoo'));
-        $this->assertEquals('red & blue', $this->headers->getHeaderLine('Foo-Zoo'));
-        $this->assertTrue($this->headers->hasHeader('Foo-Zoo'));
-        
-        $this->assertEquals([], $this->headers->getHeader('Color'));
-        $this->assertFalse($this->headers->hasHeader('Color'));
-    }
-    
-    public function testStaleWithoutHeader()
-    {
-        $this->headers->expects($this->exactly(2))->method('headersList')
-            ->willReturn(['Foo-Zoo: red & blue', 'foo-zoo : green', 'Bar: xyz']);
-        $this->headers->expects($this->once())->method('headerRemove');
-        
-        $headers = $this->headers->withoutHeader('Foo-Zoo');
-        
-        $this->assertTrue($this->headers->isStale());
-        $this->assertFalse($headers->isStale());
-        
-        $this->assertEquals(['Foo-Zoo' => ['red & blue', 'green'], 'Bar' => ['xyz']], $this->headers->getHeaders());
-        $this->assertEquals(['red & blue', 'green'], $this->headers->getHeader('Foo-Zoo'));
-        $this->assertEquals('red & blue, green', $this->headers->getHeaderLine('Foo-Zoo'));
-        $this->assertTrue($this->headers->hasHeader('Foo-Zoo'));
-    }
-    
-    
-    /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage Can not change stale object
-     */
-    public function testErrorOnSetHeaderInStaleObject()
-    {
-        $this->headers->expects($this->once())->method('headersList')->willReturn([]);
-        
-        $this->headers->withHeader('foo', 'bar');
-        $this->expectException($this->headers->withHeader('baz', 'raz'));
-    }
-
-    /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage Can not change stale object
-     */
-    public function testErrorOnAppendHeaderInStaleObject()
-    {
-        $this->headers->expects($this->once())->method('headersList')->willReturn([]);
-        
-        $this->headers->withHeader('foo', 'bar');
-        $this->expectException($this->headers->withAddedHeader('baz', 'raz'));
     }
 }

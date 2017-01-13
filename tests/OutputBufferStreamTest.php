@@ -4,6 +4,8 @@ namespace Jasny\HttpMessage;
 
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
+use Jasny\TestHelper;
+
 use Jasny\HttpMessage\OutputBufferStream;
 
 /**
@@ -11,6 +13,8 @@ use Jasny\HttpMessage\OutputBufferStream;
  */
 class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
 {
+    use TestHelper;
+    
     /**
      * @var resource
      */
@@ -408,17 +412,12 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         $ret = $stream->useGlobally();
         
         $this->assertSame($stream, $ret);
-        
-        $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
-        $refl->setAccessible(true);
-        $handle = $refl->getValue($stream);
-        
-        $this->assertSame($this->handle, $handle);
+        $this->assertAttributeSame($this->handle, 'handle', $stream);
     }
     
     /**
      * @expectedException RuntimeException
-     * @expectedExceptionMessage Failed to open 'php://output' stream
+     * @expectedExceptionMessage Failed to create temp stream
      */
     public function testUseGloballyFailure()
     {
@@ -446,17 +445,16 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         $stream->useGlobally();
     }
 
-    public function testUseLocally()
+    public function testWithLocalScope()
     {
-        $stream = $this->getStream('php://output');
+        $globalStream = $this->getStream('php://output');
         
-        $stream->expects($this->once())->method('obGetContents')->id('obGetContents')->willReturn('Foo Bar Zoo');
-        $stream->expects($this->once())->method('obClean')->after('obGetContents');
+        $globalStream->expects($this->once())->method('obGetContents')->willReturn('Foo Bar Zoo');
         
-        $ret = $stream->useLocally();
-        $this->assertSame($stream, $ret);
+        $stream = $globalStream->withLocalScope();
+        $this->assertNotSame($globalStream, $stream);
         
-        $this->assertSame('Unknown', get_resource_type($this->handle), "Output stream should be closed");
+        $this->assertSame('stream', get_resource_type($this->handle));
         
         $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
         $refl->setAccessible(true);
@@ -470,25 +468,20 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Foo Bar Zoo', fread($handle, 1000));
     }
     
-    public function testUseLocallyWhenLocal()
+    public function testWithLocalScopeWhenLocal()
     {
         $stream = $this->getStream('php://temp');
-        $ret = $stream->useLocally();
+        $ret = $stream->withLocalScope();
         
         $this->assertSame($stream, $ret);
-        
-        $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
-        $refl->setAccessible(true);
-        $handle = $refl->getValue($stream);
-        
-        $this->assertSame($this->handle, $handle);
+        $this->assertAttributeSame($this->handle, 'handle', $stream);
     }
     
     /**
      * @expectedException RuntimeException
-     * @expectedExceptionMessage Failed to open 'php://temp' stream
+     * @expectedExceptionMessage Failed to create temp stream
      */
-    public function testUseLocallyFailure()
+    public function testWithLocalScopeFailure()
     {
         $stream = $this->getMockBuilder(OutputBufferStream::class)->disableOriginalConstructor()
             ->setMethods(['createTempStream', 'obGetStatus', 'obGetContents', 'obClean', 'obFlush', 'obGetLength'])
@@ -496,21 +489,19 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
         
         $stream->expects($this->once())->method('createTempStream')->willReturn(false);
 
-        $refl = new \ReflectionProperty(OutputBufferStream::class, 'handle');
-        $refl->setAccessible(true);
-        $refl->setValue($stream, fopen('php://output', 'a+'));
+        $this->setPrivateProperty($stream, 'handle', fopen('php://output', 'a+'));
         
-        $stream->useLocally();
+        $stream->withLocalScope();
     }
     
     /**
      * @expectedException RuntimeException
      * @expectedExceptionMessage The stream is closed
      */
-    public function testUseLocallyWhenClosed()
+    public function testWithLocalScopeWhenClosed()
     {
         $stream = $this->getStream(null);
-        $stream->useLocally();
+        $stream->withLocalScope();
     }
     
 
@@ -520,7 +511,6 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
             ['close'],
             ['getSize'],
             ['tell'],
-            ['__toString'],
             ['useGlobally', false]
         ];
     }
@@ -537,12 +527,26 @@ class OutputBufferStreamTest extends PHPUnit_Framework_TestCase
     public function testAssertOutputBuffering($method, $isGlobal = true)
     {
         $stream = $this->getMockBuilder(OutputBufferStream::class)
-            ->setMethods(['obGetStatus', 'obGetContents', 'obClean', 'obFlush', 'obGetLength', 'isGlobal'])
+            ->setMethods(['obGetLevel', 'obGetContents', 'obClean', 'obFlush', 'obGetLength', 'isGlobal'])
             ->getMock();
 
         $stream->expects($this->any())->method('isGlobal')->willReturn($isGlobal);
-        $stream->expects($this->once())->method('obGetStatus')->willReturn(null);
+        $stream->expects($this->once())->method('obGetLevel')->willReturn(0);
         
         $stream->$method();
+    }
+    
+    public function testToStringAndAssertOutputBuffering()
+    {
+        $stream = $this->getMockBuilder(OutputBufferStream::class)
+            ->setMethods(['obGetLevel', 'obGetContents', 'obClean', 'obFlush', 'obGetLength', 'isGlobal'])
+            ->getMock();
+
+        $stream->expects($this->any())->method('isGlobal')->willReturn(true);
+        $stream->expects($this->once())->method('obGetLevel')->willReturn(0);
+        
+        $contents = (string)$stream;
+        
+        $this->assertEquals("Output buffering is not enabled", $contents);
     }
 }

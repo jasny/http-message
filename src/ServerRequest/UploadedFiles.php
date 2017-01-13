@@ -31,8 +31,8 @@ trait UploadedFiles
      * 
      * @return self  A non-stale request
      */
-    abstract protected function turnStale();
-    
+    abstract protected function copy();
+
     
     /**
      * Create an UploadedFile instance.
@@ -213,7 +213,7 @@ trait UploadedFiles
     {
         $this->assertUploadedFilesStructure($uploadedFiles);
         
-        $request = $this->turnStale();
+        $request = $this->copy();
         $request->uploadedFiles = $uploadedFiles;
         
         if (isset($this->files)) {

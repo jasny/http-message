@@ -14,23 +14,20 @@ class Headers implements HeadersInterface
      *
      * @var array
      */
-    protected $headers;
+    protected $headers = [];
 
     /**
      * Create header array from resived array in the Header дшые 
      * 
-     * @param array $incomingArray 
+     * @param array $headers 
      */
-    public function __construct($incomingArray = [])
+    public function __construct(array $headers = null)
     {
-        $this->headers = [];
-        
-        foreach ($incomingArray as $name => $values) {
-            $key = strtolower($name);
-            $this->headers[$key] = ['name' => $name, 'values' => (array)$values];
+        if (isset($headers)) {
+            $this->setHeaders($headers);
         }
     }
-
+    
     /**
      * Assert that the header value is a string
      *
@@ -60,7 +57,26 @@ class Headers implements HeadersInterface
             throw new \InvalidArgumentException("Header value should be a string or an array of strings");
         }
     }
+    
+    /**
+     * Set the headers
+     * 
+     * @param array $headers
+     */
+    protected function setHeaders(array $headers)
+    {
+        $this->headers = [];
+        
+        foreach ($headers as $name => $values) {
+            $this->assertHeaderName($name);
+            $this->assertHeaderValue($values);
+        
+            $key = strtolower($name);
+            $this->headers[$key] = ['name' => $name, 'values' => (array)$values];
+        }
+    }
 
+    
     /**
      * Retrieves all message header values.
      *

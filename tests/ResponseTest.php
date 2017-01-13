@@ -2,27 +2,21 @@
 
 namespace Jasny\HttpMessage;
 
-use Jasny\HttpMessage\Tests\AssertLastError;
-use Jasny\HttpMessage\Response;
-use Jasny\HttpMessage\ResponseHeaders;
-use Jasny\HttpMessage\Headers;
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
+use Jasny\TestHelper;
+
+use Jasny\HttpMessage\Response;
+use Jasny\HttpMessage\GlobalResponseHeaders;
+use Jasny\HttpMessage\Headers;
+use Jasny\HttpMessage\OutputBufferStream;
 
 /**
  * @covers Jasny\HttpMessage\Response
- * @covers Jasny\HttpMessage\Response\GlobalEnvironment
- * @covers Jasny\HttpMessage\Response\ProtocolVersion
- * @covers Jasny\HttpMessage\Message\ProtocolVersion
- * @covers Jasny\HttpMessage\Response\Status
- * @covers Jasny\HttpMessage\Response\Headers
- * @covers Jasny\HttpMessage\Message\Headers
- * @covers Jasny\HttpMessage\Response\Body
- * @covers Jasny\HttpMessage\Message\Body
  */
 class ResponseTest extends PHPUnit_Framework_TestCase
 {
-    use AssertLastError;
+    use TestHelper;
     
     /**
      * @var Response
@@ -39,39 +33,75 @@ class ResponseTest extends PHPUnit_Framework_TestCase
      */
     protected $status;
 
+    
     public function setUp()
     {
         $this->baseResponse = new Response();
+        
         $this->headers = $this->createMock(Headers::class);
+        $this->setPrivateProperty($this->baseResponse, 'headers', $this->headers);
+        
         $this->status = $this->createMock(ResponseStatus::class);
-        
-        $reflHeaders = new \ReflectionProperty(Response::class, 'headers');
-        $reflHeaders->setAccessible(true);
-        $reflHeaders->setValue($this->baseResponse, $this->headers);
-        
-        $reflStatus = new \ReflectionProperty(Response::class, 'status');
-        $reflStatus->setAccessible(true);
-        $reflStatus->setValue($this->baseResponse, $this->status);
+        $this->setPrivateProperty($this->baseResponse, 'status', $this->status);
     }
+
+    
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Unable to modify a stale response object
+     */
+    public function testCopyStale()
+    {
+        $this->setPrivateProperty($this->baseResponse, 'isStale', true);
+        $this->baseResponse->withStatus(404);
+    }
+
     
     public function testWithGlobalEnvironment()
     {
+        $this->baseResponse = $this->createPartialMock(Response::class,
+            ['createGlobalResponseStatus', 'createGlobalResponseHeaders', 'createOutputBufferStream']);
+        
+        $this->setPrivateProperty($this->baseResponse, 'headers', $this->headers);
+        $this->setPrivateProperty($this->baseResponse, 'status', $this->status);
+        
+        $globalStatus = $this->createMock(GlobalResponseStatus::class);
+        $globalHeaders = $this->createMock(GlobalResponseStatus::class);
+        $body = $this->createMock(OutputBufferStream::class);
+        
+        $this->baseResponse->expects($this->once())->method('createGlobalResponseStatus')->willReturn($globalStatus);
+        $this->baseResponse->expects($this->once())->method('createGlobalResponseHeaders')->willReturn($globalHeaders);
+        $this->baseResponse->expects($this->once())->method('createOutputBufferStream')->willReturn($body);
+        
+        $body->expects($this->once())->method('useGlobally');
+        
         $response = $this->baseResponse->withGlobalEnvironment(true);
         
         $this->assertInstanceof(Response::class, $response);
         $this->assertNotSame($this->baseResponse, $response);
-        
-        $this->assertNull($this->baseResponse->isStale());
         $this->assertFalse($response->isStale());
         
-        $refl = new \ReflectionProperty($response, 'headers');
-        $refl->setAccessible(true);
-        $this->assertInstanceof(ResponseHeaders::class, $refl->getValue($response));
+        $this->assertNull($this->baseResponse->isStale());
+    }
+    
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Unable to use a stale response object. Did you mean to rivive it?
+     */
+    public function testWithGlobalEnvironmentStale()
+    {
+        $this->setPrivateProperty($this->baseResponse, 'isStale', true);
         
-        $this->assertInstanceof(OutputBufferStream::class, $response->getBody());
-        $this->assertEquals('php://output', $response->getBody()->getMetadata('uri'));
+        $this->baseResponse->withGlobalEnvironment(true);
+    }
+    
+    public function testWithGlobalEnvironmentGlobal()
+    {
+        $this->setPrivateProperty($this->baseResponse, 'isStale', false);
         
-        $this->assertSame($response, $response->withGlobalEnvironment());
+        $response = $this->baseResponse->withGlobalEnvironment(true);
+        
+        $this->assertSame($this->baseResponse, $response);
     }
 
     public function withoutGlobalEnvironmentProvider()
@@ -105,195 +135,44 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->assertSame($response, $response->withoutGlobalEnvironment());
     }
     
-    
-    public function protocolVersionProvider()
+    public function testRevive()
     {
-        return [
-            ['2', '2'],
-            ['1.1', '1.1'],
-            ['1.0', '1.0'],
-            [2.0, '2'],
-            [1, '1.0']
-        ];
-    }
-
-    /**
-     * @dataProvider protocolVersionProvider
-     * 
-     * @param mixed  $version
-     * @param string $expect
-     */
-    public function testWithProtocolVersion($version, $expect)
-    {
-        $this->status->expects($this->once())->method('withProtocolVersion')->with($expect)->willReturnSelf();
+        $this->headers->expects($this->once())->method('getHeaders')->willReturn(['Foo' => ['bar']]);
         
-        $response = $this->baseResponse->withProtocolVersion($version);
+        $this->baseResponse = $this->createPartialMock(Response::class,
+            ['createGlobalResponseStatus', 'createGlobalResponseHeaders', 'createOutputBufferStream']);
         
-        $this->assertInstanceof(Response::class, $response);
-        $this->assertNotSame($this->baseResponse, $response);
+        $this->setPrivateProperty($this->baseResponse, 'headers', $this->headers);
+        $this->setPrivateProperty($this->baseResponse, 'status', $this->status);
         
-        $this->assertEquals($expect, $response->getProtocolVersion());
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid HTTP protocol version '0.1'
-     */
-    public function testInvalidValueProtocolVersion()
-    {
-        $this->baseResponse->withProtocolVersion('0.1');
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage HTTP version must be a string
-     */
-    public function testInvalidTypeProtocolVersion()
-    {
-        $this->baseResponse->withProtocolVersion(['1.0', '1.1']);
-    }
-
-
-    public function testGetDefaultStatusCode()
-    {
-        $response = new Response();
-        $this->assertSame(200, $response->getStatusCode());
-    }
-    
-    public function testGetStatusCode()
-    {
-        $this->status->expects($this->once())->method('getStatusCode')->willReturn(404);
-        $this->assertSame(404, $this->baseResponse->getStatusCode());
-    }
-    
-    public function testGetReasonPhrase()
-    {
-        $this->status->expects($this->once())->method('getReasonPhrase')->willReturn('Not Found');
-        $this->assertSame('Not Found', $this->baseResponse->getReasonPhrase());
-    }
-    
-    public function testWithStatus()
-    {
-        $this->status->expects($this->once())->method('withStatus')->with(500, 'Some Reason');
+        $globalStatus = $this->createMock(GlobalResponseStatus::class);
+        $globalHeaders = $this->createMock(GlobalResponseStatus::class);
+        $body = $this->createMock(OutputBufferStream::class);
         
-        $response = $this->baseResponse->withStatus(500, 'Some Reason');
+        $this->baseResponse->expects($this->once())->method('createGlobalResponseStatus')->with($this->status)
+            ->willReturn($globalStatus);
         
-        $this->assertInstanceOf(Response::class, $response);
-        $this->assertNotSame($this->baseResponse, $response);
-    }
-    
-
-    public function testGetDefaultHeaders()
-    {
-        $response = new Response();
-        $this->assertEquals([], $response->getHeaders());
-    }
-    
-    public function testWithHeader()
-    {
-        $this->headers->expects($this->once())
-            ->method('withHeader')
-            ->will($this->returnSelf());
+        $this->baseResponse->expects($this->once())->method('createGlobalResponseHeaders')->with(['Foo' => ['bar']])
+            ->willReturn($globalHeaders);
         
-        $response = $this->baseResponse->withHeader('Foo', 'Baz');
+        $this->baseResponse->expects($this->never())->method('createOutputBufferStream');
+        
+        $this->setPrivateProperty($this->baseResponse, 'body', $body);
+        $body->expects($this->once())->method('useGlobally');
+        
+        $this->setPrivateProperty($this->baseResponse, 'isStale', true);
+        
+        $response = $this->baseResponse->revive();
         
         $this->assertInstanceof(Response::class, $response);
         $this->assertNotSame($this->baseResponse, $response);
     }
-
-    public function testWithAddedHeader()
+    
+    public function testReviveNonStale()
     {
-        $this->headers->expects($this->once())
-            ->method('withAddedHeader')
-            ->will($this->returnSelf());
-        
-        $response = $this->baseResponse->withAddedHeader('Foo', 'Baz');
-        
-        $this->assertInstanceof(Response::class, $response);
-        $this->assertNotSame($this->baseResponse, $response);
-    }
-
-    public function testWithoutHeader()
-    {
-        $this->headers->expects($this->once())
-            ->method('withoutHeader')
-            ->will($this->returnSelf());
-
-        $this->headers->expects($this->atLeastOnce())
-            ->method('hasHeader')
-            ->with('Foo')
-            ->willReturn(true);
-        
-        $response = $this->baseResponse->withoutHeader('Foo');
-        
-        $this->assertInstanceof(Response::class, $response);
-        $this->assertNotSame($this->baseResponse, $response);
-    }
-
-    public function testWithoutNonExistantHeader()
-    {
-        $this->headers->expects($this->never())
-            ->method('withoutHeader')
-            ->will($this->returnSelf());
-
-        $this->headers->expects($this->atLeastOnce())
-            ->method('hasHeader')
-            ->with('Foo')
-            ->willReturn(false);
-        
-        $response = $this->baseResponse->withoutHeader('Foo');
+        $response = $this->baseResponse->revive();
         
         $this->assertSame($this->baseResponse, $response);
-    }
-
-    public function testHasHeader()
-    {
-        $this->headers->expects($this->once())
-            ->method('hasHeader')
-            ->with('Foo')
-            ->willReturn(true);
-        
-        $this->assertTrue($this->baseResponse->hasHeader('Foo'));
-    }
-
-    public function testGetHeader()
-    {
-        $this->headers->expects($this->once())
-            ->method('getHeader')
-            ->with('Foo')
-            ->willReturn(['Baz', 'Car']);
-        
-        $this->assertSame(['Baz', 'Car'], $this->baseResponse->getHeader('Foo'));
-    }
-
-    public function testGetHeaderLine()
-    {
-        $this->headers->expects($this->once())
-            ->method('getHeaderLine')
-            ->with('Foo')
-            ->will($this->returnValue('Baz'));
-        
-        $this->assertSame('Baz', $this->baseResponse->getHeaderLine('Foo'));
-    }
-
-    
-    /**
-     * @internal `createDefaultBody()` is thighly coupled, meaning `Stream::getMetadata()` must be working properly
-     */
-    public function testGetDefaultBody()
-    {
-        $body = $this->baseResponse->getBody();
-        
-        $this->assertInstanceOf(Stream::class, $body);
-        $this->assertEquals('php://temp', $body->getMetadata('uri'));
-    }
-    
-    public function testWithBody()
-    {
-        $body = $this->createMock(Stream::class);
-        
-        $response = $this->baseResponse->withBody($body);
-        $this->assertSame($body, $response->getBody());
     }
     
     
@@ -331,6 +210,19 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $emitter->expects($expect['emitBody'])->method('emitBody')->with($response);
         
         $response->emit($emitter);
+    }
+    
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Unable to emit a stale response object
+     */
+    public function testEmitStale()
+    {
+        $this->setPrivateProperty($this->baseResponse, 'isStale', true);
+        
+        $emitter = $this->createMock(EmitterInterface::class);
+        
+        $this->baseResponse->emit($emitter);
     }
     
     public function testCreateEmitter()

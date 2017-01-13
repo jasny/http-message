@@ -12,6 +12,14 @@ trait RequestTarget
      */
     protected $requestTarget;
 
+    
+    /**
+     * Disconnect the global enviroment, turning stale
+     * 
+     * @return self  A non-stale request
+     */
+    abstract protected function copy();
+
     /**
      * Get the server parameters
      * 
@@ -87,7 +95,7 @@ trait RequestTarget
     {
         $this->assertRequestTarget($requestTarget);
         
-        $request = clone $this;
+        $request = $this->copy();
         $request->requestTarget = $requestTarget;
         
         return $request;

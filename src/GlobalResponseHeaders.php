@@ -7,24 +7,20 @@ use Jasny\HttpMessage\Wrap;
 /**
  * Headers that are linked to the global environment
  */
-class ResponseHeaders extends Headers
+class GlobalResponseHeaders extends Headers
 {
     use Wrap\Headers;
-    
-    /**
-     * Flag to indicate a stale object
-     * @var boolean
-     */
-    protected $isStale = false;
 
     /**
-     * Create header array from resived array in the Header
+     * Set the headers
      * 
-     * @param array $incomingArray 
+     * @param array $headers 
      */
-    public function __construct($incomingArray = [])
+    public function setHeaders(array $headers)
     {
-        foreach ($incomingArray as $name => $values) {
+        $this->headerRemove();
+        
+        foreach ($headers as $name => $values) {
             foreach ((array)$values as $value) {
                 $this->header("$name: $value", false);
             }
@@ -43,47 +39,6 @@ class ResponseHeaders extends Headers
         list($name, $value) = explode(':', $header, 2);
         
         return [trim($name), trim($value), strtolower(trim($name))];
-    }
-    
-    
-    /**
-     * Check that this instance is in sync with the global environment
-     *
-     * @throws \RuntimeException
-     */
-    protected function assertNotStale()
-    {
-        if ($this->isStale === true) {
-            throw new \RuntimeException("Can not change stale object");
-        }
-    }
-
-    /**
-     * Mark that this instance is no longer in sync with the global environment
-     */
-    public function turnStale()
-    {
-        $this->isStale = true;
-        
-        $list = $this->headersList();
-        
-        foreach ($list as $header) {
-            list($name, $value, $key) = $this->splitHeader($header);
-            
-            if (!isset($this->headers[$key])) {
-                $this->headers[$key] = ['name' => $name, 'values' => []];
-            }
-            
-            $this->headers[$key]['values'][] = $value;
-        }
-    }
-
-    /**
-     * Public function to get object state 
-     */
-    public function isStale()
-    {
-        return $this->isStale;
     }
     
 
@@ -111,10 +66,6 @@ class ResponseHeaders extends Headers
      */
     public function getHeaders()
     {
-        if ($this->isStale()) {
-            return parent::getHeaders();
-        }
-        
         $names = [];
         $values = [];
         $list = $this->headersList();
@@ -150,10 +101,6 @@ class ResponseHeaders extends Headers
      */
     public function hasHeader($name)
     {
-        if ($this->isStale()) {
-            return parent::hasHeader($name);
-        }
-        
         $this->assertHeaderName($name);
         
         $find = strtolower($name);
@@ -185,10 +132,6 @@ class ResponseHeaders extends Headers
      */
     public function getHeader($name)
     {
-        if ($this->isStale()) {
-            return parent::getHeader($name);
-        }
-        
         $this->assertHeaderName($name);
         
         $find = strtolower($name);
@@ -220,17 +163,13 @@ class ResponseHeaders extends Headers
     {
         $this->assertHeaderName($name);
         $this->assertHeaderValue($value);
-        $this->assertNotStale();
         $this->assertHeadersNotSent();
-        
-        $request = clone $this;
-        $this->turnStale();
         
         foreach ((array)$value as $val) {
             $this->header("{$name}: {$val}", !$add);
         }
         
-        return $request;
+        return $this;
     }
 
     /**
@@ -285,13 +224,10 @@ class ResponseHeaders extends Headers
             return $this;
         }
         
-        $this->assertNotStale();
         $this->assertHeadersNotSent();
         
-        $request = clone $this;
-        $this->turnStale();
         $this->headerRemove($name);
         
-        return $request;
+        return $this;
     }
 }

@@ -19,8 +19,8 @@ trait QueryParams
      * 
      * @return self  A non-stale request
      */
-    abstract protected function turnStale();
-    
+    abstract protected function copy();
+
     
     /**
      * Retrieves the deserialized query string arguments, if any.
@@ -41,7 +41,7 @@ trait QueryParams
      */
     public function withQueryParams(array $query)
     {
-        $request = $this->turnStale();
+        $request = $this->copy();
         
         $request->queryParams = $query;
         return $request;

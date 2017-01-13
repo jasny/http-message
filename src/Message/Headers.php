@@ -19,20 +19,12 @@ trait Headers
     
     
     /**
-     * Get or set HTTP headers object
+     * Disconnect the global enviroment, turning stale
      * 
-     * @param HeadersInterface $headers
-     * @return HeadersInterface
+     * @return self  A non-stale request
      */
-    final protected function headersObject(HeadersInterface $headers = null)
-    {
-        if (func_num_args() >= 1) {
-            $this->headers = $headers;
-        }
-        
-        return $this->headers;
-    }
-    
+    abstract protected function copy();
+
     
     /**
      * Determine the headers based on other information
@@ -47,14 +39,18 @@ trait Headers
     /**
      * Public function to create header object 
      * 
+     * @return HeadersInterface
      */
     public function initHeaders()
     {
         if (!isset($this->headers)) {
             $this->headers = new HeadersObject($this->determineHeaders());
         }
+        
+        return $this->headers;
     }
 
+    
     /**
      * Retrieves all message header values.
      *
@@ -82,8 +78,7 @@ trait Headers
      */
     public function getHeaders()
     {
-        $this->initHeaders();
-        return $this->headers->getHeaders();
+        return $this->initHeaders()->getHeaders();
     }
 
     /**
@@ -97,8 +92,7 @@ trait Headers
      */
     public function hasHeader($name)
     {
-        $this->initHeaders();
-        return $this->headers->hasHeader($name);
+        return $this->initHeaders()->hasHeader($name);
     }
 
     /**
@@ -119,8 +113,7 @@ trait Headers
      */
     public function getHeaderLine($name)
     {
-        $this->initHeaders();
-        return $this->headers->getHeaderLine($name);
+        return $this->initHeaders()->getHeaderLine($name);
     }
 
     /**
@@ -137,8 +130,7 @@ trait Headers
      */
     public function getHeader($name)
     {
-        $this->initHeaders();
-        return $this->headers->getHeader($name);
+        return $this->initHeaders()->getHeader($name);
     }
 
     /**
@@ -158,10 +150,10 @@ trait Headers
      */
     public function withHeader($name, $value)
     {
-        $this->initHeaders();
+        $headers = $this->initHeaders();
         
-        $clone = clone $this;
-        $clone->headers = $this->headers->withHeader($name, $value);
+        $clone = $this->copy();
+        $clone->headers = $headers->withHeader($name, $value);
         
         return $clone;
     }
@@ -181,10 +173,10 @@ trait Headers
      */
     public function withAddedHeader($name, $value)
     {
-        $this->initHeaders();
+        $headers = $this->initHeaders();
         
-        $clone = clone $this;
-        $clone->headers = $this->headers->withAddedHeader($name, $value);
+        $clone = $this->copy();
+        $clone->headers = $headers->withAddedHeader($name, $value);
         
         return $clone;
     }
@@ -197,28 +189,15 @@ trait Headers
      */
     public function withoutHeader($name)
     {
-        $this->initHeaders();
+        $headers = $this->initHeaders();
         
-        if ($this->headers->hasHeader($name)) {
-            $clone = clone $this;
-            
-            $clone->headers = $this->headers->withoutHeader($name);
-            return $clone;
+        if (!$headers->hasHeader($name)) {
+            return $this;
         }
         
-        return $this;
-    }
-    
-    /**
-     * Turn upper case param into header case.
-     * (SOME_HEADER -> Some-Header)
-     * 
-     * @param string $param
-     * @return string
-     */
-    protected function headerCase($param)
-    {
-        $sentence = preg_replace('/[\W_]+/', ' ', $param);
-        return str_replace(' ', '-', ucwords(strtolower($sentence)));
+        $clone = $this->copy();
+        $clone->headers = $headers->withoutHeader($name);
+
+        return $clone;
     }
 }

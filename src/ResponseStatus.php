@@ -24,18 +24,6 @@ class ResponseStatus
      * @var string
      */
     protected $phrase;
-
-    /**
-     * State of the object: 'local', 'global' or 'stale'
-     * @var string
-     */
-    protected $state = 'local';
-    
-    /**
-     * HTTP protocol version
-     * @var string
-     */
-    protected $protocolVersion;
     
     
     /**
@@ -92,132 +80,21 @@ class ResponseStatus
     /**
      * Class constructor
      * 
-     * @param string $protocolVersion
-     * @param int    $code
-     * @param string $reasonPhrase
+     * @param int|ResponseStatus|null $code
+     * @param string                  $reasonPhrase
      */
-    public function __construct($protocolVersion, $code = null, $reasonPhrase = null)
+    public function __construct($code = null, $reasonPhrase = '')
     {
-        if (!is_string($protocolVersion)) {
-            throw new \InvalidArgumentException("Expected protocol version to be a string");
+        if ($code instanceof self) {
+            $reasonPhrase = $code->getReasonPhrase();
+            $code = $code->getStatusCode();
         }
-        
-        $this->protocolVersion = $protocolVersion;
         
         if (isset($code)) {
-            $this->assertStatusCode($code);
-
-            if (empty($reasonPhrase) && array_key_exists($code, $this->defaultStatuses)) {
-                $reasonPhrase = $this->defaultStatuses[$code];
-            }
-
-            $this->assertReasonPhrase($reasonPhrase);
-
-            $this->code = (int)$code;
-            $this->phrase = (string)$reasonPhrase;
+            $this->setStatus($code, $reasonPhrase);
         }
     }
     
-
-    /**
-     * Copy the http status from the global scope
-     */
-    protected function copyGlobalStatus()
-    {
-        $code = $this->httpResponseCode() ?: null;
-        
-        if ($this->code === $code) {
-            return;
-        }
-        
-        $this->code = $code;
-            
-        if (!isset($code)) {
-            $this->phrase = null;
-        } elseif (array_key_exists($code, $this->defaultStatuses)) {
-            $this->phrase = $this->defaultStatuses[$code];
-        } else {
-            $this->phrase = '';
-        }
-    }
-    
-    /**
-     * Connect the response status to the global environment
-     */
-    public function useGlobally()
-    {
-        if ($this->state !== 'local') {
-            return;
-        }
-
-        if (isset($this->code) && $this->code !== $this->httpResponseCode()) {
-            $this->assertHeadersNotSent();
-            $this->header("HTTP/{$this->protocolVersion} {$this->code} {$this->phrase}");
-        }
-        
-        $this->state = 'global';
-    }
-    
-    /**
-     * Disconnect the response status to the global environment
-     */
-    public function useLocally()
-    {
-        if ($this->state === 'local') {
-            return;
-        }
-        
-        $this->copyGlobalStatus();
-        
-        $this->state = 'local';
-    }
-    
-    /**
-     * Check if the object is bound to the global environment
-     * 
-     * @return boolean
-     */
-    public function isGlobal()
-    {
-        return $this->state !== 'local';
-    }
-    
-    /**
-     * Mark the object as no longer in sync with the Global environment
-     */
-    protected function turnStale()
-    {
-        if ($this->state !== 'global') {
-            return;
-        }
-        
-        $this->copyGlobalStatus();
-        
-        $this->state = 'stale';
-    }
-    
-    /**
-     * Check if object is stale
-     * 
-     * @return boolean
-     */
-    public function isStale()
-    {
-        return $this->state === 'stale';
-    }
-    
-    
-    /**
-     * Assert that this object isn't stale
-     * 
-     * @throws \RuntimeException
-     */
-    protected function assertNotStale()
-    {
-        if ($this->state === 'stale') {
-            throw new \RuntimeException("Can not change stale object");
-        }
-    }
     
     /**
      * Assert that the status code is valid (100..999)
@@ -227,7 +104,7 @@ class ResponseStatus
      */
     protected function assertStatusCode($code)
     {
-        if (!is_int($code)) {
+        if (!is_int($code) && !(is_string($code) && ctype_digit($code))) {
             throw new \InvalidArgumentException("Response code must be integer");
         }
         
@@ -247,7 +124,27 @@ class ResponseStatus
             throw new \InvalidArgumentException("Response message must be a string");
         }
     }
-
+    
+    
+    /**
+     * Set the specified status code and reason phrase.
+     * 
+     * @param int    $code
+     * @param string $reasonPhrase
+     */
+    protected function setStatus($code, $reasonPhrase)
+    {
+        $this->assertStatusCode($code);
+        $this->assertReasonPhrase($reasonPhrase);
+        
+        if (empty($reasonPhrase) && array_key_exists($code, $this->defaultStatuses)) {
+            $reasonPhrase = $this->defaultStatuses[$code];
+        }
+        
+        $this->code = (int)$code;
+        $this->phrase = (string)$reasonPhrase;
+    }
+    
     
     /**
      * Gets the response status code.
@@ -259,10 +156,6 @@ class ResponseStatus
      */
     public function getStatusCode()
     {
-        if ($this->state === 'global') {
-            return $this->httpResponseCode();
-        }
-        
         return $this->code ?: 200;
     }
 
@@ -273,121 +166,22 @@ class ResponseStatus
      */
     public function getReasonPhrase()
     {
-        if ($this->state === 'global') {
-            $code = $this->httpResponseCode();
-            
-            return $this->code === $code && $this->phrase
-                ? $this->phrase
-                : (isset($this->defaultStatuses[$code]) ? $this->defaultStatuses[$code] : '');
-        }
-        
-        return $this->code ? $this->phrase : $this->defaultStatuses[200];
+        return !empty($this->code) ? $this->phrase : $this->defaultStatuses[200];
     }
 
-    /**
-     * Set the protocol version
-     * 
-     * @param string $version
-     * @return static
-     */
-    public function withProtocolVersion($version)
-    {
-        if (!is_string($version)) {
-            throw new \InvalidArgumentException("Expected protocol version to be a string");
-        }
-        
-        $status = clone $this;
-        $status->protocolVersion = $version;
-        
-        return $status;
-    }
     
     /**
-     * Set the specified status code and reason phrase.
+     * Create a new response status object with the specified code and phrase.
      * 
-     * @param int    $code
-     * @param string $reasonPhrase
-     */
-    protected function setStatus($code, $reasonPhrase)
-    {
-        $this->code = (int)$code;
-        $this->phrase = (string)$reasonPhrase;
-
-        if ($this->state === 'global') {
-            $this->assertHeadersNotSent();
-            
-            $header = $this->getHeader();
-            $this->header($header);
-        }
-    }
-    
-    /**
-     * Return an instance with the specified status code and, optionally, reason phrase.
-     *
-     * If no reason phrase is specified, implementations MAY choose to default
-     * to the RFC 7231 or IANA recommended reason phrase for the response's
-     * status code.
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * updated status and reason phrase.
-     *
-     * @see http://tools.ietf.org/html/rfc7231#section-6
-     * @see http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-     * @param int $code
-     *            The 3-digit integer result code to set.
-     * @param string $reasonPhrase
-     *            The reason phrase to use with the
-     *            provided status code; if none is provided, implementations MAY
-     *            use the defaults as suggested in the HTTP specification.
-     * @return static
-     * @throws \InvalidArgumentException For invalid status code arguments.
+     * @param int     $code
+     * @param string  $reasonPhrase
+     * @return ResponseStatus
      */
     public function withStatus($code, $reasonPhrase = '')
     {
-        if ($this->getStatusCode() === $code && (empty($reasonPhrase) || $this->getReasonPhrase() === $reasonPhrase)) {
-            return $this;
-        }
-        
-        $this->assertNotStale();
-        $this->assertStatusCode($code);
-        
-        if (empty($reasonPhrase) && array_key_exists($code, $this->defaultStatuses)) {
-            $reasonPhrase = $this->defaultStatuses[$code];
-        }
-        
-        $this->assertReasonPhrase($reasonPhrase);
-        
         $status = clone $this;
-        
-        $this->turnStale();
-        
         $status->setStatus($code, $reasonPhrase);
         
         return $status;
     }
-    
-    /**
-     * Get the HTTP header to set the HTTP response
-     * 
-     * @return string
-     */
-    public function getHeader()
-    {
-        return "HTTP/{$this->protocolVersion} {$this->code} {$this->phrase}";
-    }
-    
-    
-    /**
-     * Wrapper around `header` function
-     * @link http://php.net/manual/en/function.header.php
-     * @codeCoverageIgnore
-     * 
-     * @param string $string
-     */
-    protected function header($string)
-    {
-        header($string);
-    }
 }
-

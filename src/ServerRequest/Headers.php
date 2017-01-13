@@ -11,12 +11,14 @@ trait Headers
 {
     use Message\Headers;
 
+    
     /**
      * Get the server parameters
      * 
      * @return array
      */
     abstract public function getServerParams();
+    
 
     /**
      * Determine the headers based on the server parameters
@@ -41,5 +43,18 @@ trait Headers
         }
         
         return $headers;
+    }
+    
+    /**
+     * Turn upper case param into header case.
+     * (SOME_HEADER -> Some-Header)
+     * 
+     * @param string $param
+     * @return string
+     */
+    protected function headerCase($param)
+    {
+        $sentence = preg_replace('/[\W_]+/', ' ', $param);
+        return str_replace(' ', '-', ucwords(strtolower($sentence)));
     }
 }
