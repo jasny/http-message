@@ -48,7 +48,7 @@ class OutputBufferStream extends Stream
         
         $output = $this->createOutputStream();
         if ($output === false) {
-            throw new \RuntimeException("Failed to open 'php://output' stream");
+            throw new \RuntimeException("Failed to create temp stream");
         }
         
         $this->obClean();
@@ -70,16 +70,15 @@ class OutputBufferStream extends Stream
      */
     public function withLocalScope()
     {
+        if ($this->isClosed()) {
+            throw new \RuntimeException("The stream is closed");
+        }
+        
         if (!$this->isGlobal()) {
             return $this;
         }
         
         $stream = clone $this;
-        $stream->handle = $this->createTempStream();
-        
-        if (!$stream->handle) {
-            throw new \RuntimeException("Failed to create temp stream to copy output buffer into");
-        }
         
         fwrite($stream->handle, (string)$this);
         
@@ -293,7 +292,7 @@ class OutputBufferStream extends Stream
             $this->assertOutputBuffering();
             $contents = $this->obGetContents();
         } catch (\Exception $e) {
-            $contents = (string)$e;
+            $contents = $e->getMessage();
         }
         
         return $contents;
@@ -310,6 +309,10 @@ class OutputBufferStream extends Stream
         }
             
         $this->handle = $this->createTempStream();
+        
+        if (!$this->handle) {
+            throw new \RuntimeException("Failed to create temp stream");
+        }
     }
     
     
