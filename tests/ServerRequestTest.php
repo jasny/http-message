@@ -193,7 +193,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
             ServerRequest::class,
             array_merge(
                 array_map(function ($method) { return "get{$method}"; }, array_keys($methods)),
-                ['withGlobalEnvironment']
+                ['buildGlobalEnvironment']
             )
         );
 
@@ -211,7 +211,7 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         }
         
         $this->setPrivateProperty($this->baseRequest, 'isStale', true);
-        $this->baseRequest->expects($this->once())->method('withGlobalEnvironment')->with(true)
+        $this->baseRequest->expects($this->once())->method('buildGlobalEnvironment')
             ->willReturn($revivedRequest);
         
         $ret = $this->baseRequest->revive();

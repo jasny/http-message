@@ -50,10 +50,7 @@ trait Body
      *
      * @param StreamInterface $body
      */
-    protected function setBody(StreamInterface $body)
-    {
-        $this->body = $body;
-    }
+    abstract protected function setBody(StreamInterface $body);
     
     /**
      * Return an instance with the specified message body.

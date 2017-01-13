@@ -84,6 +84,21 @@ class ServerRequest implements ServerRequestInterface
             return $this;
         }
         
+        $request = $this->buildGlobalEnvironment();
+        
+        if (!$bind) {
+            $request->copy();
+            $request->isStale = null;
+        }
+        
+        return $request;
+    }
+    
+    /**
+     * Build the global environment
+     */
+    protected function buildGlobalEnvironment()
+    {
         $request = clone $this;
         
         $request->serverParams =& $_SERVER;
@@ -98,11 +113,6 @@ class ServerRequest implements ServerRequestInterface
         $request->reset();
         
         $request->isStale = false;
-        
-        if (!$bind) {
-            $request->copy();
-            $request->isStale = null;
-        }
         
         return $request;
     }
@@ -172,7 +182,7 @@ class ServerRequest implements ServerRequestInterface
             return $this;
         }
         
-        $request = $this->withGlobalEnvironment(true);
+        $request = $this->buildGlobalEnvironment();
         
         return $request
             ->withServerParams($this->getServerParams())

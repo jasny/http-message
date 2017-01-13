@@ -10,6 +10,7 @@ use Jasny\HttpMessage\Headers;
 use Jasny\HttpMessage\GlobalResponseHeaders;
 use Jasny\HttpMessage\EmitterInterface;
 use Jasny\HttpMessage\Emitter;
+use Jasny\HttpMessage\OutputBufferStream;
 
 /**
  * Http response
@@ -101,22 +102,21 @@ class Response implements ResponseInterface
      */
     public function withGlobalEnvironment($bind = false)
     {
-        if ($this->isStale !== null) {
+        if ($this->isStale === false) {
             return $this;
         }
         
-        if ($this->isStale === true) {
-            throw new \BadMethodCallException("Unable to use a stale response object");
+        if ($this->isStale) {
+            throw new \BadMethodCallException("Unable to use a stale response object. Did you mean to rivive it?");
         }
         
         $response = clone $this;
-        
-        $response->status = new GlobalResponseStatus();
-        $response->headers = new GlobalResponseHeaders();
-        $response->setBody(new OutputBufferStream());
-        
         $response->isStale = false;
-
+        
+        $response->status = $this->createGlobalResponseStatus();
+        $response->headers = $this->createGlobalResponseHeaders();
+        $response->setBody($this->createOutputBufferStream());
+        
         if (!$bind) {
             // This will copy the headers and body from the global environment
             $response = $response->withoutGlobalEnvironment();
@@ -198,13 +198,52 @@ class Response implements ResponseInterface
             return $this;
         }
         
-        $this->status = (new GlobalResponseStatus($this->status))->withProtocolVersion($this->getProtocolVersion());
-        $this->headers = new GlobalResponseHeaders($this->getHeaders());
+        $response = clone $this;
         
-        if ($this->body instanceof OutputBufferStream) {
-            $this->body->useGlobally();
+        $response->status = $this->createGlobalResponseStatus($this->status)
+            ->withProtocolVersion($this->getProtocolVersion());
+        $response->headers = $this->createGlobalResponseHeaders($this->getHeaders());
+        
+        if ($response->body instanceof OutputBufferStream) {
+            $response->body->useGlobally();
         }
         
-        return $this;
+        return $response;
+    }
+
+    
+    /**
+     * Create a new global response status.
+     * @codeCoverageIgnore
+     * 
+     * @param ResponseStatus|null $status
+     * @return GlobalResponseStatus
+     */
+    protected function createGlobalResponseStatus($status = null)
+    {
+        return new GlobalResponseStatus($status);
+    }
+    
+    /**
+     * Create a new global response status.
+     * @codeCoverageIgnore
+     * 
+     * @param array|null $headers
+     * @return GlobalResponseHeaders
+     */
+    protected function createGlobalResponseHeaders($headers = null)
+    {
+        return isset($headers) ? new GlobalResponseHeaders($headers) : new GlobalResponseHeaders();
+    }
+    
+    /**
+     * Create a new output buffer stream.
+     * @codeCoverageIgnore
+     * 
+     * @return OutputBufferStream
+     */
+    protected function createOutputBufferStream()
+    {
+        return new OutputBufferStream();
     }
 }

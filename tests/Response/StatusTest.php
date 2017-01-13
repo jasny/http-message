@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage\Resposne;
+namespace Jasny\HttpMessage\Response;
 
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
@@ -8,6 +8,7 @@ use Jasny\TestHelper;
 
 use Jasny\HttpMessage\Response;
 use Jasny\HttpMessage\ResponseStatus;
+use Jasny\HttpMessage\GlobalResponseStatus;
 
 /**
  * @covers Jasny\HttpMessage\Response\Status
@@ -72,15 +73,19 @@ class StatusTest extends PHPUnit_Framework_TestCase
      */
     public function testWithStatus($code, $phrase)
     {
+        $newStatus = $this->createMock(ResponseStatus::class);
+        
         $this->status->method('getStatusCode')->willReturn(200);
         $this->status->method('getReasonPhrase')->willReturn('OK');
         
-        $this->status->expects($this->once())->method('withStatus')->with($code, $phrase);
+        $this->status->expects($this->once())->method('withStatus')->with($code, $phrase)->willReturn($newStatus);
         
         $response = $this->baseResponse->withStatus($code, $phrase);
         
         $this->assertInstanceOf(Response::class, $response);
         $this->assertNotSame($this->baseResponse, $response);
+        
+        $this->assertAttributeSame($newStatus, 'status', $response);
     }
     
     public function statusNoChangeProvider()
@@ -108,5 +113,27 @@ class StatusTest extends PHPUnit_Framework_TestCase
         $response = $this->baseResponse->withStatus($code, $phrase);
         
         $this->assertSame($this->baseResponse, $response);
-   }
+    }
+   
+    public function testWithStatusGlobal()
+    {
+        $this->status = $this->createMock(GlobalResponseStatus::class);
+        $this->setPrivateProperty($this->baseResponse, 'status', $this->status);
+        
+        $this->status->method('getStatusCode')->willReturn(200);
+        $this->status->method('getReasonPhrase')->willReturn('OK');
+        
+        $this->status->expects($this->once())->method('withStatus')->with(404, 'Not Found')->willReturnSelf();
+        
+        $this->setPrivateProperty($this->baseResponse, 'isStale', false);
+        
+        $response = $this->baseResponse->withStatus(404, 'Not Found');
+        
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
+        $this->assertAttributeSame($this->status, 'status', $response);
+        $this->assertFalse($response->isStale());
+        
+        $this->assertTrue($this->baseResponse->isStale());
+    }
 }
