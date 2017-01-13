@@ -66,10 +66,6 @@ trait ParsedBody
         if ($this->parseCondition !== false) {
             $this->parsedBody = null;
             $this->parseCondition = null;
-            
-            if (isset($this->postData)) {
-                $this->postData = [];
-            }
         }
     }
     

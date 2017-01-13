@@ -17,7 +17,7 @@ class ServerRequest implements ServerRequestInterface
     use ServerRequest\RequestTarget;
     use ServerRequest\Method;
     use ServerRequest\Uri;
-    use ServerRequest\Cookies;
+    use ServerRequest\CookieParams;
     use ServerRequest\QueryParams;
     use ServerRequest\UploadedFiles;
     use ServerRequest\ParsedBody;
@@ -80,7 +80,7 @@ class ServerRequest implements ServerRequestInterface
      */
     public function withGlobalEnvironment($bind = false)
     {
-        if (isset($this->isStale)) {
+        if ($this->isStale !== null) {
             return $this;
         }
         
@@ -100,7 +100,7 @@ class ServerRequest implements ServerRequestInterface
         $request->isStale = false;
         
         if (!$bind) {
-            $request->turnStale();
+            $request->copy();
             $request->isStale = null;
         }
         
@@ -120,7 +120,7 @@ class ServerRequest implements ServerRequestInterface
         
         $request = clone $this;
         
-        $request->turnStale();
+        $request->copy();
         $request->isStale = null;
         
         return $request;
@@ -172,7 +172,7 @@ class ServerRequest implements ServerRequestInterface
             return $this;
         }
         
-        $request = (new static())->withGlobalEnvironment(true);
+        $request = $this->withGlobalEnvironment(true);
         
         return $request
             ->withServerParams($this->getServerParams())

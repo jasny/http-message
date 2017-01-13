@@ -5,7 +5,7 @@ namespace Jasny\HttpMessage\ServerRequest;
 /**
  * ServerRequest cookies methods
  */
-trait Cookies
+trait CookieParams
 {
     /**
      * Cookies, typically $_COOKIE

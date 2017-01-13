@@ -27,37 +27,6 @@ trait Headers
 
     
     /**
-     * Assert that the header value is a string
-     *
-     * @param string $name
-     * @throws \InvalidArgumentException
-     */
-    protected function assertHeaderName($name)
-    {
-        if (!is_string($name)) {
-            throw new \InvalidArgumentException("Header name must be a string");
-        }
-        
-        if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*(\-[a-zA-Z0-9]+)*$/', $name)) {
-            throw new \InvalidArgumentException("Invalid header name '$name'");
-        }
-    }
-
-    /**
-     * Assert that the header value is a string
-     *
-     * @param string|string[] $value
-     * @throws \InvalidArgumentException
-     */
-    protected function assertHeaderValue($value)
-    {
-        if (!is_string($value) && (!is_array($value) || array_product(array_map('is_string', $value)) === 0)) {
-            throw new \InvalidArgumentException("Header value should be a string or an array of strings");
-        }
-    }
-
-    
-    /**
      * Determine the headers based on other information
      * 
      * @return array headers array with structure $key => [$value, ...]
