@@ -19,8 +19,8 @@ HTTP request. If you want to send HTTP request to other webservices, I recommend
 
 Jasny HTTP Message is a no-nonsence implementation, that can be used with any framework or library.
 
-The focus of the library is to behave as expected, without unwanted and unexpected side effects. A prime example of this
-is how [`parsing the body`](#parsed-body) is implemented.
+The focus of the library is to behave as expected, without unwanted and unexpected side effects. A good example of this
+is how [parsing the body](#parsed-body) is implemented.
 
 Using the library in it's basic form is kept as simple as possible. You only to deal with a subset of all available
 classes, unless you need to customize.
@@ -31,7 +31,7 @@ object.
 
 If you, your team or your project isn't ready for this paradigm shift, this library allows you to ease into using PSR-7.
 It can be used as an abstraction layer over the normal input/output methods and variables like `echo`, `header()`,
-`$_GET`, $_POST`, etc.
+`$_GET`, `$_POST`, etc.
 
 
 ## Installation
