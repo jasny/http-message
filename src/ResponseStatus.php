@@ -175,6 +175,7 @@ class ResponseStatus
      * 
      * @param int     $code
      * @param string  $reasonPhrase
+     * @return ResponseStatus
      */
     public function withStatus($code, $reasonPhrase = '')
     {

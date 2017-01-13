@@ -23,7 +23,7 @@ class GlobalResponseStatus extends ResponseStatus
      * Set the protocol version
      * 
      * @param string $version
-     * @return static
+     * @return $this
      */
     public function withProtocolVersion($version)
     {
@@ -31,10 +31,11 @@ class GlobalResponseStatus extends ResponseStatus
             throw new \InvalidArgumentException("Expected protocol version to be a string");
         }
         
-        $status = clone $this;
-        $status->protocolVersion = $version;
+        $this->protocolVersion = $version;
         
-        return $status;
+        $this->sendStatusHeader();
+        
+        return $this;
     }
     
     
@@ -78,20 +79,32 @@ class GlobalResponseStatus extends ResponseStatus
 
         parent::setStatus($code, $reasonPhrase);
         
-        $this->header($this->getHeader());
+        $this->sendStatusHeader();
+    }
+    
+    /**
+     * Create a new response status object with the specified code and phrase.
+     * 
+     * @param int     $code
+     * @param string  $reasonPhrase
+     * @return $this
+     */
+    public function withStatus($code, $reasonPhrase = '')
+    {
+        $this->setStatus($code, $reasonPhrase);
+        
+        return $this;
     }
     
     
     /**
-     * Get the HTTP header to set the HTTP response.
-     * 
-     * @return string
+     * Send the HTTP header to set the HTTP response.
      */
-    protected function getHeader()
+    protected function sendStatusHeader()
     {
-        $code = $this->getStatusCode();
-        $phrase = $this->getReasonPhrase();
+        $code = parent::getStatusCode();
+        $phrase = parent::getReasonPhrase();
         
-        return "HTTP/{$this->protocolVersion} {$code} {$phrase}";
+        $this->header("HTTP/{$this->protocolVersion} {$code} {$phrase}");
     }
 }
