@@ -166,6 +166,8 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         
         $this->assertInstanceof(Response::class, $response);
         $this->assertNotSame($this->baseResponse, $response);
+        
+        $this->assertFalse($response->isStale());
     }
     
     public function testReviveNonStale()
