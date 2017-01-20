@@ -184,7 +184,7 @@ class UploadedFilesTest extends PHPUnit_Framework_TestCase
 
         if ($tmp_name) {
             $fileStream = $this->createMock(Stream::class);
-            $fileStream->expects($this->atLeastOnce())->method('getMetadata')->with('url')->willReturn($tmp_name);
+            $fileStream->expects($this->atLeastOnce())->method('getMetadata')->with('uri')->willReturn($tmp_name);
             
             $file->expects($this->atLeastOnce())->method('getStream')->willReturn($fileStream);
         } else {
