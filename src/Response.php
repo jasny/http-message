@@ -208,6 +208,8 @@ class Response implements ResponseInterface
             $response->body->useGlobally();
         }
         
+        $response->isStale = false;
+        
         return $response;
     }
 
