@@ -66,9 +66,23 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
         $this->baseRequest->getParsedBody();
     }
 
-    public function testParseJsonBody()
+    public function jsonHeaderProvider()
     {
-        $this->setContentType('application/json');
+        return [
+            ['application/json'],
+            ['application/json; charset=utf-8']
+        ];
+    }
+    
+    /**
+     * @dataProvider jsonHeaderProvider
+     * 
+     * @param string $header
+     * @return ServerRequest
+     */
+    public function testParseJsonBody($header)
+    {
+        $this->setContentType($header);
         
         $body = $this->createMock(Stream::class);
         $body->expects($this->once())
@@ -130,10 +144,6 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
         $this->assertLastError(E_WARNING);
     }
 
-    /**
-     * @expectedException PHPUnit_Framework_Error_Warning
-     * @expectedExceptionMessage Unable to parse body: 'Content-Type' header is missing
-     */
     public function testParseUnknownBody()
     {
         $body = $this->createMock(Stream::class);
@@ -142,7 +152,8 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
             ->willReturn(4);
         
         $request = $this->baseRequest->withBody($body);
-        $request->getParsedBody();
+        
+        $this->assertNull($request->getParsedBody());
     }
 
     public function testParseUnsupportedBody()
@@ -174,7 +185,7 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
     {
         $data = ['foo' => 'bar'];
         
-        $this->setContentType('application/x-www-form-urlencoded');
+        $this->setContentType('application/x-www-form-urlencoded; charset=utf-8');
         
         $body = $this->createMock(Stream::class);
         $body->expects($this->never())->method('__toString');
@@ -200,7 +211,7 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
     {
         $data = ['zoo' => 'qux'];
         
-        $this->setContentType('application/json');
+        $this->setContentType('application/json; charset=utf-8');
         
         $body = $this->createMock(Stream::class);
         $body->expects($this->once())
@@ -268,7 +279,7 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
         
         $this->baseRequest
             ->method('withHeader')
-            ->with('Content-Type', 'application/json')
+            ->with('Content-Type', 'application/json; charset=utf-8')
             ->willReturnSelf();
 
         $body = $this->createMock(Stream::class);
@@ -280,7 +291,7 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
 
         $request->getParsedBody();
         
-        $contentType = 'application/json';
+        $contentType = 'application/json; charset=utf-8';
         $request->withHeader('Content-Type', $contentType)->getParsedBody();
     }
 

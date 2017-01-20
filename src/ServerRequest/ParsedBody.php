@@ -59,6 +59,17 @@ trait ParsedBody
 
 
     /**
+     * Get the MIME from the Content-Type header
+     * 
+     * @return string
+     */
+    protected function getContentType()
+    {
+        $header = $this->getHeaderLine('Content-Type');
+        return trim(strstr($header, ';', true) ?: $header);
+    }
+
+    /**
      * Reset the parsed body, excepted if it was explicitly set
      */
     protected function resetParsedBody()
@@ -76,22 +87,11 @@ trait ParsedBody
      */
     protected function parseBodyIsRequired()
     {
-        if (!isset($this->parseCondition)) {
-            return true;
-        }
-        
-        if (
-            isset($this->parseCondition['content_type']) &&
-            $this->parseCondition['content_type'] !== $this->getHeaderLine('Content-Type')
-        ) {
-            return true;
-        }
-        
-        if (isset($this->parseCondition['size']) && $this->parseCondition['size'] !== $this->getBody()->getSize()) {
-            return true;
-        }
-        
-        return false;
+        return
+            !isset($this->parseCondition) ||
+            (isset($this->parseCondition['content_type']) && $this->parseCondition['content_type'] !==
+                $this->getContentType()) ||
+            (isset($this->parseCondition['size']) && $this->parseCondition['size'] !== $this->getBody()->getSize());
     }
 
     /**
@@ -115,7 +115,7 @@ trait ParsedBody
             return false;
         }
         
-        $contentType = $this->getHeaderLine('Content-Type');
+        $contentType = $this->getContentType();
         
         return
             in_array($contentType, ['application/x-www-form-urlencoded', 'multipart/form-data']) ||
@@ -131,14 +131,8 @@ trait ParsedBody
     protected function parseBody()
     {
         $data = null;
-        $contentType = $this->getHeaderLine('Content-Type');
         
-        switch ($contentType) {
-            case '':
-                if ($this->getBody()->getSize() > 0) {
-                    trigger_error("Unable to parse body: 'Content-Type' header is missing", E_USER_WARNING);
-                } // @codeCoverageIgnore
-                break;
+        switch ($this->getContentType()) {
             case 'application/x-www-form-urlencoded':
                 $data = $this->parseUrlEncodedBody();
                 break;
@@ -194,7 +188,7 @@ trait ParsedBody
         if (!function_exists('simplexml_load_string')) {
             // @codeCoverageIgnoreStart
             throw new \RuntimeException("Unable to parse XML body: SimpleXML extension isn't loaded");
-            // @codeCoverageIgnoreEnd
+            // @codeCoverageIgnore
         }
         
         return simplexml_load_string($this->getBody()) ?: null;
@@ -227,7 +221,7 @@ trait ParsedBody
             $this->parsedBody = $this->parseBody();
 
             $this->parseCondition = [
-                'content_type' => $this->getHeaderLine('Content-Type'),
+                'content_type' => $this->getContentType(),
                 'size' => $this->getBody()->getSize()
             ];
         }
