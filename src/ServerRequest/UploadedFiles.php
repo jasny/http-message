@@ -123,7 +123,7 @@ trait UploadedFiles
                     'name' => $item->getClientFilename(),
                     'type' => $item->getClientMediaType(),
                     'size' => $item->getSize(),
-                    'tmp_name' => $stream ? $stream->getMetadata('url') : null,
+                    'tmp_name' => $stream ? $stream->getMetadata('uri') : null,
                     'error' => $item->getError()
                 ];
             }
@@ -162,7 +162,7 @@ trait UploadedFiles
                 $name[$key] = $item->getClientFilename();
                 $type[$key] = $item->getClientMediaType();
                 $size[$key] = $item->getSize();
-                $tmpName[$key] = $stream ? $stream->getMetadata('url') : null;
+                $tmpName[$key] = $stream ? $stream->getMetadata('uri') : null;
                 $error[$key] = $item->getError();
             }
         }
