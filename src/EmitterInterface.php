@@ -13,6 +13,7 @@ interface EmitterInterface
      * Emit the HTTP status (and protocol version)
      * 
      * @param ResponseInterface $response
+     * @return void
      */
     public function emitStatus(ResponseInterface $response);
     
@@ -20,6 +21,7 @@ interface EmitterInterface
      * Emit the HTTP headers
      * 
      * @param ResponseInterface $response
+     * @return void
      */
     public function emitHeaders(ResponseInterface $response);
     
@@ -28,6 +30,7 @@ interface EmitterInterface
      * 
      * @param ResponseInterface $response
      * @throws \RuntimeException
+     * @return void
      */
     public function emitBody(ResponseInterface $response);
 }
