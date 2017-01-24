@@ -134,7 +134,7 @@ class OutputBufferStream extends Stream
      */
     public function tell()
     {
-        if (!$this->isGlobal()){
+        if (!$this->isGlobal()) {
             return parent::tell();
         }
         

@@ -21,6 +21,7 @@ class Emitter implements EmitterInterface
      * @param string $protocolVersion
      * @param int    $statusCode
      * @param string $reasonPhrase
+     * @return string
      */
     protected function getStatusHeader($protocolVersion, $statusCode, $reasonPhrase)
     {

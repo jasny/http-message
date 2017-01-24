@@ -142,7 +142,7 @@ class Response implements ResponseInterface, GlobalEnvironmentInterface
         
         $response->copy(); // explicitly make stale
         
-        if ($response->body instanceof OutputBufferStream){
+        if ($response->body instanceof OutputBufferStream) {
             $response->body = $response->body->withLocalScope();
         }
         
