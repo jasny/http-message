@@ -156,7 +156,7 @@ class Response implements ResponseInterface, GlobalEnvironmentInterface
      * The object is stale if it no longer reflects the global environment.
      * Returns null if the object isn't using the globla state.
      * 
-     * @var boolean|null
+     * @return boolean|null
      */
     public function isStale()
     {

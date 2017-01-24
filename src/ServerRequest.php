@@ -142,7 +142,7 @@ class ServerRequest implements ServerRequestInterface, GlobalEnvironmentInterfac
      * The object is stale if it no longer reflects the global environment.
      * Returns null if the object isn't using the global state.
      * 
-     * @var boolean|null
+     * @return boolean|null
      */
     public function isStale()
     {
