@@ -11,11 +11,12 @@ use Jasny\HttpMessage\GlobalResponseHeaders;
 use Jasny\HttpMessage\EmitterInterface;
 use Jasny\HttpMessage\Emitter;
 use Jasny\HttpMessage\OutputBufferStream;
+use Jasny\HttpMessage\GlobalEnvironmentInterface;
 
 /**
  * Http response
  */
-class Response implements ResponseInterface
+class Response implements ResponseInterface, GlobalEnvironmentInterface
 {
     use Response\ProtocolVersion {
         withProtocolVersion as _withProtocolVersion;
