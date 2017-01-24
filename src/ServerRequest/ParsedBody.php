@@ -232,6 +232,7 @@ trait ParsedBody
     
     /**
      * Return an instance with the specified body parameters.
+     * Setting the parsed body to `null` means that the body will be (re-)parsed on `getParsedBody()`.
      *
      * @param null|array|object|mixed $data The deserialized body data.
      * @return static
@@ -240,7 +241,7 @@ trait ParsedBody
     {
         $request = $this->copy();
 
-        $request->parseCondition = false;
+        $request->parseCondition = ($data === null ? null : false);
         
         if ($this->shouldUsePostData()) {
             $request->postData = $data;
