@@ -4,11 +4,12 @@ namespace Jasny\HttpMessage;
 
 use Psr\Http\Message\ServerRequestInterface;
 use Jasny\HttpMessage\ServerRequest;
+use Jasny\HttpMessage\GlobalEnvironmentInterface;
 
 /**
  * Representation of an incoming, server-side HTTP request.
  */
-class ServerRequest implements ServerRequestInterface
+class ServerRequest implements ServerRequestInterface, GlobalEnvironmentInterface
 {
     use ServerRequest\ServerParams;
     use ServerRequest\ProtocolVersion;
@@ -139,9 +140,9 @@ class ServerRequest implements ServerRequestInterface
     
     /**
      * The object is stale if it no longer reflects the global environment.
-     * Returns null if the object isn't using the globla state.
+     * Returns null if the object isn't using the global state.
      * 
-     * @var boolean|null
+     * @return boolean|null
      */
     public function isStale()
     {

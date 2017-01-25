@@ -11,11 +11,12 @@ use Jasny\HttpMessage\GlobalResponseHeaders;
 use Jasny\HttpMessage\EmitterInterface;
 use Jasny\HttpMessage\Emitter;
 use Jasny\HttpMessage\OutputBufferStream;
+use Jasny\HttpMessage\GlobalEnvironmentInterface;
 
 /**
  * Http response
  */
-class Response implements ResponseInterface
+class Response implements ResponseInterface, GlobalEnvironmentInterface
 {
     use Response\ProtocolVersion {
         withProtocolVersion as _withProtocolVersion;
@@ -141,7 +142,7 @@ class Response implements ResponseInterface
         
         $response->copy(); // explicitly make stale
         
-        if ($response->body instanceof OutputBufferStream){
+        if ($response->body instanceof OutputBufferStream) {
             $response->body = $response->body->withLocalScope();
         }
         
@@ -155,7 +156,7 @@ class Response implements ResponseInterface
      * The object is stale if it no longer reflects the global environment.
      * Returns null if the object isn't using the globla state.
      * 
-     * @var boolean|null
+     * @return boolean|null
      */
     public function isStale()
     {
