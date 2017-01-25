@@ -31,6 +31,9 @@ trait Headers
         $headers = [];
         
         foreach ($params as $param => $value) {
+            if (!is_string($value)) {
+                continue;
+            }
             if (\Jasny\str_starts_with($param, 'HTTP_')) {
                 $key = $this->headerCase(substr($param, 5));
             } elseif (in_array($param, ['CONTENT_TYPE', 'CONTENT_LENGTH'])) {
