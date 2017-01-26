@@ -63,8 +63,6 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
             ->getMetadata('uri'));
         
         $this->assertFalse($request->isStale());
-        
-        $this->assertSame($request, $request->withGlobalEnvironment());
     }
 
     public function testWithGlobalEnvironmentReset()
@@ -72,6 +70,30 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $request = $this->baseRequest->withMethod('POST')->withGlobalEnvironment();
         
         $this->assertEquals('', $request->getMethod());
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Unable to use a stale server request. Did you mean to rivive it?
+     */
+    public function testWithGlobalEnvironmentStale()
+    {
+        $this->setPrivateProperty($this->baseRequest, 'isStale', true);
+        
+        $this->baseRequest->withGlobalEnvironment(true);
+    }
+    
+    public function testWithGlobalEnvironmentGlobal()
+    {
+        $this->setPrivateProperty($this->baseRequest, 'isStale', false);
+        
+        $request = $this->baseRequest->withGlobalEnvironment(true);
+        
+        $this->assertInstanceof(ServerRequest::class, $request);
+        $this->assertNotSame($this->baseRequest, $request);
+        $this->assertFalse($request->isStale());
+        
+        $this->assertTrue($this->baseRequest->isStale());
     }
 
     /**

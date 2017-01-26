@@ -103,12 +103,12 @@ class Response implements ResponseInterface, GlobalEnvironmentInterface
      */
     public function withGlobalEnvironment($bind = false)
     {
-        if ($this->isStale === false) {
-            return $this;
+        if ($this->isStale) {
+            throw new \BadMethodCallException("Unable to use a stale response. Did you mean to rivive it?");
         }
         
-        if ($this->isStale) {
-            throw new \BadMethodCallException("Unable to use a stale response object. Did you mean to rivive it?");
+        if ($this->isStale === false) {
+            return $this->copy();
         }
         
         $response = clone $this;
