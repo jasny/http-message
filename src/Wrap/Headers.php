@@ -46,7 +46,7 @@ trait Headers
      */
     protected function headerRemove($name = null)
     {
-        header_remove($name);
+        header_remove(...func_get_args());
     }
     
     /**
@@ -75,7 +75,7 @@ trait Headers
     {
         if (php_sapi_name() === 'cli') {
             if (!function_exists('xdebug_get_headers')) {
-                throw new \RuntimeException("Getting the HTTP headers on PHP CLI requires XDebug");
+                throw new \Exception("Getting the HTTP headers on PHP CLI requires XDebug");
             }
             
             return xdebug_get_headers();
