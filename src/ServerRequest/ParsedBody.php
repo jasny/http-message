@@ -243,7 +243,7 @@ trait ParsedBody
 
         $request->parseCondition = ($data === null ? null : false);
         
-        if ($this->shouldUsePostData()) {
+        if ($this->shouldUsePostData() && $data !== null) {
             $request->postData = $data;
             $request->parsedBody = null;
         } else {
