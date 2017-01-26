@@ -67,8 +67,6 @@ class ProtocolVersionTest extends PHPUnit_Framework_TestCase
      */
     public function testWithProtocolVersion($version, $expect)
     {
-        $this->status->expects($this->never())->method('withProtocolVersion');
-        
         $response = $this->baseResponse->withProtocolVersion($version);
         
         $this->assertInstanceof(Response::class, $response);
