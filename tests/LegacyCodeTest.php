@@ -39,8 +39,16 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
             'cookie' => $_COOKIE,
             'server' => $_SERVER
         ];
+        
+        ob_start();
     }
     
+    public function tearDown()
+    {
+        ob_end_clean();
+    }
+
+
     /**
      * Initialize the request
      * 
@@ -137,8 +145,6 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
      */
     public function test()
     {
-        ob_start();
-        
         // Create server request with (actual) global enviroment.
         $request = (new ServerRequest())->withGlobalEnvironment(true);
         
@@ -176,6 +182,5 @@ class LegacyCodeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('http://example.com/foo/1', $finalResponse->getHeaderLine('Location'));
         $this->assertStringStartsWith('text/plain', $finalResponse->getHeaderLine('Content-Type'));
         $this->assertEquals("Hello world", (string)$finalResponse->getBody());
-        
     }
 }

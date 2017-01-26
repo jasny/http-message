@@ -242,6 +242,8 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
 
     public function testWithParsedBodyNoReset()
     {
+        $this->setContentType('application/json');
+
         $body = $this->createMock(Stream::class);
         $body->expects($this->never())
             ->method('__toString');
@@ -252,6 +254,22 @@ class ParsedBodyTest extends PHPUnit_Framework_TestCase
         $request = $this->baseRequest->withBody($body)->withParsedBody(['foo' => 'bar']);
         
         $this->assertEquals(['foo' => 'bar'], $request->getParsedBody());
+    }
+
+    public function testWithParsedBodySetNull()
+    {
+        $this->setContentType('application/json');
+
+        $body = $this->createMock(Stream::class);
+        $body->expects($this->once())
+            ->method('__toString')
+            ->willReturn('{"foo": "bar"}');
+
+        $request = $this->baseRequest->withBody($body)->withParsedBody(['foo' => 'qux']);
+        $this->assertEquals(['foo' => 'qux'], $request->getParsedBody());
+        
+        $nextRequest = $request->withParsedBody(null);
+        $this->assertEquals(['foo' => 'bar'], $nextRequest->getParsedBody());
     }
 
     public function testWithParsedBodyTurnStale()

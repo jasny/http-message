@@ -19,6 +19,25 @@ trait Headers
      */
     abstract public function getServerParams();
     
+    
+    /**
+     * Turn a server parameter key to a header name
+     * 
+     * @param string $key
+     * @return string|null
+     */
+    protected function serverParamKeyToHeaderName($key)
+    {
+        $name = null;
+        
+        if (\Jasny\str_starts_with($key, 'HTTP_')) {
+            $name = $this->headerCase(substr($key, 5));
+        } elseif (in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH'])) {
+            $name = $this->headerCase($key);
+        }
+            
+        return $name;
+    }
 
     /**
      * Determine the headers based on the server parameters
@@ -30,19 +49,12 @@ trait Headers
         $params = $this->getServerParams();
         $headers = [];
         
-        foreach ($params as $param => $value) {
-            if (!is_string($value)) {
-                continue;
-            }
-            if (\Jasny\str_starts_with($param, 'HTTP_')) {
-                $key = $this->headerCase(substr($param, 5));
-            } elseif (in_array($param, ['CONTENT_TYPE', 'CONTENT_LENGTH'])) {
-                $key = $this->headerCase($param);
-            } else {
-                continue;
-            }
+        foreach ($params as $key => $value) {
+            $name = $this->serverParamKeyToHeaderName($key);
             
-            $headers[$key] = [$value];
+            if (isset($name) && is_string($value)) {
+                $headers[$name] = [$value];
+            }
         }
         
         return $headers;
