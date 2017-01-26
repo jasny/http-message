@@ -17,7 +17,7 @@ trait ParsedBody
     
     /**
      * The condition under which the body was parsed
-     * @var array|null
+     * @var array|false|null
      */
     protected $parseCondition;
 
