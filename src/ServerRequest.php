@@ -81,8 +81,12 @@ class ServerRequest implements ServerRequestInterface, GlobalEnvironmentInterfac
      */
     public function withGlobalEnvironment($bind = false)
     {
-        if ($this->isStale !== null) {
-            return $this;
+        if ($this->isStale) {
+            throw new \BadMethodCallException("Unable to use a stale server request. Did you mean to rivive it?");
+        }
+        
+        if ($this->isStale === false) {
+            return $this->copy();
         }
         
         $request = $this->buildGlobalEnvironment();

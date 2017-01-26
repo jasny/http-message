@@ -86,7 +86,7 @@ class ResponseTest extends PHPUnit_Framework_TestCase
     
     /**
      * @expectedException BadMethodCallException
-     * @expectedExceptionMessage Unable to use a stale response object. Did you mean to rivive it?
+     * @expectedExceptionMessage Unable to use a stale response. Did you mean to rivive it?
      */
     public function testWithGlobalEnvironmentStale()
     {
@@ -101,7 +101,10 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         
         $response = $this->baseResponse->withGlobalEnvironment(true);
         
-        $this->assertSame($this->baseResponse, $response);
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertNotSame($this->baseResponse, $response);
+        
+        $this->assertTrue($this->baseResponse->isStale());
     }
 
     public function withoutGlobalEnvironmentProvider()
