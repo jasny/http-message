@@ -78,6 +78,7 @@ class Emitter implements EmitterInterface
             throw new \RuntimeException("Failed to open output stream");
         }
         
+        $response->getBody()->rewind();
         $handle = $response->getBody()->detach();
         
         stream_copy_to_stream($handle, $output);
