@@ -36,7 +36,7 @@ It can be used as an abstraction layer over the normal input/output methods and 
 
 ## Installation
 
-    composer install jasny/http-message
+    composer require jasny/http-message
 
 
 ## Documentation
