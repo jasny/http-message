@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage\DerivedAttribute;
+namespace Jasny\HttpMessage\Tests;
 
 use PHPUnit_Framework_TestCase;
 

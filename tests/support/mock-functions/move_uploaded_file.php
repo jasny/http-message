@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage;
+namespace Jasny\HttpMessage\Tests;
 
 /**
  * Overwrite build-in function move_uploaded_file

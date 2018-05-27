@@ -1,11 +1,13 @@
 <?php
 
-namespace Jasny\HttpMessage;
+namespace Jasny\HttpMessage\Tests;
 
 use PHPUnit_Framework_TestCase;
 use Jasny\TestHelper;
 
 use Jasny\HttpMessage\ServerRequest;
+use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\UploadedFile;
 use Jasny\HttpMessage\Headers as HeaderObject;
 
 /**

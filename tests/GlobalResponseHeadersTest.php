@@ -1,10 +1,12 @@
 <?php
 
-namespace Jasny\HttpMessage;
+namespace Jasny\HttpMessage\Tests;
 
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use Jasny\TestHelper;
+
+use Jasny\HttpMessage\GlobalResponseHeaders;
 
 /**
  * @covers Jasny\HttpMessage\GlobalResponseHeaders

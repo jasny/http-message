@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage;
+namespace Jasny\HttpMessage\Tests;
 
 use PHPUnit_Framework_TestCase;
 use Jasny\HttpMessage\Headers;

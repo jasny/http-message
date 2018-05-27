@@ -22,7 +22,8 @@
     },
     "require-dev": {
         "jasny/php-code-quality": "^2.1",
-        "mikey179/vfsStream": "^1.6"
+        "mikey179/vfsStream": "^1.6",
+        "php-http/psr7-integration-tests": "dev-master"
     },
     "provide": {
         "psr/http-message-implementation": "~1.0.0"

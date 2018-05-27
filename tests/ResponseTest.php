@@ -1,15 +1,19 @@
 <?php
 
-namespace Jasny\HttpMessage;
+namespace Jasny\HttpMessage\Tests;
 
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use Jasny\TestHelper;
 
 use Jasny\HttpMessage\Response;
+use Jasny\HttpMessage\ResponseStatus;
 use Jasny\HttpMessage\GlobalResponseHeaders;
+use Jasny\HttpMessage\GlobalResponseStatus;
 use Jasny\HttpMessage\Headers;
 use Jasny\HttpMessage\OutputBufferStream;
+use Jasny\HttpMessage\Emitter;
+use Jasny\HttpMessage\EmitterInterface;
 
 /**
  * @covers Jasny\HttpMessage\Response

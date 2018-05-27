@@ -1,11 +1,13 @@
 <?php
 
-namespace Jasny\HttpMessage;
+namespace Jasny\HttpMessage\Tests;
 
 use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\UploadedFile;
 use PHPUnit_Framework_TestCase;
 use org\bovigo\vfs\vfsStream;
+
+use Jasny\HttpMessage\Response;
 
 /**
  * @runTestsInSeparateProcesses

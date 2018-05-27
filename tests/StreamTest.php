@@ -1,10 +1,11 @@
 <?php
 
-namespace Jasny\HttpMessage;
+namespace Jasny\HttpMessage\Tests;
 
 use PHPUnit_Framework_TestCase;
 
 use Jasny\HttpMessage\Stream;
+use Jasny\HttpMessage\OutputBufferStream;
 
 /**
  * @covers \Jasny\HttpMessage\Stream

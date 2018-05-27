@@ -1,6 +1,6 @@
 <?php
 
-namespace Jasny\HttpMessage\Response;
+namespace Jasny\HttpMessage\Tests\Response;
 
 use PHPUnit_Framework_TestCase;
 use Jasny\TestHelper;
