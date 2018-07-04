@@ -21,7 +21,7 @@
         "jasny/php-functions": "^2.2|^3.0"
     },
     "require-dev": {
-        "jasny/php-code-quality": "^2.1",
+        "jasny/php-code-quality": "2.1.*",
         "mikey179/vfsStream": "^1.6"
     },
     "provide": {
