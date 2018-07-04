@@ -98,7 +98,7 @@ class EmitterTest extends PHPUnit_Framework_TestCase
         $stream = $this->createMock(StreamInterface::class);
         $stream->expects($this->once())->method('detach')->willReturn($input);
         
-        $this->response->expects($this->once())->method('getBody')->willReturn($stream);
+        $this->response->expects($this->any())->method('getBody')->willReturn($stream);
         
         $this->emitter->expects($this->once())->method('createOutputStream')->willReturn($output);
         
