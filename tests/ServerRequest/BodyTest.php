@@ -9,8 +9,8 @@ use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\Stream;
 
 /**
- * @covers Jasny\HttpMessage\Message\Body
- * @covers Jasny\HttpMessage\ServerRequest\Body
+ * @covers Jasny\HttpMessage\Message\BodyTrait
+ * @covers Jasny\HttpMessage\ServerRequest\BodyTrait
  */
 class BodyTest extends PHPUnit_Framework_TestCase
 {

@@ -13,7 +13,7 @@ use Jasny\HttpMessage\ResponseStatus;
  */
 class Emitter implements EmitterInterface
 {
-    use Wrap\Headers;
+    use Wrap\HeadersTrait;
 
     /**
      * Get the response header for a status code

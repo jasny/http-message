@@ -9,8 +9,8 @@ use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\Headers as HeaderObject;
 
 /**
- * @covers Jasny\HttpMessage\Message\Headers
- * @covers Jasny\HttpMessage\ServerRequest\Headers
+ * @covers Jasny\HttpMessage\Message\HeadersTrait
+ * @covers Jasny\HttpMessage\ServerRequest\HeadersTrait
  */
 class HeadersTest extends PHPUnit_Framework_TestCase
 {
@@ -37,7 +37,7 @@ class HeadersTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @internal Tight coupling in `initHeaders()` means `Headers::getHeaders()` must work properly
+     * @internal Tight coupling in `initHeaders()` means `HeadersTrait::getHeaders()` must work properly
      */
     public function testDetermineHeaders()
     {

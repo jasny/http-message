@@ -7,7 +7,7 @@ use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use Jasny\TestHelper;
 
 /**
- * @covers Jasny\HttpMessage\GlobalResponseHeaders
+ * @covers Jasny\HttpMessage\HeadersTrait
  */
 class GlobalResponseHeadersTest extends PHPUnit_Framework_TestCase
 {
@@ -21,7 +21,7 @@ class GlobalResponseHeadersTest extends PHPUnit_Framework_TestCase
     
     public function setUp()
     {
-        $this->headers = $this->getMockBuilder(GlobalResponseHeaders::class)
+        $this->headers = $this->getMockBuilder(ResponseHeaders::class)
             ->disableOriginalConstructor()
             ->setMethods(['headersList', 'header', 'headerRemove', 'headersSent'])
             ->getMock();
@@ -172,7 +172,7 @@ class GlobalResponseHeadersTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \RuntimeException
-     * @expectedExceptionMessage Headers already sent in foo.php on line 42
+     * @expectedExceptionMessage HeadersTrait already sent in foo.php on line 42
      */
     public function testWithHeaderAlreaySent()
     {

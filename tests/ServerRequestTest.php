@@ -203,12 +203,12 @@ class ServerRequestTest extends PHPUnit_Framework_TestCase
         $uploadedFile = $this->createMock(UploadedFile::class);
         
         $methods = [
-            'ServerParams' => ['HTTP_FOO' => 'bar', 'CLIENT_IP' => '127.0.0.1'],
-            'CookieParams' => ['uid' => 123],
-            'QueryParams' => ['color' => 'red'],
-            'ParsedBody' => ['hello' => 'world'],
-            'Body' => $body,
-            'UploadedFiles' => ['file' => $uploadedFile]
+            'ServerParamsTrait' => ['HTTP_FOO' => 'bar', 'CLIENT_IP' => '127.0.0.1'],
+            'CookieParamsTrait' => ['uid' => 123],
+            'QueryParamsTrait' => ['color' => 'red'],
+            'ParsedBodyTrait' => ['hello' => 'world'],
+            'BodyTrait' => $body,
+            'UploadedFilesTrait' => ['file' => $uploadedFile]
         ];
         
         $this->baseRequest = $this->createPartialMock(

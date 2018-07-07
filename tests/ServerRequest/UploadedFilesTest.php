@@ -10,7 +10,7 @@ use Jasny\HttpMessage\UploadedFile;
 use Jasny\HttpMessage\Stream;
 
 /**
- * @covers Jasny\HttpMessage\ServerRequest\UploadedFiles
+ * @covers Jasny\HttpMessage\ServerRequest\UploadedFilesTrait
  */
 class UploadedFilesTest extends PHPUnit_Framework_TestCase
 {

@@ -10,7 +10,7 @@ use Jasny\HttpMessage\DerivedAttribute;
 use Jasny\HttpMessage\DerivedAttributeInterface;
 
 /**
- * @covers Jasny\HttpMessage\ServerRequest\Attributes
+ * @covers Jasny\HttpMessage\ServerRequest\AttributesTrait
  */
 class AttributesTest extends PHPUnit_Framework_TestCase
 {

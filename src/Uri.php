@@ -19,21 +19,21 @@ use Jasny\HttpMessage\Uri;
  * state of the current instance and return an instance that contains the
  * changed state.
  *
- * Typically the Host header will also be present in the request message.
+ * Typically the HostTrait header will also be present in the request message.
  *
  * @see http://www.php-fig.org/psr/psr-7/#3-5-psr-http-message-uriinterface
  * @see http://tools.ietf.org/html/rfc3986 (the URI specification)
  */
 class Uri implements UriInterface
 {
-    use Uri\Scheme;
-    use Uri\Authority;
-    use Uri\UserInfo;
-    use Uri\Host;
-    use Uri\Port;
-    use Uri\Path;
-    use Uri\Query;
-    use Uri\Fragment;
+    use Uri\SchemeTrait;
+    use Uri\AuthorityTrait;
+    use Uri\UserInfoTrait;
+    use Uri\HostTrait;
+    use Uri\PortTrait;
+    use Uri\PathTrait;
+    use Uri\QueryTrait;
+    use Uri\FragmentTrait;
     
     /**
      * Class constructor.

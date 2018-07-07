@@ -8,11 +8,11 @@ use Jasny\TestHelper;
 
 use Jasny\HttpMessage\Response;
 use Jasny\HttpMessage\ResponseStatus;
-use Jasny\HttpMessage\GlobalResponseStatus;
+use Jasny\HttpMessage\ResponseStatus;
 
 /**
- * @covers Jasny\HttpMessage\Message\ProtocolVersion
- * @covers Jasny\HttpMessage\Response\ProtocolVersion
+ * @covers Jasny\HttpMessage\Message\ProtocolVersionTrait
+ * @covers Jasny\HttpMessage\Response\ProtocolVersionTrait
  * @covers Jasny\HttpMessage\Response::withProtocolVersion
  */
 class ProtocolVersionTest extends PHPUnit_Framework_TestCase
@@ -39,7 +39,7 @@ class ProtocolVersionTest extends PHPUnit_Framework_TestCase
     
     protected function useGlobalResponseStatus()
     {
-        $this->status = $this->createMock(GlobalResponseStatus::class);
+        $this->status = $this->createMock(ResponseStatus::class);
         $this->setPrivateProperty($this->baseResponse, 'status', $this->status);
     }
     

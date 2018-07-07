@@ -8,10 +8,10 @@ use Jasny\TestHelper;
 
 use Jasny\HttpMessage\Response;
 use Jasny\HttpMessage\ResponseStatus;
-use Jasny\HttpMessage\GlobalResponseStatus;
+use Jasny\HttpMessage\ResponseStatus;
 
 /**
- * @covers Jasny\HttpMessage\Response\Status
+ * @covers Jasny\HttpMessage\Response\StatusTrait
  */
 class StatusTest extends PHPUnit_Framework_TestCase
 {
@@ -117,7 +117,7 @@ class StatusTest extends PHPUnit_Framework_TestCase
    
     public function testWithStatusGlobal()
     {
-        $this->status = $this->createMock(GlobalResponseStatus::class);
+        $this->status = $this->createMock(ResponseStatus::class);
         $this->setPrivateProperty($this->baseResponse, 'status', $this->status);
         
         $this->status->method('getStatusCode')->willReturn(200);

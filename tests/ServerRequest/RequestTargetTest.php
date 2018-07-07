@@ -8,7 +8,7 @@ use Jasny\TestHelper;
 use Jasny\HttpMessage\ServerRequest;
 
 /**
- * @covers Jasny\HttpMessage\ServerRequest\RequestTarget
+ * @covers Jasny\HttpMessage\ServerRequest\RequestTargetTrait
  */
 class RequestTargetTest extends PHPUnit_Framework_TestCase
 {

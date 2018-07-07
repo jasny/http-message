@@ -12,7 +12,7 @@ use Jasny\HttpMessage\Response;
 
 /**
  * @covers Jasny\HttpMessage\Emitter
- * @covers Jasny\HttpMessage\Wrap\Headers
+ * @covers Jasny\HttpMessage\Wrap\HeadersTrait
  */
 class EmitterTest extends PHPUnit_Framework_TestCase
 {
@@ -82,7 +82,7 @@ class EmitterTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException RuntimeException
-     * @expectedExceptionMessage Headers already sent in foo.php on line 42
+     * @expectedExceptionMessage HeadersTrait already sent in foo.php on line 42
      */
     public function testAssertHeadersSent()
     {

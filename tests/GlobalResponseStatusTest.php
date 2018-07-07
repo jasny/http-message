@@ -2,12 +2,12 @@
 
 namespace Jasny\HttpMessage;
 
-use Jasny\HttpMessage\GlobalResponseStatus;
+use Jasny\HttpMessage\ResponseStatus;
 use PHPUnit_Framework_TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 
 /**
- * @covers Jasny\HttpMessage\GlobalResponseStatus
+ * @covers Jasny\HttpMessage\ResponseStatus
  */
 class GlobalResponseStatusTest extends PHPUnit_Framework_TestCase
 {
@@ -18,7 +18,7 @@ class GlobalResponseStatusTest extends PHPUnit_Framework_TestCase
     
     public function setUp()
     {
-        $this->baseStatus = $this->getMockBuilder(GlobalResponseStatus::class)
+        $this->baseStatus = $this->getMockBuilder(ResponseStatus::class)
             ->setMethods(['header', 'headersSent', 'httpResponseCode'])
             ->getMock();
         

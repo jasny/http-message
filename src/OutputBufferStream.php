@@ -3,7 +3,7 @@
 namespace Jasny\HttpMessage;
 
 use Jasny\HttpMessage\Stream;
-use Jasny\HttpMessage\Wrap\OutputControl;
+use Jasny\HttpMessage\Wrap\OutputControlTrait;
 
 /**
  * An instance wraps a PHP stream and can be used for a PSR-7 implementation.
@@ -12,7 +12,7 @@ use Jasny\HttpMessage\Wrap\OutputControl;
  */
 class OutputBufferStream extends Stream
 {
-    use OutputControl;
+    use OutputControlTrait;
     
     /**
      * Assert that output buffering is enabled.

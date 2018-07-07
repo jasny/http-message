@@ -11,8 +11,8 @@ use Jasny\HttpMessage\OutputBufferStream;
 use Psr\Http\Message\StreamInterface;
 
 /**
- * @covers Jasny\HttpMessage\Message\Body
- * @covers Jasny\HttpMessage\Response\Body
+ * @covers Jasny\HttpMessage\Message\BodyTrait
+ * @covers Jasny\HttpMessage\Response\BodyTrait
  */
 class BodyTest extends PHPUnit_Framework_TestCase
 {

@@ -11,7 +11,7 @@ use Jasny\HttpMessage\Headers;
 use Jasny\HttpMessage\HeadersInterface;
 
 /**
- * @covers Jasny\HttpMessage\ServerRequest\Uri
+ * @covers Jasny\HttpMessage\ServerRequest\UriTrait
  */
 class UriTest extends PHPUnit_Framework_TestCase
 {
@@ -100,7 +100,7 @@ class UriTest extends PHPUnit_Framework_TestCase
         
         $this->headers->expects($this->once())
             ->method('withHeader')
-            ->with('Host', 'www.example.com')
+            ->with('HostTrait', 'www.example.com')
             ->will($this->returnSelf());
         
         $request = $this->baseRequest->withUri($uri);

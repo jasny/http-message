@@ -8,7 +8,7 @@ use Jasny\TestHelper;
 use Jasny\HttpMessage\ServerRequest;
 
 /**
- * @covers Jasny\HttpMessage\ServerRequest\QueryParams
+ * @covers Jasny\HttpMessage\ServerRequest\QueryParamsTrait
  */
 class QueryParamsTest extends PHPUnit_Framework_TestCase
 {

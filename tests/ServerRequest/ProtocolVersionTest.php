@@ -8,8 +8,8 @@ use Jasny\TestHelper;
 use Jasny\HttpMessage\ServerRequest;
 
 /**
- * @covers Jasny\HttpMessage\Message\ProtocolVersion
- * @covers Jasny\HttpMessage\ServerRequest\ProtocolVersion
+ * @covers Jasny\HttpMessage\Message\ProtocolVersionTrait
+ * @covers Jasny\HttpMessage\ServerRequest\ProtocolVersionTrait
  */
 class ProtocolVersionTest extends PHPUnit_Framework_TestCase
 {

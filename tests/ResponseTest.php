@@ -7,7 +7,7 @@ use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use Jasny\TestHelper;
 
 use Jasny\HttpMessage\Response;
-use Jasny\HttpMessage\GlobalResponseHeaders;
+use Jasny\HttpMessage\ResponseHeaders;
 use Jasny\HttpMessage\Headers;
 use Jasny\HttpMessage\OutputBufferStream;
 
@@ -65,8 +65,8 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->setPrivateProperty($this->baseResponse, 'headers', $this->headers);
         $this->setPrivateProperty($this->baseResponse, 'status', $this->status);
         
-        $globalStatus = $this->createMock(GlobalResponseStatus::class);
-        $globalHeaders = $this->createMock(GlobalResponseStatus::class);
+        $globalStatus = $this->createMock(ResponseStatus::class);
+        $globalHeaders = $this->createMock(ResponseStatus::class);
         $body = $this->createMock(OutputBufferStream::class);
         
         $this->baseResponse->expects($this->once())->method('createGlobalResponseStatus')->willReturn($globalStatus);
@@ -148,8 +148,8 @@ class ResponseTest extends PHPUnit_Framework_TestCase
         $this->setPrivateProperty($this->baseResponse, 'headers', $this->headers);
         $this->setPrivateProperty($this->baseResponse, 'status', $this->status);
         
-        $globalStatus = $this->createMock(GlobalResponseStatus::class);
-        $globalHeaders = $this->createMock(GlobalResponseStatus::class);
+        $globalStatus = $this->createMock(ResponseStatus::class);
+        $globalHeaders = $this->createMock(ResponseStatus::class);
         $body = $this->createMock(OutputBufferStream::class);
         
         $this->baseResponse->expects($this->once())->method('createGlobalResponseStatus')->with($this->status)

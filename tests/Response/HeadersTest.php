@@ -10,8 +10,8 @@ use Jasny\HttpMessage\Response;
 use Jasny\HttpMessage\Headers;
 
 /**
- * @covers Jasny\HttpMessage\Message\Headers
- * @covers Jasny\HttpMessage\Response\Headers
+ * @covers Jasny\HttpMessage\Message\HeadersTrait
+ * @covers Jasny\HttpMessage\Response\HeadersTrait
  */
 class HeadersTest extends PHPUnit_Framework_TestCase
 {
@@ -23,7 +23,7 @@ class HeadersTest extends PHPUnit_Framework_TestCase
     protected $baseResponse;
     
     /**
-     * @var Headers|MockObject
+     * @var HeadersTrait|MockObject
      */
     protected $headers;
     

@@ -9,7 +9,7 @@ use Jasny\HttpMessage\Wrap;
  */
 class ResponseStatus
 {
-    use Wrap\Headers;
+    use Wrap\HeadersTrait;
     
     /**
      * HTTP Response status code.
@@ -55,7 +55,7 @@ class ResponseStatus
         402 => 'Payment Required',
         403 => 'Forbidden',
         404 => 'Not Found',
-        405 => 'Method Not Allowed',
+        405 => 'MethodTrait Not Allowed',
         406 => 'Not Acceptable',
         407 => 'Proxy Authentication Required',
         408 => 'Request Timeout',
@@ -114,7 +114,7 @@ class ResponseStatus
     }
 
     /**
-     * Function to set Status phrase
+     * Function to set StatusTrait phrase
      *
      * @param string $phrase
      */
@@ -152,7 +152,7 @@ class ResponseStatus
      * The status code is a 3-digit integer result code of the server's attempt
      * to understand and satisfy the request.
      *
-     * @return int Status code.
+     * @return int StatusTrait code.
      */
     public function getStatusCode()
     {

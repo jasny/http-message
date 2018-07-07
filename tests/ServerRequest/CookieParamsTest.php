@@ -8,7 +8,7 @@ use Jasny\TestHelper;
 use Jasny\HttpMessage\ServerRequest;
 
 /**
- * @covers Jasny\HttpMessage\ServerRequest\CookieParams
+ * @covers Jasny\HttpMessage\ServerRequest\CookieParamsTrait
  */
 class CookieParamsTest extends PHPUnit_Framework_TestCase
 {

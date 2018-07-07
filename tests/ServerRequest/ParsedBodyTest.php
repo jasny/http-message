@@ -9,7 +9,7 @@ use Jasny\HttpMessage\ServerRequest;
 use Jasny\HttpMessage\Stream;
 
 /**
- * @covers Jasny\HttpMessage\ServerRequest\ParsedBody
+ * @covers Jasny\HttpMessage\ServerRequest\ParsedBodyTrait
  */
 class ParsedBodyTest extends PHPUnit_Framework_TestCase
 {

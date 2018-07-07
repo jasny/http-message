@@ -84,7 +84,7 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     }
     
     /**
-     * Host doesn't match referer domain
+     * HostTrait doesn't match referer domain
      */
     public function testNoMatch()
     {
@@ -97,7 +97,7 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     }
     
     /**
-     * Host doesn't match referer domain through subdomain
+     * HostTrait doesn't match referer domain through subdomain
      */
     public function testSubdomainsDontMatch()
     {
@@ -110,7 +110,7 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     }
     
     /**
-     * Port doesn't match referer port
+     * PortTrait doesn't match referer port
      */
     public function testPortsDontMatch()
     {
@@ -123,7 +123,7 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     }
     
     /**
-     * Port doesn't match referer port
+     * PortTrait doesn't match referer port
      */
     public function testDontCheckPort()
     {
@@ -136,7 +136,7 @@ class LocalRefererTest extends PHPUnit_Framework_TestCase
     }
     
     /**
-     * Scheme doesn't match referer
+     * SchemeTrait doesn't match referer
      */
     public function testSchemesDontMatch()
     {

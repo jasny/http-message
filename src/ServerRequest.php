@@ -4,25 +4,25 @@ namespace Jasny\HttpMessage;
 
 use Psr\Http\Message\ServerRequestInterface;
 use Jasny\HttpMessage\ServerRequest;
-use Jasny\HttpMessage\GlobalEnvironmentInterface;
+use Jasny\HttpMessage\EnvironmentInterface;
 
 /**
  * Representation of an incoming, server-side HTTP request.
  */
-class ServerRequest implements ServerRequestInterface, GlobalEnvironmentInterface
+class ServerRequest implements ServerRequestInterface, EnvironmentInterface
 {
-    use ServerRequest\ServerParams;
-    use ServerRequest\ProtocolVersion;
-    use ServerRequest\Headers;
-    use ServerRequest\Body;
-    use ServerRequest\RequestTarget;
-    use ServerRequest\Method;
-    use ServerRequest\Uri;
-    use ServerRequest\CookieParams;
-    use ServerRequest\QueryParams;
-    use ServerRequest\UploadedFiles;
-    use ServerRequest\ParsedBody;
-    use ServerRequest\Attributes;
+    use ServerRequest\ServerParamsTrait;
+    use ServerRequest\ProtocolVersionTrait;
+    use ServerRequest\HeadersTrait;
+    use ServerRequest\BodyTrait;
+    use ServerRequest\RequestTargetTrait;
+    use ServerRequest\MethodTrait;
+    use ServerRequest\UriTrait;
+    use ServerRequest\CookieParamsTrait;
+    use ServerRequest\QueryParamsTrait;
+    use ServerRequest\UploadedFilesTrait;
+    use ServerRequest\ParsedBodyTrait;
+    use ServerRequest\AttributesTrait;
     
     
     /**

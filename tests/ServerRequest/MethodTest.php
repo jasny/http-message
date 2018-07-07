@@ -8,7 +8,7 @@ use Jasny\TestHelper;
 use Jasny\HttpMessage\ServerRequest;
 
 /**
- * @covers Jasny\HttpMessage\ServerRequest\Method
+ * @covers Jasny\HttpMessage\ServerRequest\MethodTrait
  */
 class MethodTest extends PHPUnit_Framework_TestCase
 {
@@ -48,7 +48,7 @@ class MethodTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid method 'foo bar': Method may only contain letters and dashes
+     * @expectedExceptionMessage Invalid method 'foo bar': MethodTrait may only contain letters and dashes
      */
     public function testWithMethodInvalid()
     {
@@ -57,7 +57,7 @@ class MethodTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Method should be a string, not a stdClass object
+     * @expectedExceptionMessage MethodTrait should be a string, not a stdClass object
      */
     public function testWithMethodInvalidArgument()
     {

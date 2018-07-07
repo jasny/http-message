@@ -6,7 +6,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Jasny\HttpMessage\Uri;
 
 /**
- * Return the path of the `Referer` header, but only if the referer's host part matches the `Host` header.
+ * Return the path of the `Referer` header, but only if the referer's host part matches the `HostTrait` header.
  */
 class LocalReferer
 {
