@@ -225,9 +225,6 @@ class StreamTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($stream->eof());
         
         $stream->read(100);
-        $this->assertFalse($stream->eof());
-        
-        $stream->read(1);
         $this->assertTrue($stream->eof());
     }
 

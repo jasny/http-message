@@ -184,6 +184,13 @@ class Stream implements StreamInterface
      */
     public function rewind()
     {
+        // @codeCoverageIgnoreStart
+        $meta = $this->getMetadata();
+        if ($meta['wrapper_type'] === 'PHP' && strtolower($meta['stream_type']) === 'input') {
+            $this->handle = fopen($meta['uri']);
+        }
+        // @codeCoverageIgnoreEnd
+
         $this->seek(0, SEEK_SET);
     }
 
