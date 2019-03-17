@@ -187,7 +187,7 @@ class Stream implements StreamInterface
         // @codeCoverageIgnoreStart
         $meta = $this->getMetadata();
         if ($meta['wrapper_type'] === 'PHP' && strtolower($meta['stream_type']) === 'input') {
-            $this->handle = fopen($meta['uri']);
+            $this->handle = fopen($meta['uri'], $meta['mode']);
         }
         // @codeCoverageIgnoreEnd
 
